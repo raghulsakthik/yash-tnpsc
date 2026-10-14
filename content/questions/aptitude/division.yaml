@@ -1,0 +1,85 @@
+topic: aptitude.division
+language: en
+source: authored
+# Requires whole-numbers. Division is the direct prerequisite for fractions
+# (already shipped), HCF and LCM — remainder and divisibility sense matters
+# more here than raw calculation speed.
+questions:
+  - id: division-001
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "What is 144 ÷ 12?"
+    options: ["11", "12", "13", "14"]
+    answer: 1
+    explanation: "12 × 12 = 144, so 144 ÷ 12 = 12."
+    trap: "11 and 13 are both one away from the right answer — check by multiplying the option back up, not by estimating."
+
+  - id: division-002
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "Divide 256 by 8."
+    options: ["28", "30", "32", "34"]
+    answer: 2
+    explanation: "8 × 32 = 256, so 256 ÷ 8 = 32."
+    trap: "30 is a rounder-looking number but 8 × 30 = 240, not 256 — a close guess is still wrong."
+
+  - id: division-003
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "When 87 is divided by 5, what is the remainder?"
+    options: ["1", "2", "3", "4"]
+    answer: 1
+    explanation: "5 × 17 = 85, and 87 − 85 = 2, so the remainder is 2."
+    trap: "A remainder must always be less than the divisor — any option of 5 or more could be ruled out immediately, but 1, 3 and 4 still need the actual division to tell them apart."
+
+  - id: division-004
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Which of these numbers is exactly divisible by 9?"
+    options: ["4851", "3452", "7264", "8125"]
+    answer: 0
+    explanation: >
+      A number is divisible by 9 exactly when its digit sum is. 4+8+5+1 = 18,
+      which is divisible by 9, so 4851 is too (4851 ÷ 9 = 539).
+    trap: "The other three all have digit sums that aren't multiples of 9 (14, 19 and 16) — the digit-sum rule settles it without doing the full division."
+
+  - id: division-005
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A rope 158 m long is cut into pieces of 12 m each. How many full pieces are cut, and how many metres are left over?"
+    options: ["13 pieces, 2 m left over", "12 pieces, 14 m left over", "13 pieces, 0 m left over", "14 pieces, 2 m left over"]
+    answer: 0
+    explanation: >
+      12 × 13 = 156, and 158 − 156 = 2, so 13 full pieces are cut with 2 m
+      left over.
+    trap: "12 pieces, 14 m left over can't be right on its own terms — 14 m left over is enough rope for one more full 12 m piece, so it isn't a true remainder."
+
+  - id: division-006
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "What is the smallest number that must be added to 1,056 to make it exactly divisible by 23?"
+    options: ["1", "2", "3", "4"]
+    answer: 1
+    explanation: >
+      23 × 45 = 1,035, and 1,056 − 1,035 = 21 is the remainder. The next
+      multiple of 23 is 1,035 + 23 = 1,058, so 1,058 − 1,056 = 2 must be
+      added.
+    trap: "The remainder itself, 21, is not the answer — what's needed is how much further to the NEXT multiple, which is 23 minus the remainder."
+
+  - id: division-007
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "A school collected ₹7,245 to be divided equally among 15 charities. How much does each charity receive?"
+    options: ["₹463", "₹483", "₹493", "₹503"]
+    answer: 1
+    explanation: "15 × 483 = 7,245, so each charity receives ₹483."
+    trap: "₹463 and ₹503 are both plausible-looking round-ish numbers, but neither survives multiplying back by 15 — always verify a division word problem by multiplying the answer back up."
+
+  - id: division-008
+    difficulty: 0.45
+    estimatedSeconds: 60
+    question: "Divide 1,000 by 37 and give the remainder."
+    options: ["0", "1", "2", "3"]
+    answer: 1
+    explanation: "37 × 27 = 999, and 1,000 − 999 = 1, so the remainder is 1."
+    trap: "0 assumes 1,000 divides evenly just because it's a round number — 37 × 27 = 999, one short, so it doesn't."

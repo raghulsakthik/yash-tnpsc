@@ -1,0 +1,93 @@
+topic: aptitude.time-and-work
+language: en
+source: authored
+# Requires fractions and lcm.
+questions:
+  - id: time-and-work-001
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "A can do a piece of work in 12 days. What fraction of the work does A complete in 4 days?"
+    options: ["1/3", "1/4", "1/2", "2/3"]
+    answer: 0
+    explanation: "A's rate is 1/12 of the work per day. In 4 days: 4 × 1/12 = 4/12 = 1/3."
+    trap: "1/4 swaps the numbers — it treats 12 days as the amount of work done in 4 units, the wrong way round."
+
+  - id: time-and-work-002
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "A can finish a job in 10 days and B can finish it in 15 days. In how many days can they finish it together?"
+    options: ["6 days", "8 days", "5 days", "12 days"]
+    answer: 0
+    explanation: >
+      Combined rate: 1/10 + 1/15 = 3/30 + 2/30 = 5/30 = 1/6 of the work per
+      day, so together they take 6 days.
+    trap: "12.5 days (close to option 12) comes from averaging the two times — rates add, not times; working together is always faster than either alone, which rules out anything above 10 days immediately."
+
+  - id: time-and-work-003
+    difficulty: 0.35
+    estimatedSeconds: 55
+    question: "A and B together can complete a work in 12 days, and A alone can complete it in 20 days. In how many days can B alone complete it?"
+    options: ["30 days", "24 days", "36 days", "40 days"]
+    answer: 0
+    explanation: >
+      Combined rate 1/12, A's rate 1/20. B's rate = 1/12 − 1/20 =
+      5/60 − 3/60 = 2/60 = 1/30, so B alone takes 30 days.
+    trap: "24 days comes from a subtraction slip in the fractions — 1/12 − 1/20 needs a common denominator of 60, not 20 or 12 alone."
+
+  - id: time-and-work-004
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "A, B and C can each complete a work alone in 10, 15 and 30 days respectively. In how many days can they complete it working together?"
+    options: ["5 days", "6 days", "8 days", "10 days"]
+    answer: 0
+    explanation: >
+      Combined rate: 1/10 + 1/15 + 1/30 = 3/30 + 2/30 + 1/30 = 6/30 = 1/5,
+      so together they take 5 days.
+    trap: "10 days is C's time alone — adding a third, slower worker can only ever speed things up from the two-worker time, never match the slowest worker's own time."
+
+  - id: time-and-work-005
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A can do a work in 18 days, and B is 50% more efficient than A. In how many days can B alone complete the work?"
+    options: ["12 days", "9 days", "15 days", "27 days"]
+    answer: 0
+    explanation: >
+      Being 50% more efficient means B's RATE is 1.5 times A's rate:
+      1.5 × 1/18 = 1/12, so B takes 12 days.
+    trap: "27 days adds 50% to A's TIME instead of A's rate — being more efficient means taking LESS time, not more, so an answer bigger than 18 can't be right."
+
+  - id: time-and-work-006
+    difficulty: 0.50
+    estimatedSeconds: 70
+    question: "A does a work in 20 days. After working alone for 5 days, he is joined by B, and together they finish the remaining work in 6 days. In how many days can B alone do the work?"
+    options: ["13 1/3 days", "15 days", "12 days", "16 days"]
+    answer: 0
+    explanation: >
+      In 5 days A completes 5/20 = 1/4 of the work, leaving 3/4. Together,
+      A and B finish 3/4 in 6 days, so their combined rate is
+      (3/4) ÷ 6 = 1/8. B's rate is 1/8 − 1/20 = 5/40 − 2/40 = 3/40, so B
+      alone takes 40/3 = 13 1/3 days.
+    trap: "15 days rounds the fraction 40/3 to a tidier-looking number instead of keeping it exact — 40/3 is 13 1/3, not 15."
+
+  - id: time-and-work-007
+    difficulty: 0.60
+    estimatedSeconds: 75
+    question: "A and B together can do a work in 8 days. They worked together for 3 days, after which A left, and B alone finished the remaining work in 15 more days. In how many days can A alone do the whole work?"
+    options: ["12 days", "10 days", "15 days", "18 days"]
+    answer: 0
+    explanation: >
+      In 3 days together they complete 3/8 of the work, leaving 5/8. B
+      finishes 5/8 in 15 days, so B's rate is (5/8) ÷ 15 = 1/24. A's rate =
+      1/8 − 1/24 = 3/24 − 1/24 = 2/24 = 1/12, so A alone takes 12 days.
+    trap: "18 days comes from subtracting the days (15 − 3 and similar) instead of working with rates — time-and-work problems need rates to be added or subtracted, never the raw day counts."
+
+  - id: time-and-work-008
+    difficulty: 0.55
+    estimatedSeconds: 60
+    question: "12 men can complete a piece of work in 18 days. How many men are needed to complete the same work in 8 days?"
+    options: ["27 men", "24 men", "30 men", "20 men"]
+    answer: 0
+    explanation: >
+      The total work is 12 × 18 = 216 man-days. For 8 days: 216 ÷ 8 = 27
+      men.
+    trap: "24 men comes from scaling 12 by the ratio of 18:8 rounded to roughly 2 (12 × 2) instead of computing the exact man-days — 18/8 is not a clean multiple, so the full division has to be done."

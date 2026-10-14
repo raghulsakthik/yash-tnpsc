@@ -1,0 +1,91 @@
+topic: aptitude.hcf
+language: en
+source: authored
+# Requires division.
+questions:
+  - id: hcf-001
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the HCF of 12 and 18?"
+    options: ["6", "4", "3", "12"]
+    answer: 0
+    explanation: "12 = 2² × 3 and 18 = 2 × 3². The common factors give 2 × 3 = 6."
+    trap: "12 is one of the numbers itself, not a factor shared by both — the HCF can never be larger than the smaller of the two numbers... and here it's smaller still."
+
+  - id: hcf-002
+    difficulty: 0.20
+    estimatedSeconds: 40
+    question: "Find the HCF of 24, 36 and 60."
+    options: ["12", "6", "24", "18"]
+    answer: 0
+    explanation: >
+      24 = 2³ × 3, 36 = 2² × 3², 60 = 2² × 3 × 5. Taking the lowest power of
+      each common prime: 2² × 3 = 12.
+    trap: "18 is a common factor of 36 and 60 but not of 24 — a number has to divide ALL three, not just two of them."
+
+  - id: hcf-003
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "The HCF of two numbers is 5 and their product is 150. If one number is 15, find the other."
+    options: ["10", "20", "25", "30"]
+    answer: 0
+    explanation: >
+      The other number is 150 ÷ 15 = 10. Check: the HCF of 15 and 10 is
+      indeed 5.
+    trap: "30 confuses the relationship — dividing the product by the HCF (150 ÷ 5 = 30) gives the LCM-style result, not the other number, which comes from dividing by the KNOWN number instead."
+
+  - id: hcf-004
+    difficulty: 0.35
+    estimatedSeconds: 55
+    question: "Find the greatest number that divides 70 and 125, leaving remainders 5 and 8 respectively."
+    options: ["13", "5", "9", "15"]
+    answer: 0
+    explanation: >
+      Subtract the remainders first: 70 − 5 = 65, and 125 − 8 = 117. The HCF
+      of 65 and 117 is 13 (65 = 5 × 13, 117 = 9 × 13).
+    trap: "5 is just one of the remainders quoted in the question, not the answer — the remainders have to be subtracted off first before finding the HCF."
+
+  - id: hcf-005
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Using the division (Euclid) method, what is the HCF of 48 and 180?"
+    options: ["12", "6", "24", "36"]
+    answer: 0
+    explanation: >
+      180 = 3 × 48 + 36. Then 48 = 1 × 36 + 12. Then 36 = 3 × 12 + 0. The
+      last non-zero remainder, 12, is the HCF.
+    trap: "36 is a remainder reached partway through the Euclid method, not the final one — keep dividing until the remainder is exactly 0."
+
+  - id: hcf-006
+    difficulty: 0.45
+    estimatedSeconds: 60
+    question: "Three ropes of 84 m, 126 m and 210 m are to be cut into the largest possible equal pieces with none left over. What is the length of each piece?"
+    options: ["42", "21", "14", "7"]
+    answer: 0
+    explanation: >
+      84 = 2² × 3 × 7, 126 = 2 × 3² × 7, 210 = 2 × 3 × 5 × 7. The HCF is
+      2 × 3 × 7 = 42.
+    trap: "21 is half of the correct answer — it divides all three ropes too, but it isn't the LARGEST piece length that does, which is what 'as long as possible' requires."
+
+  - id: hcf-007
+    difficulty: 0.50
+    estimatedSeconds: 70
+    question: "The HCF of two numbers is supposed to be 8. Which of these pairs does NOT actually have an HCF of 8?"
+    options: ["16 and 24", "24 and 36", "40 and 56", "8 and 24"]
+    answer: 1
+    explanation: >
+      16 and 24: HCF 8. 40 and 56: HCF 8. 8 and 24: HCF 8. But 24 and 36:
+      24 = 2³ × 3, 36 = 2² × 3², giving HCF = 2² × 3 = 12, not 8.
+    trap: "24 and 36 both happen to be multiples of 8 individually, but that's not enough — their actual shared HCF is 12, higher than 8."
+
+  - id: hcf-008
+    difficulty: 0.55
+    estimatedSeconds: 75
+    question: "Three pieces of rope measuring 48 m, 60 m and 72 m are to be cut into equal pieces, each as long as possible, with none left over. How many pieces are cut in total?"
+    options: ["15 pieces of 12 m each", "12 pieces of 15 m each", "10 pieces of 18 m each", "20 pieces of 9 m each"]
+    answer: 0
+    explanation: >
+      The HCF of 48, 60 and 72 is 12 (48 = 2⁴×3, 60 = 2²×3×5, 72 = 2³×3²,
+      common = 2²×3). Pieces: 48/12 + 60/12 + 72/12 = 4 + 5 + 6 = 15 pieces
+      of 12 m each.
+    trap: "12 pieces of 15 m swaps the piece length and the piece count — but 15 isn't even a common factor of 48, 60 and 72, so it can't be a valid piece length."

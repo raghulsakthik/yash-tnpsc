@@ -1,0 +1,182 @@
+# TNPSC Combined Civil Services (Preliminary) Examination – II
+# Group II and Group IIA Services. Code 495, dated 12.12.2024.
+#
+# 200 questions in one paper:
+#   General Studies            75  (degree standard)
+#   Aptitude and Mental Ability 25  (SSLC standard)
+#   Language                  100  (SSLC standard, General Tamil OR General English)
+#
+# question_count on each chapter is the official count from the paper. It is the
+# only input to examWeight in topic selection — never invent a weight.
+#
+# transcribed: false means the unit's prose has not yet been split into topics.
+# The validator reports coverage; it does not fail the build on it.
+
+exam: tnpsc-prelims-495
+code: 495
+dated: 2024-12-12
+total_questions: 200
+
+subjects:
+  # ------------------------------------------------------------- 75 questions
+  - id: general-studies
+    name: General Studies
+    sort_order: 1
+    chapters:
+      - id: gs.general-science
+        name: General Science
+        sort_order: 1
+        question_count: 5
+        transcribed: false
+        topics: []
+
+      - id: gs.geography-india
+        name: Geography of India
+        sort_order: 2
+        question_count: 5
+        transcribed: false
+        topics: []
+
+      - id: gs.history-culture-national-movement
+        name: History, Culture of India, and Indian National Movement
+        sort_order: 3
+        question_count: 10
+        transcribed: false
+        topics: []
+
+      - id: gs.indian-polity
+        name: Indian Polity
+        sort_order: 4
+        question_count: 15
+        transcribed: true
+        topics:
+          - { id: polity.constitution-preamble,        name: Preamble to the Constitution }
+          - { id: polity.salient-features,             name: Salient features of the Constitution }
+          - { id: polity.union-state-ut,               name: Union, State and Union Territory }
+          - { id: polity.citizenship,                  name: Citizenship }
+          - { id: polity.fundamental-rights,           name: Fundamental Rights }
+          - { id: polity.fundamental-duties,           name: Fundamental Duties }
+          - { id: polity.directive-principles,         name: Directive Principles of State Policy }
+          - { id: polity.union-executive,              name: Union Executive }
+          - { id: polity.union-legislature,            name: Union Legislature }
+          - { id: polity.state-executive,              name: State Executive }
+          - { id: polity.state-legislature,            name: State Legislature }
+          - { id: polity.local-government,             name: Local Governments and Panchayat Raj }
+          - { id: polity.federalism,                   name: Spirit of federalism, Centre-State relationships }
+          - { id: polity.elections,                    name: Elections }
+          - { id: polity.judiciary,                    name: Judiciary in India and Rule of Law }
+          - { id: polity.corruption-anti-corruption,   name: Corruption in public life, Lokpal and Lok Ayukta }
+          - { id: polity.right-to-information,         name: Right to Information }
+          - { id: polity.women-empowerment,            name: Empowerment of Women }
+          - { id: polity.consumer-human-rights,        name: Consumer Protection Forums, Human Rights Charter }
+          - { id: polity.parties-political-system,     name: Political parties and political system in India }
+
+      - id: gs.indian-economy-tn-development
+        name: Indian Economy and Development Administration in Tamil Nadu
+        sort_order: 5
+        question_count: 20
+        transcribed: false
+        topics: []
+
+      - id: gs.tn-history-culture-movements
+        name: History, Culture, Heritage and Socio-Political Movements in Tamil Nadu
+        sort_order: 6
+        question_count: 20
+        transcribed: false
+        topics: []
+
+  # ------------------------------------------------------------- 25 questions
+  - id: aptitude-mental-ability
+    name: Aptitude and Mental Ability
+    sort_order: 2
+    chapters:
+      # Not on the syllabus and worth no marks directly. These exist only as
+      # prerequisites for the examined aptitude topics, which is why the count
+      # is 0 — the engine must never spend her time here for its own sake.
+      - id: apt.foundation
+        name: Arithmetic foundation (prerequisite only, not examined)
+        sort_order: 0
+        question_count: 0
+        transcribed: true
+        topics:
+          - { id: aptitude.whole-numbers,   name: Whole numbers and place value }
+          - { id: aptitude.division,        name: Division }
+          - { id: aptitude.fractions,       name: Fractions }
+          - { id: aptitude.decimals,        name: Decimals }
+
+      - id: apt.aptitude
+        name: Aptitude
+        sort_order: 1
+        question_count: 15
+        transcribed: true
+        topics:
+          - { id: aptitude.simplification,      name: Simplification }
+          - { id: aptitude.percentage,          name: Percentage }
+          - { id: aptitude.hcf,                 name: Highest Common Factor }
+          - { id: aptitude.lcm,                 name: Lowest Common Multiple }
+          - { id: aptitude.ratio-and-proportion, name: Ratio and Proportion }
+          - { id: aptitude.simple-interest,     name: Simple interest }
+          - { id: aptitude.compound-interest,   name: Compound interest }
+          - { id: aptitude.area,                name: Area }
+          - { id: aptitude.volume,              name: Volume }
+          - { id: aptitude.time-and-work,       name: Time and Work }
+
+      - id: apt.reasoning
+        name: Reasoning
+        sort_order: 2
+        question_count: 10
+        transcribed: true
+        topics:
+          - { id: reasoning.logical,        name: Logical reasoning }
+          - { id: reasoning.puzzles,        name: Puzzles }
+          - { id: reasoning.dice,           name: Dice }
+          - { id: reasoning.visual,         name: Visual reasoning }
+          - { id: reasoning.alpha-numeric,  name: Alpha numeric reasoning }
+          - { id: reasoning.number-series,  name: Number series }
+
+  # ------------------------------------- 100 questions, General Tamil OR English
+  # Only one of these two subjects is seeded, decided by the learner's profile.
+  - id: language-en
+    name: General English
+    sort_order: 3
+    language: en
+    chapters:
+      - { id: en.grammar,               name: Grammar,               sort_order: 1, question_count: 25, transcribed: false, topics: [] }
+      - { id: en.vocabulary,            name: Vocabulary,            sort_order: 2, question_count: 15, transcribed: false, topics: [] }
+      - { id: en.writing-skills,        name: Writing Skills,        sort_order: 3, question_count: 10, transcribed: false, topics: [] }
+      - { id: en.technical-terms,       name: Technical Terms,       sort_order: 4, question_count: 10, transcribed: false, topics: [] }
+      - { id: en.reading-comprehension, name: Reading Comprehension, sort_order: 5, question_count: 20, transcribed: false, topics: [] }
+      - { id: en.translation,           name: Translation,           sort_order: 6, question_count: 5,  transcribed: false, topics: [] }
+      - { id: en.literary-works,        name: Literary Works,        sort_order: 7, question_count: 15, transcribed: false, topics: [] }
+
+  - id: language-ta
+    name: பொதுத் தமிழ்
+    sort_order: 3
+    language: ta
+    chapters:
+      - { id: ta.ilakkanam,       name: இலக்கணம்,                  sort_order: 1, question_count: 25, transcribed: false, topics: [] }
+      - { id: ta.sollakarathi,    name: சொல்லகராதி,                sort_order: 2, question_count: 15, transcribed: false, topics: [] }
+      - { id: ta.ezhuthum-thiran, name: எழுதும் திறன்,              sort_order: 3, question_count: 15, transcribed: false, topics: [] }
+      - { id: ta.kalai-sorkal,    name: கலைச் சொற்கள்,              sort_order: 4, question_count: 10, transcribed: false, topics: [] }
+      - { id: ta.vasithal,        name: வாசித்தல் – புரிந்து கொள்ளும் திறன், sort_order: 5, question_count: 15, transcribed: false, topics: [] }
+      - { id: ta.mozhipeyarppu,   name: எளிய மொழி பெயர்ப்பு,        sort_order: 6, question_count: 5,  transcribed: false, topics: [] }
+      - { id: ta.ilakkiyam,       name: இலக்கியம், தமிழ் அறிஞர்கள், தமிழ்த்தொண்டு, sort_order: 7, question_count: 15, transcribed: false, topics: [] }
+
+# Weighted directed edges, only where the dependency is real. An empty graph is
+# better than a fictional one: for recall subjects the engine falls back to
+# exam weight and weakness, which is the honest behaviour.
+prerequisites:
+  - { topic: aptitude.division,             requires: aptitude.whole-numbers,       strength: 0.80 }
+  - { topic: aptitude.fractions,            requires: aptitude.division,            strength: 0.85 }
+  - { topic: aptitude.decimals,             requires: aptitude.fractions,           strength: 0.75 }
+  - { topic: aptitude.percentage,           requires: aptitude.fractions,           strength: 0.85 }
+  - { topic: aptitude.percentage,           requires: aptitude.decimals,            strength: 0.75 }
+  - { topic: aptitude.ratio-and-proportion, requires: aptitude.fractions,           strength: 0.80 }
+  - { topic: aptitude.simplification,       requires: aptitude.fractions,           strength: 0.70 }
+  - { topic: aptitude.lcm,                  requires: aptitude.division,            strength: 0.70 }
+  - { topic: aptitude.hcf,                  requires: aptitude.division,            strength: 0.70 }
+  - { topic: aptitude.simple-interest,      requires: aptitude.percentage,          strength: 0.90 }
+  - { topic: aptitude.compound-interest,    requires: aptitude.simple-interest,     strength: 0.85 }
+  - { topic: aptitude.time-and-work,        requires: aptitude.fractions,           strength: 0.75 }
+  - { topic: aptitude.time-and-work,        requires: aptitude.lcm,                 strength: 0.60 }
+  - { topic: aptitude.volume,               requires: aptitude.area,                strength: 0.80 }

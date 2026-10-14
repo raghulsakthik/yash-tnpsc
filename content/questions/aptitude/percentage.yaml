@@ -1,0 +1,86 @@
+topic: aptitude.percentage
+language: en
+source: authored
+# Requires fractions and decimals. Directly examined, and the prerequisite
+# for simple and compound interest.
+questions:
+  - id: percentage-001
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 25% of 160?"
+    options: ["40", "35", "45", "50"]
+    answer: 0
+    explanation: "25% is a quarter. A quarter of 160 is 40."
+    trap: "35 and 45 are close round-number guesses — 25% has an exact value here, no estimating needed."
+
+  - id: percentage-002
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Convert 7/40 to a percentage."
+    options: ["17.5%", "17%", "175%", "1.75%"]
+    answer: 0
+    explanation: >
+      7 ÷ 40 = 0.175, and a percentage is the decimal times 100, so 17.5%.
+    trap: "175% misplaces the decimal point — 0.175 as a percentage is 17.5%, not 175%."
+
+  - id: percentage-003
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What percentage of 80 is 20?"
+    options: ["20%", "25%", "30%", "40%"]
+    answer: 1
+    explanation: "20/80 = 1/4 = 25%."
+    trap: "20% mistakes the number 20 in the question for the answer itself — the question asks what fraction 20 is OF 80, not for 20 restated as a percentage."
+
+  - id: percentage-004
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "In an election, a candidate got 60% of the 25,000 votes cast. How many votes did the candidate get?"
+    options: ["12,000", "15,000", "18,000", "20,000"]
+    answer: 1
+    explanation: "60% of 25,000 = 0.6 × 25,000 = 15,000."
+    trap: "12,000 is 60% of 20,000, not of 25,000 — double-check which number the percentage is being taken of."
+
+  - id: percentage-005
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "A shirt's price is increased by 20% to ₹600. What was the original price?"
+    options: ["₹480", "₹500", "₹520", "₹550"]
+    answer: 1
+    explanation: >
+      Let the original price be P. P × 1.20 = 600, so P = 600 ÷ 1.2 = ₹500.
+    trap: "₹480 takes 20% of ₹600 and subtracts it — but the 20% increase was applied to the ORIGINAL price, not to ₹600, so working backwards from ₹600 needs division, not a flat subtraction."
+
+  - id: percentage-006
+    difficulty: 0.45
+    estimatedSeconds: 55
+    question: "The population of a town decreased from 50,000 to 46,000. What is the percentage decrease?"
+    options: ["8%", "9%", "6%", "4%"]
+    answer: 0
+    explanation: >
+      The decrease is 50,000 − 46,000 = 4,000. As a percentage of the
+      ORIGINAL population: 4,000 / 50,000 = 8%.
+    trap: "4% restates the raw decrease fraction over 100,000 instead of over the original population of 50,000 — percentage change is always relative to the starting value."
+
+  - id: percentage-007
+    difficulty: 0.55
+    estimatedSeconds: 70
+    question: "If 40% of a number is 18 more than 25% of the same number, what is the number?"
+    options: ["90", "100", "120", "150"]
+    answer: 2
+    explanation: >
+      Let the number be N. 0.40N − 0.25N = 18, so 0.15N = 18, giving N = 120.
+      Check: 40% of 120 is 48, 25% of 120 is 30, and 48 − 30 = 18.
+    trap: "100 comes from treating the gap between 40% and 25% as if it were 10% instead of the correct 15% — subtract the percentages carefully before dividing."
+
+  - id: percentage-008
+    difficulty: 0.60
+    estimatedSeconds: 75
+    question: "A trader marks goods 40% above cost price and allows a 10% discount on the marked price. What is his profit percentage?"
+    options: ["26%", "30%", "24%", "36%"]
+    answer: 0
+    explanation: >
+      Take cost price as 100. Marked price = 140. A 10% discount on 140 is
+      14, so selling price = 140 − 14 = 126. Profit on a cost of 100 is 26,
+      which is 26%.
+    trap: "30% just subtracts the 10% discount from the 40% markup — but the discount is 10% of the MARKED price (140), not 10% of the original cost price, so the two percentages don't simply cancel."

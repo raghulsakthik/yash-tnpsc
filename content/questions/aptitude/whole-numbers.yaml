@@ -1,0 +1,90 @@
+topic: aptitude.whole-numbers
+language: en
+source: authored
+# Place value, order of operations and rounding — the foundation everything
+# else in the aptitude chain (division, fractions, decimals...) sits on.
+questions:
+  - id: whole-numbers-001
+    difficulty: 0.10
+    estimatedSeconds: 25
+    question: "What is the place value of 7 in 3,752?"
+    options: ["7", "70", "700", "7000"]
+    answer: 2
+    explanation: >
+      In 3,752 the digits are 3 (thousands), 7 (hundreds), 5 (tens) and 2
+      (units). The place value of 7 is 7 × 100 = 700.
+    trap: "Confusing the digit itself (7) with its place value (700) is the single most common slip at this level."
+
+  - id: whole-numbers-002
+    difficulty: 0.10
+    estimatedSeconds: 25
+    question: "Which digit is in the thousands place of 48,265?"
+    options: ["4", "8", "2", "6"]
+    answer: 1
+    explanation: >
+      Counting from the right: 5 units, 6 tens, 2 hundreds, 8 thousands, 4
+      ten-thousands. The thousands digit is 8.
+    trap: "4 is the ten-thousands digit, one place further left than what was asked."
+
+  - id: whole-numbers-003
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "Write 50000 + 3000 + 200 + 7 in standard form."
+    options: ["53207", "53270", "50327", "53027"]
+    answer: 0
+    explanation: >
+      Add each place: 50000 + 3000 = 53000, + 200 = 53200, + 7 = 53207.
+    trap: "53027 drops the hundreds digit into the tens place — add one place value at a time rather than guessing the digit order."
+
+  - id: whole-numbers-004
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 4,683 to the nearest hundred."
+    options: ["4600", "4700", "4680", "4690"]
+    answer: 1
+    explanation: >
+      Look at the tens digit, 8. Since 8 ≥ 5, round the hundreds digit up:
+      4,683 rounds to 4,700.
+    trap: "4680 and 4690 round to the nearest ten, not the nearest hundred — rounding to the wrong place is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-005
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "What is 18 + 6 × 3?"
+    options: ["72", "36", "24", "54"]
+    answer: 1
+    explanation: >
+      Multiplication happens before addition: 6 × 3 = 18, then 18 + 18 = 36.
+    trap: "72 comes from adding 18 + 6 first and multiplying the result by 3 — addition does not get to go first just because it's written first."
+
+  - id: whole-numbers-006
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Arrange the digits 4, 0, 7, 2 to form the largest possible 4-digit number."
+    options: ["7420", "7240", "7402", "4720"]
+    answer: 0
+    explanation: >
+      To maximise a number, place the digits in strictly descending order:
+      7, 4, 2, 0 gives 7420.
+    trap: "7402 puts a large digit first but loses the descending order after it — every digit must be smaller than the one before it, not just the first one."
+
+  - id: whole-numbers-007
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is 100 − 2 × (5 + 3)?"
+    options: ["84", "93", "70", "784"]
+    answer: 0
+    explanation: >
+      Brackets first: 5 + 3 = 8. Then multiplication: 2 × 8 = 16. Then
+      subtraction: 100 − 16 = 84.
+    trap: "93 treats the bracket as if it weren't there, computing 100 − 2 × 5 + 3 left to right instead of multiplying by the full bracketed sum first."
+
+  - id: whole-numbers-008
+    difficulty: 0.40
+    estimatedSeconds: 60
+    question: "A cinema hall has 48 rows with 35 seats in each row. If 1,308 seats are already booked, how many seats remain?"
+    options: ["372", "382", "362", "412"]
+    answer: 0
+    explanation: >
+      Total seats: 48 × 35 = 1,680. Remaining: 1,680 − 1,308 = 372.
+    trap: "382 comes from a small slip in 48 × 35 before subtracting — always re-check the multiplication of a word problem before trusting the final subtraction."

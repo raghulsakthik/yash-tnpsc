@@ -1,0 +1,367 @@
+topic: aptitude.fractions
+language: en
+source: authored
+# Fractions are not examined directly in prelims — they are the prerequisite the
+# examined aptitude topics (percentage, ratio, time and work, simplification)
+# all rest on. These 25 exist to prove the adaptive loop works on content whose
+# answers are unarguable.
+questions:
+  - id: fractions-001
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "Which is larger: 3/4 or 5/8?"
+    options: ["5/8", "3/4", "They are equal", "It cannot be decided"]
+    answer: 1
+    explanation: >
+      Put them over the same denominator. 3/4 = 6/8, and 6/8 is larger than 5/8.
+      As decimals, 0.75 against 0.625.
+    trap: "A bigger bottom number does not mean a bigger fraction — 8 > 4 but 5/8 < 3/4."
+
+  - id: fractions-002
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "Write 12/18 in its lowest terms."
+    options: ["6/9", "4/6", "2/3", "3/4"]
+    answer: 2
+    explanation: >
+      Divide top and bottom by their highest common factor, 6. 12 ÷ 6 = 2 and
+      18 ÷ 6 = 3, giving 2/3.
+    trap: "6/9 and 4/6 are the same value, but neither is in lowest terms — the question asks for the simplest form."
+
+  - id: fractions-003
+    difficulty: 0.10
+    estimatedSeconds: 30
+    question: "What is 1/4 + 1/4?"
+    options: ["1/8", "2/8", "1/2", "1/16"]
+    answer: 2
+    explanation: >
+      The denominators already match, so add the numerators only: 1 + 1 = 2,
+      giving 2/4, which simplifies to 1/2.
+    trap: "Adding the bottoms as well gives 2/8, which is a quarter — the wrong answer and a very common slip."
+
+  - id: fractions-004
+    difficulty: 0.25
+    estimatedSeconds: 45
+    question: "What is 2/3 + 1/6?"
+    options: ["3/9", "5/6", "1/2", "3/6"]
+    answer: 1
+    explanation: >
+      Make the denominators the same. 2/3 = 4/6, so 4/6 + 1/6 = 5/6.
+    trap: "3/9 comes from adding tops and bottoms separately. That is never how fractions add."
+
+  - id: fractions-005
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is 3/5 − 1/5?"
+    options: ["2/5", "4/5", "2/10", "1/5"]
+    answer: 0
+    explanation: >
+      Same denominator, so subtract the numerators: 3 − 1 = 2, giving 2/5.
+    trap: "The denominator stays at 5. Subtracting it too would give 2/0, which is not a number at all."
+
+  - id: fractions-006
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is 5/6 − 1/3?"
+    options: ["4/3", "1/3", "1/2", "2/3"]
+    answer: 2
+    explanation: >
+      1/3 = 2/6, so 5/6 − 2/6 = 3/6, which simplifies to 1/2.
+    trap: "Leaving the answer as 3/6 is correct in value but not in lowest terms — and 3/6 is not among the options."
+
+  - id: fractions-007
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "What is 2/3 × 3/4?"
+    options: ["5/12", "8/9", "6/7", "1/2"]
+    answer: 3
+    explanation: >
+      Multiply straight across: 2 × 3 = 6 on top, 3 × 4 = 12 underneath. 6/12
+      simplifies to 1/2.
+    trap: "Multiplying does not need a common denominator. Looking for one wastes time and invites mistakes."
+
+  - id: fractions-008
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "What is 3/4 ÷ 1/2?"
+    options: ["3/8", "3/2", "2/3", "1/2"]
+    answer: 1
+    explanation: >
+      Dividing by a fraction means multiplying by its reciprocal:
+      3/4 × 2/1 = 6/4 = 3/2.
+    trap: "3/8 is 3/4 × 1/2 — multiplying instead of dividing. Flip the second fraction first."
+
+  - id: fractions-009
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Write 0.75 as a fraction in its lowest terms."
+    options: ["75/10", "3/4", "7/5", "3/5"]
+    answer: 1
+    explanation: >
+      0.75 is 75 hundredths, so 75/100. Divide top and bottom by 25 to get 3/4.
+    trap: "0.75 has two decimal places, so the denominator is 100, not 10."
+
+  - id: fractions-010
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Write 2/5 as a decimal."
+    options: ["0.25", "2.5", "0.4", "0.45"]
+    answer: 2
+    explanation: >
+      2/5 means 2 ÷ 5 = 0.4. Or scale to tenths: 2/5 = 4/10 = 0.4.
+    trap: "0.25 is 1/4, not 2/5. Dividing in the wrong order gives 2.5."
+
+  - id: fractions-011
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "Express 3/8 as a percentage."
+    options: ["38%", "37.5%", "3.8%", "0.375%"]
+    answer: 1
+    explanation: >
+      3 ÷ 8 = 0.375, and a percentage is the decimal × 100, so 37.5%.
+    trap: "Reading the digits off as 38% loses the half. This is the step where percentage questions go wrong later."
+
+  - id: fractions-012
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "What is 5/8 of 240?"
+    options: ["96", "120", "150", "180"]
+    answer: 2
+    explanation: >
+      240 ÷ 8 = 30, which is one eighth. Five eighths is 5 × 30 = 150.
+    trap: "96 is 240 × 2/5 — the fraction read upside down. Find one part first, then multiply."
+
+  - id: fractions-013
+    difficulty: 0.40
+    estimatedSeconds: 60
+    question: "Arrange 2/3, 1/2 and 5/6 in ascending order."
+    options: ["2/3, 1/2, 5/6", "5/6, 2/3, 1/2", "1/2, 2/3, 5/6", "1/2, 5/6, 2/3"]
+    answer: 2
+    explanation: >
+      Over a denominator of 6: 1/2 = 3/6, 2/3 = 4/6, 5/6 = 5/6. So the order is
+      1/2, 2/3, 5/6.
+    trap: "Ascending means smallest first. Option 2 is the correct order reversed."
+
+  - id: fractions-014
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Write the mixed number 2 1/3 as an improper fraction."
+    options: ["7/3", "6/3", "5/3", "2/3"]
+    answer: 0
+    explanation: >
+      Multiply the whole number by the denominator and add the numerator:
+      (2 × 3) + 1 = 7, over 3. So 7/3.
+    trap: "5/3 comes from adding 2 + 3 instead of multiplying. 6/3 forgets the 1 entirely."
+
+  - id: fractions-015
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Write 17/5 as a mixed number."
+    options: ["2 7/5", "5 2/3", "3 1/5", "3 2/5"]
+    answer: 3
+    explanation: >
+      17 ÷ 5 is 3 with a remainder of 2. The quotient is the whole number and
+      the remainder goes over the original denominator: 3 2/5.
+    trap: "2 7/5 keeps a fraction bigger than 1 in the fractional part, which is not a finished mixed number."
+
+  - id: fractions-016
+    difficulty: 0.25
+    estimatedSeconds: 30
+    question: "What is the reciprocal of 4/7?"
+    options: ["4/7", "7/4", "1/4", "−4/7"]
+    answer: 1
+    explanation: >
+      The reciprocal turns the fraction upside down, so 4/7 becomes 7/4.
+      Check: 4/7 × 7/4 = 1.
+    trap: "The reciprocal is not the negative. −4/7 is the opposite, a different idea entirely."
+
+  - id: fractions-017
+    difficulty: 0.40
+    estimatedSeconds: 60
+    question: "What is 1/2 + 1/3 + 1/6?"
+    options: ["5/6", "1", "1/11", "2/3"]
+    answer: 1
+    explanation: >
+      Over a denominator of 6: 3/6 + 2/6 + 1/6 = 6/6, which is 1.
+    trap: "1/11 comes from adding all the denominators. Stopping at 5/6 means one of the three was dropped."
+
+  - id: fractions-018
+    difficulty: 0.45
+    estimatedSeconds: 70
+    question: "If 2/5 of a number is 30, what is the number?"
+    options: ["12", "60", "75", "150"]
+    answer: 2
+    explanation: >
+      Two fifths is 30, so one fifth is 15, and the whole is 5 × 15 = 75.
+      Check: 2/5 of 75 = 30.
+    trap: "12 is 2/5 of 30 — the question answered backwards. Always check your answer against the original statement."
+
+  - id: fractions-019
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "What is 7/12 − 1/4?"
+    options: ["1/3", "6/8", "5/12", "1/2"]
+    answer: 0
+    explanation: >
+      1/4 = 3/12, so 7/12 − 3/12 = 4/12, which simplifies to 1/3.
+    trap: "6/8 comes from subtracting tops and bottoms separately. Only the numerators change."
+
+  - id: fractions-020
+    difficulty: 0.50
+    estimatedSeconds: 70
+    question: "What is (2/3) ÷ (4/9)?"
+    options: ["8/27", "2/3", "9/8", "3/2"]
+    answer: 3
+    explanation: >
+      Multiply by the reciprocal: 2/3 × 9/4 = 18/12 = 3/2.
+    trap: "8/27 is 2/3 × 4/9 — multiplied instead of divided. The flip comes first."
+
+  - id: fractions-021
+    difficulty: 0.55
+    estimatedSeconds: 75
+    question: "Which of these fractions lies between 1/3 and 1/2?"
+    options: ["1/6", "5/12", "2/3", "1/5"]
+    answer: 1
+    explanation: >
+      Over a denominator of 12: 1/3 = 4/12 and 1/2 = 6/12. 5/12 sits between
+      them. As decimals, 0.333 < 0.417 < 0.5.
+    trap: "1/5 and 1/6 are both smaller than 1/3; 2/3 is larger than 1/2. A common denominator settles it in one step."
+
+  - id: fractions-022
+    difficulty: 0.55
+    estimatedSeconds: 75
+    question: "What is two-thirds of three-fifths of 150?"
+    options: ["45", "75", "60", "90"]
+    answer: 2
+    explanation: >
+      Three fifths of 150 is 90. Two thirds of 90 is 60. Or multiply first:
+      2/3 × 3/5 = 6/15 = 2/5, and 2/5 of 150 = 60.
+    trap: "90 is only the first step. Read to the end of the question before answering."
+
+  - id: fractions-023
+    difficulty: 0.60
+    estimatedSeconds: 90
+    question: "A tank is 3/4 full. One third of the water in it is used. What fraction of the tank is still filled?"
+    options: ["5/12", "1/4", "2/3", "1/2"]
+    answer: 3
+    explanation: >
+      Two thirds of the water remains, and the water was 3/4 of the tank.
+      2/3 × 3/4 = 6/12 = 1/2 of the tank.
+    trap: "5/12 comes from 3/4 − 1/3, but the third is a third of the water, not a third of the tank."
+
+  - id: fractions-024
+    difficulty: 0.60
+    estimatedSeconds: 90
+    question: "A recipe uses 3/4 cup of rice for 6 people. How much is needed for 8 people?"
+    options: ["9/16 cup", "1 cup", "1 1/4 cups", "2/3 cup"]
+    answer: 1
+    explanation: >
+      Per person it is 3/4 ÷ 6 = 1/8 cup. For 8 people, 8 × 1/8 = 1 cup.
+    trap: "9/16 is 3/4 × 6/8 — the ratio applied upside down. More people must mean more rice, so the answer has to be bigger than 3/4."
+
+  - id: fractions-025
+    difficulty: 0.65
+    estimatedSeconds: 90
+    question: "Which of 3/7, 2/5 and 5/11 is the largest?"
+    options: ["3/7", "2/5", "5/11", "They are all equal"]
+    answer: 2
+    explanation: >
+      As decimals: 3/7 ≈ 0.4286, 2/5 = 0.4, 5/11 ≈ 0.4545. The largest is 5/11.
+    trap: "All three are close to 0.4, so eyeballing fails. When fractions are close, divide them out to three decimal places."
+
+  - id: fractions-026
+    difficulty: 0.70
+    estimatedSeconds: 100
+    question: "A pole is 2/5 in mud, 1/3 in water, and the rest in air. If the part in air is 4 metres, how long is the pole?"
+    options: ["10 m", "12 m", "15 m", "20 m"]
+    answer: 2
+    explanation: >
+      Mud and water take 2/5 + 1/3 = 6/15 + 5/15 = 11/15 of the pole, leaving
+      4/15 in air. 4/15 of the length is 4 m, so one fifteenth is 1 m and the
+      whole pole is 15 m.
+    trap: "Treating 'the rest' as 1/2 or guessing a round number skips the step of finding what fraction is actually left: 1 − 11/15 = 4/15."
+
+  - id: fractions-027
+    difficulty: 0.70
+    estimatedSeconds: 100
+    question: "After spending 1/4 of her money and then 1/3 of what remained, Meena has ₹300 left. How much did she start with?"
+    options: ["₹450", "₹500", "₹600", "₹720"]
+    answer: 2
+    explanation: >
+      After spending 1/4, she has 3/4 left. Spending 1/3 of that leaves 2/3 of
+      3/4, which is 1/2 of the original. Half the money is ₹300, so she
+      started with ₹600.
+    trap: "Adding the two fractions as 1/4 + 1/3 = 7/12 spent and solving from there is wrong — the second spend is a third of what remained, not a third of the original."
+
+  - id: fractions-028
+    difficulty: 0.75
+    estimatedSeconds: 110
+    question: "What is 2 1/3 × 1 3/5?"
+    options: ["3 11/15", "3 2/15", "2 4/5", "4"]
+    answer: 0
+    explanation: >
+      Convert to improper fractions first: 2 1/3 = 7/3 and 1 3/5 = 8/5.
+      7/3 × 8/5 = 56/15, which is 3 11/15.
+    trap: "Multiplying whole number parts and fractional parts separately (2 × 1 and 1/3 × 3/5) and adding them is not how mixed-number multiplication works — convert to improper fractions first."
+
+  - id: fractions-029
+    difficulty: 0.75
+    estimatedSeconds: 110
+    question: "Pipe A fills a tank in 1/3 of an hour and pipe B fills it in 1/4 of an hour. Working together, what fraction of the tank do they fill in 6 minutes?"
+    options: ["7/10", "7/20", "6/10", "1/2"]
+    answer: 0
+    explanation: >
+      A fills 1 tank per 1/3 hour, a rate of 3 tanks/hour. B fills 1 tank per
+      1/4 hour, a rate of 4 tanks/hour. Together that is 7 tanks/hour. Six
+      minutes is 1/10 of an hour, so together they fill 7 × 1/10 = 7/10 of
+      the tank.
+    trap: "7/20 comes from adding the two time fractions, 1/3 and 1/4, as if rates add like plain fractions of the same whole — they don't; convert each to a rate first."
+
+  - id: fractions-030
+    difficulty: 0.80
+    estimatedSeconds: 120
+    question: "What is 1 ÷ (1 + 1 ÷ (1 + 1/2))?"
+    options: ["2/3", "3/5", "5/3", "1/3"]
+    answer: 1
+    explanation: >
+      Work from the innermost bracket out. 1 + 1/2 = 3/2. Then 1 ÷ (3/2) =
+      2/3. Then 1 + 2/3 = 5/3. Finally 1 ÷ (5/3) = 3/5.
+    trap: "Dividing before finishing the bracket it sits inside — for instance doing 1 ÷ 1 first — breaks the order the brackets fix in place."
+
+  - id: fractions-031
+    difficulty: 0.80
+    estimatedSeconds: 110
+    question: "A alone can finish a piece of work in 1/2 the time B takes, and together they finish it in 4 days. In how many days can A alone finish it?"
+    options: ["4 days", "6 days", "8 days", "12 days"]
+    answer: 1
+    explanation: >
+      Let B take x days, so A takes x/2 days. Their rates are 1/x and 2/x,
+      adding to 3/x per day. Together they take 4 days, so 3/x = 1/4, giving
+      x = 12. A alone takes x/2 = 6 days.
+    trap: "8 days treats A and B as splitting the 4 days somehow, rather than setting up rates that add — 'together' means rates add, not times."
+
+  - id: fractions-032
+    difficulty: 0.85
+    estimatedSeconds: 120
+    question: "An alloy is 3/8 copper and the rest is zinc. If 20 kg of zinc is added, the alloy becomes 1/4 copper by weight. What was the original weight of the alloy?"
+    options: ["24 kg", "32 kg", "40 kg", "48 kg"]
+    answer: 2
+    explanation: >
+      Let the original weight be w. The copper weight never changes: (3/8)w.
+      After adding 20 kg of zinc the total becomes w + 20, and copper is now
+      1/4 of that total: (3/8)w = (1/4)(w + 20). Multiplying both sides by 8
+      gives 3w = 2(w + 20) = 2w + 40, so w = 40 kg.
+    trap: "32 kg comes from treating the zinc fraction (5/8 originally, 3/4 afterward) as the one that stays fixed — it's the copper weight that is constant here, not the zinc weight."
+
+  - id: fractions-033
+    difficulty: 0.90
+    estimatedSeconds: 130
+    question: "Three partners invest in a business. The first puts in 1/3 of the capital, the second 2/5 of what remains after the first, and the third the rest. If profit is shared in proportion to capital, what fraction of a ₹90,000 profit does the third partner get?"
+    options: ["₹20,000", "₹24,000", "₹30,000", "₹36,000"]
+    answer: 3
+    explanation: >
+      The first partner takes 1/3, leaving 2/3. The second takes 2/5 of that
+      2/3, which is 2/5 × 2/3 = 4/15. Together the first two hold
+      1/3 + 4/15 = 5/15 + 4/15 = 9/15 = 3/5, so the third partner holds the
+      rest, 2/5. Their share of ₹90,000 is 2/5 × 90,000 = ₹36,000.
+    trap: "₹24,000 treats the second partner's 2/5 as 2/5 of the whole capital rather than 2/5 of what was left after the first partner — 'of what remains' changes the base."

@@ -1,0 +1,93 @@
+topic: aptitude.simple-interest
+language: en
+source: authored
+# Requires percentage. Also the direct prerequisite for compound-interest.
+questions:
+  - id: simple-interest-001
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Find the simple interest on ₹5,000 at 6% per annum for 3 years."
+    options: ["₹900", "₹850", "₹950", "₹1,000"]
+    answer: 0
+    explanation: "SI = P × R × T / 100 = 5000 × 6 × 3 / 100 = ₹900."
+    trap: "₹1,000 rounds the rate up to a friendlier-looking number — use the rate given, 6%, not a nearby round one."
+
+  - id: simple-interest-002
+    difficulty: 0.25
+    estimatedSeconds: 45
+    question: "A sum of ₹8,000 amounts to ₹9,440 in 3 years at simple interest. Find the rate of interest per annum."
+    options: ["6%", "5%", "7%", "8%"]
+    answer: 0
+    explanation: >
+      Interest earned: 9,440 − 8,000 = ₹1,440. Rate = (SI × 100) / (P × T) =
+      (1440 × 100) / (8000 × 3) = 6%.
+    trap: "8% applies the interest figure to the final amount, ₹9,440, instead of to the original principal, ₹8,000 — the rate is always worked out on the principal."
+
+  - id: simple-interest-003
+    difficulty: 0.30
+    estimatedSeconds: 50
+    question: "In how many years will ₹4,500 amount to ₹5,850 at 10% simple interest per annum?"
+    options: ["3 years", "2 years", "4 years", "2.5 years"]
+    answer: 0
+    explanation: >
+      Interest earned: 5,850 − 4,500 = ₹1,350. Time = (SI × 100) / (P × R) =
+      (1350 × 100) / (4500 × 10) = 3 years.
+    trap: "2 years comes from rounding the division early — keep the full numbers through the calculation before simplifying."
+
+  - id: simple-interest-004
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "What principal will yield a simple interest of ₹960 in 4 years at 8% per annum?"
+    options: ["₹3,000", "₹2,800", "₹3,200", "₹2,500"]
+    answer: 0
+    explanation: >
+      P = (SI × 100) / (R × T) = (960 × 100) / (8 × 4) = 96,000 / 32 =
+      ₹3,000.
+    trap: "₹3,200 comes from dividing by R × T computed as 8 × 4 = 32 but then mis-dividing 96,000 — always re-check the final division on a word problem like this."
+
+  - id: simple-interest-005
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "A sum doubles itself in 8 years at simple interest. Find the rate of interest per annum."
+    options: ["12.5%", "8%", "10%", "16%"]
+    answer: 0
+    explanation: >
+      If the sum doubles, the interest earned equals the principal itself
+      (SI = P). Rate = (SI × 100) / (P × T) = (P × 100) / (P × 8) = 12.5%.
+    trap: "8% confuses the number of years for the rate — the two are related here but aren't the same number."
+
+  - id: simple-interest-006
+    difficulty: 0.50
+    estimatedSeconds: 70
+    question: "₹12,000 is lent out in two parts, one at 8% and the other at 10% simple interest per annum. If the total interest at the end of one year is ₹1,080, find the amount lent at 10%."
+    options: ["₹6,000", "₹5,000", "₹7,000", "₹4,000"]
+    answer: 0
+    explanation: >
+      Let x be the amount at 10%; (12000 − x) is at 8%. For one year:
+      0.10x + 0.08(12000 − x) = 1080. This gives 0.02x = 120, so x = ₹6,000.
+    trap: "₹5,000 comes from splitting the ₹1,080 interest in the same ratio as the two rates (8:10) rather than setting up and solving the actual equation."
+
+  - id: simple-interest-007
+    difficulty: 0.55
+    estimatedSeconds: 70
+    question: "A certain sum amounts to ₹6,200 in 2 years and ₹6,800 in 3 years at simple interest. Find the principal."
+    options: ["₹5,000", "₹5,200", "₹4,800", "₹5,500"]
+    answer: 0
+    explanation: >
+      Since simple interest is the same every year, the interest for the
+      third year alone is 6,800 − 6,200 = ₹600. The amount after 2 years,
+      6,200, is the principal plus 2 years of that interest: 6,200 − 2×600
+      = ₹5,000.
+    trap: "₹5,200 subtracts only one year's interest instead of two — the ₹6,200 figure already includes 2 full years of interest on top of the principal."
+
+  - id: simple-interest-008
+    difficulty: 0.60
+    estimatedSeconds: 75
+    question: "A sum amounts to ₹9,200 in 3 years and ₹10,400 in 6 years at simple interest. Find the rate of interest per annum."
+    options: ["5%", "6%", "4%", "8%"]
+    answer: 0
+    explanation: >
+      The extra 3 years (from year 3 to year 6) add 10,400 − 9,200 = ₹1,200
+      in interest, so ₹400 per year. The principal is 9,200 − 3×400 =
+      ₹8,000. Rate = (400 × 100) / 8,000 = 5% per annum.
+    trap: "6% comes from dividing the ₹1,200 gap by the wrong base — work out the per-year interest and the principal first, then the rate, in that order."

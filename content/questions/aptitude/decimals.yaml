@@ -1,0 +1,86 @@
+topic: aptitude.decimals
+language: en
+source: authored
+# Requires fractions. Decimal arithmetic and comparison — the direct
+# prerequisite for percentage.
+questions:
+  - id: decimals-001
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is 4.56 + 2.3?"
+    options: ["6.86", "6.59", "7.86", "6.76"]
+    answer: 0
+    explanation: "Line up the decimal points: 4.56 + 2.30 = 6.86."
+    trap: "6.59 comes from misaligning the decimal places — 2.3 is 2.30, not 2.03."
+
+  - id: decimals-002
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "What is 7.2 − 3.45?"
+    options: ["3.75", "4.25", "3.85", "4.75"]
+    answer: 0
+    explanation: "7.20 − 3.45 = 3.75."
+    trap: "4.25 comes from subtracting as if 7.2 were 7.70 — write 7.2 as 7.20 first so both numbers have the same number of decimal places."
+
+  - id: decimals-003
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Which is greater: 0.45 or 0.5?"
+    options: ["0.45", "0.5", "They are equal", "Cannot be determined"]
+    answer: 1
+    explanation: >
+      0.5 is the same as 0.50, and 0.50 > 0.45.
+    trap: "0.45 looks bigger if you compare 45 and 5 as plain numbers — but place value means 0.5 = 0.50, which has a bigger tenths digit."
+
+  - id: decimals-004
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is 3.6 × 0.5?"
+    options: ["1.8", "18", "0.18", "1.08"]
+    answer: 0
+    explanation: >
+      3.6 × 0.5 is half of 3.6, which is 1.8.
+    trap: "18 comes from multiplying 3.6 × 5 instead of 3.6 × 0.5 — 0.5 is five tenths, not five."
+
+  - id: decimals-005
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "What is 9.6 ÷ 0.4?"
+    options: ["24", "2.4", "240", "0.24"]
+    answer: 0
+    explanation: >
+      Dividing by 0.4 is the same as multiplying by 10 and dividing by 4:
+      96 ÷ 4 = 24.
+    trap: "2.4 forgets that dividing by a number smaller than 1 makes the result bigger than the number you started with, not smaller."
+
+  - id: decimals-006
+    difficulty: 0.40
+    estimatedSeconds: 45
+    question: "Round 5.678 to two decimal places."
+    options: ["5.67", "5.68", "5.70", "5.66"]
+    answer: 1
+    explanation: >
+      The third decimal digit is 8, which rounds the second decimal digit up:
+      5.678 → 5.68.
+    trap: "5.67 simply drops the third digit instead of rounding it — 8 rounds up, it doesn't just disappear."
+
+  - id: decimals-007
+    difficulty: 0.45
+    estimatedSeconds: 50
+    question: "What is 0.125 as a fraction in its lowest terms?"
+    options: ["1/8", "1/5", "1/4", "1/80"]
+    answer: 0
+    explanation: >
+      0.125 = 125/1000. Dividing top and bottom by 125 gives 1/8.
+    trap: "1/80 keeps one zero too many in the denominator — count the decimal places carefully: three decimal places means a denominator of 1000, not 10000."
+
+  - id: decimals-008
+    difficulty: 0.55
+    estimatedSeconds: 60
+    question: "A litre of juice costs ₹84.50. What is the cost of 3.5 litres?"
+    options: ["₹295.75", "₹289.50", "₹298.25", "₹253.50"]
+    answer: 0
+    explanation: >
+      84.50 × 3 = 253.50, and 84.50 × 0.5 = 42.25. Adding: 253.50 + 42.25 =
+      ₹295.75.
+    trap: "₹253.50 is only the cost of 3 litres — the extra 0.5 litre still needs to be added."

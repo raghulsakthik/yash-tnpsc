@@ -117,3 +117,51 @@ questions:
       Applying the same alternating −1/+1 pattern to CANDID: C→B (−1),
       A→B (+1), N→M (−1), D→E (+1), I→H (−1), D→E (+1), giving BBMEHE.
     trap: "DZOCJC starts the alternation on the wrong foot — shifting the very first letter +1 instead of −1 and alternating from there — so every letter ends up shifted the opposite way from the real pattern."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: alpha-numeric-011
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2024
+    year: 2024
+    question: "If fox = cat, then xerox may be equal to:"
+    options: ["terct", "tcroa", "tcrot", "terat"]
+    answer: 3
+    explanation: >
+      Matching fox to cat letter by letter gives a substitution table:
+      f→c, o→a, x→t. Letters with no entry in the table (like e and r)
+      stay unchanged. Applying this to xerox: x→t, e→e, r→r, o→a, x→t,
+      giving terat.
+    trap: "tcrot keeps the 4th letter as 'o' instead of translating it — every occurrence of a mapped letter has to be converted, not just the first one."
+
+  - id: alpha-numeric-012
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2024
+    year: 2024
+    question: "If cat = abc and dog = def, then which one of the following may be equal to tan/cot?"
+    options: ["cba/aec", "cba/ace", "cbn/ace", "cbn/aec"]
+    answer: 3
+    explanation: >
+      Matching cat↔abc and dog↔def letter by letter gives: c→a, a→b,
+      t→c, d→d, o→e, g→f. Letters with no entry (like n) stay unchanged.
+      Applying this: tan → t(c) a(b) n(n) = cbn. cot → c(a) o(e) t(c) =
+      aec. So tan/cot → cbn/aec.
+    trap: "cbn/ace gets the numerator right but mixes up the order of the denominator's letters — cot translates letter-by-letter to a, e, c in that order, not a, c, e."
+
+  - id: alpha-numeric-013
+    difficulty: 0.60
+    estimatedSeconds: 90
+    source: tnpsc-2024
+    year: 2024
+    question: "E&GBDM4NKH2ACZSV3F1JLOQ5PR: what will come in place of the question mark in the following sequence? GDR, BMP, D45, ?"
+    options: ["MNQ", "4NQ", "MKO", "M4Q"]
+    answer: 0
+    explanation: >
+      Numbering the 26 characters of the string 1 to 26, each group of
+      three pulls from positions (g+2, g+4, 27−g) where g is the group
+      number: group 1 (3,5,26)=G,D,R; group 2 (4,6,25)=B,M,P; group 3
+      (5,7,24)=D,4,5 — all confirmed. Group 4 is (6,8,23), which are
+      M, N and Q.
+    trap: "4NQ keeps the group-3 first letter's '4' in place of recomputing it — each group's first position shifts by one along the string too, not just the last position."

@@ -192,3 +192,43 @@ questions:
     answer: 3
     explanation: "Cost = Selling price / 1.15 = 414 / 1.15 = ₹360."
     trap: "₹400 is a rounder-looking number, but only dividing by 1.15 gives the exact cost — check that 360 × 1.15 = 414 before trusting a tidier-looking guess."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-017
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2024
+    year: 2024
+    question: "Gopi sold a laptop at 12% gain. If it had been sold for ₹1,200 more, the gain would have been 20%. Find the cost price of the laptop."
+    options: ["₹15,000", "₹16,000", "₹14,000", "₹15,500"]
+    answer: 0
+    explanation: >
+      Let the cost price be x. Selling at 12% gain gives 1.12x; at 20%
+      gain gives 1.20x. The difference between these is the extra ₹1,200:
+      0.08x = 1,200, so x = ₹15,000.
+    trap: "₹16,000 is a rounder number nearby, but only the exact 8%-of-cost-price equation (the gap between 12% and 20% gain) pins down the true cost."
+
+  - id: percentage-018
+    difficulty: 0.30
+    estimatedSeconds: 40
+    source: tnpsc-2024
+    year: 2024
+    question: "What is 20% of 30% of 500?"
+    options: ["30", "150", "75", "100"]
+    answer: 0
+    explanation: "30% of 500 = 150. 20% of 150 = 30."
+    trap: "150 stops after the first step — the question asks for 20% OF that 30% figure, not the 30% figure itself."
+
+  - id: percentage-019
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2024
+    year: 2024
+    question: "The value of a motorcycle 2 years ago was ₹80,000. It depreciates at 4% per annum in the first year, then increases by 4% per annum in the second year. Find the present value."
+    options: ["₹76,800", "₹80,000", "₹80,128", "₹79,872"]
+    answer: 3
+    explanation: >
+      After year 1: 80,000 × 0.96 = ₹76,800. After year 2:
+      76,800 × 1.04 = ₹79,872.
+    trap: "₹80,000 assumes a 4% drop and a 4% rise cancel out exactly — they don't, because the second change applies to a smaller base (76,800), so the value doesn't fully recover."

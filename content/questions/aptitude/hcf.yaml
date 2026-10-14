@@ -104,3 +104,22 @@ questions:
       Factorise both: a³ − 1 = (a − 1)(a² + a + 1), and a² − 1 =
       (a − 1)(a + 1). The only factor common to both is (a − 1).
     trap: "a² − 1 is one of the two expressions given in the question itself, not their shared factor — factorise both before comparing."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: hcf-010
+    difficulty: 0.70
+    estimatedSeconds: 100
+    source: tnpsc-2024
+    year: 2024
+    question: "If the HCF of x³ − 8y³ and x² − k²y² is x + ky, find the value of k."
+    options: ["2 or −2", "+2", "−2", "0"]
+    answer: 2
+    explanation: >
+      Factorise: x³ − 8y³ = (x − 2y)(x² + 2xy + 4y²), and
+      x² − k²y² = (x − ky)(x + ky). For x + ky to be the shared factor,
+      it must match the linear factor of the first expression, (x − 2y),
+      which means ky = −2y, so k = −2. (k = +2 would make x + ky = x + 2y,
+      which is NOT a factor of x³ − 8y³, so it doesn't satisfy the
+      condition even though k² = 4 either way.)
+    trap: "2 or −2 looks safe since k² = 4 has two roots, but only k = −2 actually makes x + ky equal to the real common factor — the other root fails the condition stated in the question."

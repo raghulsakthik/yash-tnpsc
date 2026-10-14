@@ -138,3 +138,18 @@ questions:
       A+B+C = 1/9. B alone is (A+B+C) − (C+A) = 1/9 − 1/18 = 1/18, so B
       takes 18 days.
     trap: "12 days comes from averaging the three given times in some way rather than combining their rates — time-and-work problems with pairs like this need the sum-of-all-three-rates trick, not an average."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-012
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2024
+    year: 2024
+    question: "A can finish a job in 6 days, whereas B finishes it in 12 days. How long does it take them to complete the job working together?"
+    options: ["6 days", "4 days", "8 days", "3 days"]
+    answer: 1
+    explanation: >
+      Combined rate: 1/6 + 1/12 = 2/12 + 1/12 = 3/12 = 1/4, so together
+      they take 4 days.
+    trap: "6 days repeats A's own time, as if working with a slower partner made no difference at all — working together is always faster than either person alone."

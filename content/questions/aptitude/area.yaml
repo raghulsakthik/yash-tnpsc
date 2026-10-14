@@ -121,3 +121,31 @@ questions:
       Area = 1/2 × 10,000 = 5,000 m². The diagonal of a square relates to
       its area by diagonal = √(2 × area) = √10,000 = 100 m.
     trap: "50√2 metres is the diagonal of a square with area 2,500 m² (side 50 m) — a sign of halving the area instead of using the full 5,000 m² figure."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: area-012
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2024
+    year: 2024
+    question: "The curved surface area of a right circular cylinder of height 7 cm is 66 cm². Find the diameter of the cylinder. (Use π = 22/7.)"
+    options: ["2 cm", "4 cm", "6 cm", "3 cm"]
+    answer: 3
+    explanation: >
+      Curved surface area = 2πrh: 2 × 22/7 × r × 7 = 66, so 44r = 66,
+      giving r = 1.5 cm. The diameter is 2r = 3 cm.
+    trap: "6 cm is double the correct answer — a sign of reporting the radius's double (a leftover step) instead of carrying through to the actual diameter, or of a slip that skipped halving somewhere."
+
+  - id: area-013
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2024
+    year: 2024
+    question: "One side of a rectangular field is 15 m and one of its diagonals is 17 m. Find the area of the field."
+    options: ["80 m²", "100 m²", "110 m²", "120 m²"]
+    answer: 3
+    explanation: >
+      The other side is √(17² − 15²) = √(289 − 225) = √64 = 8 m. Area =
+      15 × 8 = 120 m².
+    trap: "110 m² comes from a slip while computing the square root step — recheck that 17² − 15² = 64 exactly, giving a clean side length of 8 m."

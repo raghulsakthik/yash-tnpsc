@@ -100,3 +100,33 @@ questions:
     answer: 0
     explanation: "For any two numbers, HCF × LCM = their product, so LCM = 1,600 ÷ 5 = 320."
     trap: "8,000 multiplies instead of divides — the relationship is product = HCF × LCM, so finding the LCM means dividing the product by the HCF, not multiplying."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: lcm-010
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2024
+    year: 2024
+    question: "There are four cell phones in a house. At 5 a.m., all four ring together. After that, the first rings every 20 minutes, the second every 30 minutes, the third every 40 minutes, and the fourth every 50 minutes. At what time will all four ring together again?"
+    options: ["1 P.M.", "1 A.M.", "3 P.M.", "3 A.M."]
+    answer: 2
+    explanation: >
+      The LCM of 20, 30, 40 and 50 gives the gap until they next coincide.
+      20=2²×5, 30=2×3×5, 40=2³×5, 50=2×5². LCM = 2³×3×5² = 600 minutes =
+      10 hours. 5 a.m. + 10 hours = 3 p.m.
+    trap: "1 A.M. adds 20 hours instead of 10 — a sign of doubling the LCM rather than using it directly, or of an error crossing midnight."
+
+  - id: lcm-011
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2024
+    year: 2024
+    question: "The LCM of 3, 2.7 and 0.09 is"
+    options: ["2.7", "0.27", "0.027", "27"]
+    answer: 3
+    explanation: >
+      Scale all three to whole numbers by the same factor of 100: 300,
+      270 and 9. Their LCM: 300=2²×3×5², 270=2×3³×5, 9=3². LCM =
+      2²×3³×5² = 2,700. Scaling back down (÷100) gives 27.
+    trap: "0.027 scales the LCM back down by the wrong amount (÷100,000 instead of ÷100) — the scaling factor used going in must match the one used coming back out."

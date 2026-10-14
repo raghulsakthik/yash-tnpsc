@@ -105,3 +105,19 @@ questions:
       From the clues: B < A < C, and C < E < D. Chaining everything
       together: B < A < C < E < D. D is the costliest.
     trap: "E is tempting since it's explicitly described as costing more than C — but D is described as costing even more than E, one step further up the chain."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: puzzles-010
+    difficulty: 0.60
+    estimatedSeconds: 90
+    source: tnpsc-2024
+    year: 2024
+    question: "Reaching the meeting place 20 minutes before 8.50, Sunil found himself thirty minutes earlier than a man who came 40 minutes late. What was the scheduled time of the meeting?"
+    options: ["8.00", "8.05", "8.10", "8.20"]
+    answer: 3
+    explanation: >
+      Sunil arrived at 8.50 − 20 min = 8.30. The late man arrived 30
+      minutes after Sunil: 8.30 + 30 min = 9.00. Since that man was 40
+      minutes late, the scheduled time was 9.00 − 40 min = 8.20.
+    trap: "8.10 mixes up which direction the 30-minute gap goes — Sunil arrived BEFORE the late man, so the late man's arrival time is Sunil's time PLUS 30 minutes, not minus."

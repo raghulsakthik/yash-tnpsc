@@ -88,3 +88,35 @@ questions:
       After tipping, the new top face is what used to be the right face:
       3. The new bottom is opposite the new top: 7 − 3 = 4.
     trap: "1 reuses the ORIGINAL top face — but the die has been tipped over, so a new face is now on top and the bottom must be recalculated from that new top, not the old one."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: dice-009
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2024
+    year: 2024
+    question: "Three dice are thrown at once. Find the probability of getting the same number on all three dice."
+    options: ["1/6", "1/216", "1/36", "1/2"]
+    answer: 2
+    explanation: >
+      Total outcomes: 6 × 6 × 6 = 216. Favourable outcomes (all three
+      faces match): 6 (all 1s, all 2s, ..., all 6s). Probability =
+      6/216 = 1/36.
+    trap: "1/216 forgets that any of the 6 numbers can be the matching one — it only counts one specific triple-match (like all 1s), not all six possible ones."
+
+  - id: dice-010
+    difficulty: 0.65
+    estimatedSeconds: 90
+    source: tnpsc-2024
+    year: 2024
+    question: "A die has faces numbered 1, 2, 2, 3, 3, 3 (so 1 appears once, 2 appears twice, 3 appears three times). Two such dice are rolled. In how many of the 36 possible face-combinations is the 2nd die's face bigger than the 1st die's face?"
+    options: ["3", "6", "8", "11"]
+    answer: 3
+    explanation: >
+      Count by the 1st die's value: if 1st die shows the single '1' face,
+      all 5 faces showing 2 or 3 on the 2nd die beat it (1×5=5). If the
+      1st die shows one of the two '2' faces, only the three '3' faces on
+      the 2nd die beat it (2×3=6). If the 1st die shows a '3', nothing
+      beats it (0). Total: 5 + 6 + 0 = 11.
+    trap: "8 comes from treating the die as if each number 1, 2 and 3 were equally likely (one face each) instead of accounting for 2 and 3 appearing on multiple physical faces."

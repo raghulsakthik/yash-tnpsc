@@ -96,3 +96,18 @@ questions:
       Surface area scales with r², so the radius ratio is √9 : √25 = 3 : 5.
       Volume scales with r³, so the volume ratio is 3³ : 5³ = 27 : 125.
     trap: "81 : 625 squares the radius ratio (3²:5²) again instead of cubing it — surface area already used up one power of r² to get the radius ratio; volume needs the radius ratio cubed, not squared a second time."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: volume-010
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2024
+    year: 2024
+    question: "A swimming bath is 24 m long and 15 m wide. When a number of men dive in, the water level rises by 1 cm. If each man displaces an average of 0.1 m³ of water, how many men are in the bath?"
+    options: ["32", "36", "42", "46"]
+    answer: 1
+    explanation: >
+      Volume of water displaced = length × width × rise = 24 × 15 × 0.01
+      = 3.6 m³. Number of men = 3.6 ÷ 0.1 = 36.
+    trap: "32 comes from a small slip in the rise conversion — double-check that 1 cm becomes 0.01 m, not 0.1 m, before multiplying."

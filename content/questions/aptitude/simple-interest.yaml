@@ -136,3 +136,31 @@ questions:
       (120 × 100)/(800 × 3) = 5%. At 3% more (8%), the interest becomes
       800 × 8 × 3 / 100 = ₹192, so the new amount is 800 + 192 = ₹992.
     trap: "₹1,882 comes from a much larger misreading of the rate — recompute the original rate from the 800-to-920 figures first (5%), then add 3% and rework the interest from scratch at 8%."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simple-interest-012
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2024
+    year: 2024
+    question: "In how many months will a principal of ₹2,000 double itself at 8% per annum simple interest?"
+    options: ["144 months", "150 months", "120 months", "140 months"]
+    answer: 1
+    explanation: >
+      Doubling means the interest earned equals the principal (SI = P).
+      Time = 100/R years = 100/8 = 12.5 years = 150 months.
+    trap: "144 months (12 years) rounds 12.5 down to a tidier whole number of years instead of keeping the exact half-year, which is 6 extra months."
+
+  - id: simple-interest-013
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2024
+    year: 2024
+    question: "Find the simple interest on ₹68,000 at 16 2/3% per annum for 9 months."
+    options: ["₹7,500", "₹8,500", "₹6,500", "₹5,500"]
+    answer: 1
+    explanation: >
+      9 months = 0.75 years. 16 2/3% = 1/6 as a fraction. SI = 68,000 ×
+      (1/6) × 0.75 = 68,000 × 0.125 = ₹8,500.
+    trap: "₹7,500 comes from rounding 16 2/3% down to a plainer-looking 16% before multiplying — keep the exact fraction (1/6) through the calculation."

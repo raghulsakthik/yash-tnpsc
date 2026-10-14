@@ -144,3 +144,30 @@ questions:
       Let the ages be 2k and 3k. The difference is 3k − 2k = k = 8. P, the
       smaller share, is 2k = 16 years.
     trap: "24 yrs is Q's age (3k = 24), not P's — double-check which of the two the question is actually asking for."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-013
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2024
+    year: 2024
+    question: "₹10,890 is divided between groups A and B in the ratio 4:5. What is group B's share?"
+    options: ["₹1,210", "₹4,840", "₹6,050", "₹5,445"]
+    answer: 2
+    explanation: "9 parts = ₹10,890, so 1 part = ₹1,210. B's share is 5 parts: 5 × 1,210 = ₹6,050."
+    trap: "₹5,445 is exactly half of ₹10,890 — a sign of splitting the money evenly instead of in the stated 4:5 ratio."
+
+  - id: ratio-and-proportion-014
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2024
+    year: 2024
+    question: "If A:B:C = 2:3:4, then A/B : B/C : C/A is equal to"
+    options: ["8:9:10", "8:16:24", "8:9:24", "24:9:8"]
+    answer: 2
+    explanation: >
+      A/B = 2/3, B/C = 3/4, C/A = 4/2 = 2. Writing these as a ratio
+      2/3 : 3/4 : 2 and multiplying all three by 12 (clearing the
+      denominators): 8 : 9 : 24.
+    trap: "24:9:8 reverses the order of the ratio — recompute each of the three fractions (A/B, then B/C, then C/A) in the order the question actually asks for."

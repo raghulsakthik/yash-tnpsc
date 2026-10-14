@@ -77,3 +77,47 @@ questions:
     answer: 1
     explanation: "Area of a parallelogram is base × height, so height = 240 ÷ 20 = 12 cm."
     trap: "24 cm doubles the correct answer — a sign of mixing up the parallelogram formula (base × height) with the triangle formula (1/2 × base × height) and compensating in the wrong direction."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: area-009
+    difficulty: 0.60
+    estimatedSeconds: 80
+    source: tnpsc-2018
+    year: 2018
+    question: "Find the area of the iron sheet required to prepare a closed cone 24 cm high with base radius 7 cm. (Use π = 22/7.)"
+    options: ["704 cm²", "702 cm²", "700 cm²", "668 cm²"]
+    answer: 0
+    explanation: >
+      Slant height l = √(24² + 7²) = √(576 + 49) = √625 = 25 cm. Total
+      surface area = πrl + πr² = (22/7 × 7 × 25) + (22/7 × 7 × 7) =
+      550 + 154 = 704 cm².
+    trap: "550 cm² (not listed, but a common stopping point) is only the curved surface — a closed cone made from sheet metal needs the circular base too."
+
+  - id: area-010
+    difficulty: 0.65
+    estimatedSeconds: 90
+    source: tnpsc-2018
+    year: 2018
+    question: "A circus tent is cylindrical to a height of 3 m and conical above it. If the base radius is 52.5 m and the slant height of the cone is 53 m, find the area of canvas required to make the tent."
+    options: ["315 π m²", "3097.5 π m²", "2782.5 π m²", "2997.5 π m²"]
+    answer: 1
+    explanation: >
+      Canvas is only the curved surfaces (no floor, and the cylinder-cone
+      join isn't covered twice). Cylinder curved surface = 2πrh =
+      2 × π × 52.5 × 3 = 315π. Cone curved surface = πrl =
+      π × 52.5 × 53 = 2782.5π. Total = 315π + 2782.5π = 3097.5π m².
+    trap: "315 π m² is only the cylinder part — the conical roof above it still needs its own curved surface added."
+
+  - id: area-011
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2018
+    year: 2018
+    question: "The area of a square is 1/2 hectare. Find the diagonal of the square. (1 hectare = 10,000 m².)"
+    options: ["250 metres", "100 metres", "50√2 metres", "50 metres"]
+    answer: 1
+    explanation: >
+      Area = 1/2 × 10,000 = 5,000 m². The diagonal of a square relates to
+      its area by diagonal = √(2 × area) = √10,000 = 100 m.
+    trap: "50√2 metres is the diagonal of a square with area 2,500 m² (side 50 m) — a sign of halving the area instead of using the full 5,000 m² figure."

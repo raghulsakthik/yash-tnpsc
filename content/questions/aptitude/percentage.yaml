@@ -84,3 +84,111 @@ questions:
       14, so selling price = 140 − 14 = 126. Profit on a cost of 100 is 26,
       which is 26%.
     trap: "30% just subtracts the 10% discount from the 40% markup — but the discount is 10% of the MARKED price (140), not 10% of the original cost price, so the two percentages don't simply cancel."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-009
+    difficulty: 0.25
+    estimatedSeconds: 35
+    source: tnpsc-2018
+    year: 2018
+    question: "What percent is 5 grams of 1 kg?"
+    options: ["5%", "1%", "0.5%", "0.2%"]
+    answer: 2
+    explanation: "1 kg = 1,000 g. 5/1,000 = 0.005, which is 0.5%."
+    trap: "5% mistakes the figure 5 in the question for the final percentage, skipping the conversion to grams entirely."
+
+  - id: percentage-010
+    difficulty: 0.45
+    estimatedSeconds: 55
+    source: tnpsc-2018
+    year: 2018
+    question: "A pie chart divides a class's results into four sectors: Passed in First Class (90°), Passed in Second Class (126°), Passed in Third Class (108°), and Failed (36°). What percentage of students passed in First Class?"
+    options: ["35%", "30%", "10%", "25%"]
+    answer: 3
+    explanation: "A full pie chart is 360°. 90° is 90/360 = 1/4 of it, which is 25%."
+    trap: "10% comes from reading off the 36° 'Failed' sector instead of the 90° 'First Class' one — check which sector the question is actually asking about."
+
+  - id: percentage-011
+    difficulty: 0.60
+    estimatedSeconds: 80
+    source: tnpsc-2018
+    year: 2018
+    question: "A man sells two wrist watches at ₹594 each. On one he gains 10% and on the other he loses 10%. Find his gain or loss percent on the whole."
+    options: ["Loss % = 90%", "Gain % = 5%", "Loss % = 1%", "Loss % = 7%"]
+    answer: 2
+    explanation: >
+      Cost of the watch sold at a gain: 594 / 1.10 = ₹540. Cost of the
+      watch sold at a loss: 594 / 0.90 = ₹660. Total cost = ₹1,200, total
+      selling price = ₹1,188, a loss of ₹12. As a percentage of the total
+      cost: 12/1,200 = 1%. (A shortcut worth knowing: selling two items at
+      the same price with equal and opposite percent gain/loss always
+      produces a loss of (common%)²/100 — here 10²/100 = 1%.)
+    trap: "Gain % = 5% averages the +10% and −10% to zero and then guesses — but the two watches had different cost prices, so a straight average of the percentages doesn't apply."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-012
+    difficulty: 0.40
+    estimatedSeconds: 60
+    source: tnpsc-2013
+    year: 2013
+    question: "A line graph plots a company's profit (in lakhs) by year: 2003: 40, 2004: 30, 2005: 50, 2006: 70. Find the percentage increase in profit from 2004 to 2005."
+    options: ["20%", "50%", "66 2/3%", "71 2/3%"]
+    answer: 2
+    explanation: >
+      The increase from 2004 to 2005 is 50 − 30 = 20 lakhs. As a
+      percentage of the 2004 figure: 20/30 = 2/3 = 66 2/3%.
+    trap: "20% reads the raw increase (20 lakhs) as if it were already the percentage, skipping the division by the 2004 starting value."
+
+  - id: percentage-013
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2013
+    year: 2013
+    question: "One litre of water is added to 5 litres of a 20% solution of alcohol in water. What is the strength of alcohol in the new solution?"
+    options: ["16 2/3%", "15%", "20%", "16%"]
+    answer: 0
+    explanation: >
+      5 litres of a 20% solution contains 1 litre of alcohol. Adding 1
+      litre of water doesn't change the amount of alcohol, only the total
+      volume: 5 + 1 = 6 litres. New strength: 1/6 = 16 2/3%.
+    trap: "20% keeps the original percentage unchanged, forgetting that adding plain water dilutes the mixture even though the amount of alcohol itself stays the same."
+
+  - id: percentage-014
+    difficulty: 0.40
+    estimatedSeconds: 60
+    source: tnpsc-2013
+    year: 2013
+    question: "If the cost of 12 articles equals the selling price of 10 articles, what is the profit percent in the transaction?"
+    options: ["18%", "16 2/3%", "20%", "25%"]
+    answer: 2
+    explanation: >
+      Let one article cost ₹1, so 12 articles cost ₹12. This ₹12 is also
+      the selling price of 10 articles, so each sells for ₹1.20 — a
+      profit of ₹0.20 on a ₹1 cost, which is 20%.
+    trap: "16 2/3% comes from measuring the profit against the selling price instead of the cost price — profit percent is always calculated on the cost."
+
+  - id: percentage-015
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2013
+    year: 2013
+    question: "If A's height is 25% less than B's, by what percentage is B's height more than A's?"
+    options: ["50%", "45%", "22 1/3%", "33 1/3%"]
+    answer: 3
+    explanation: >
+      Let B = 100, so A = 75 (25% less). B compared to A:
+      (100 − 75)/75 = 25/75 = 1/3 = 33 1/3%.
+    trap: "25% re-uses the original percentage directly — but 'A is 25% less than B' and 'B is some % more than A' are measured against different base values (B vs. A), so the two percentages aren't the same number."
+
+  - id: percentage-016
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2013
+    year: 2013
+    question: "A table is sold for ₹414 at a profit of 15%. What did it cost?"
+    options: ["₹400", "₹314", "₹326", "₹360"]
+    answer: 3
+    explanation: "Cost = Selling price / 1.15 = 414 / 1.15 = ₹360."
+    trap: "₹400 is a rounder-looking number, but only dividing by 1.15 gives the exact cost — check that 360 × 1.15 = 414 before trusting a tidier-looking guess."

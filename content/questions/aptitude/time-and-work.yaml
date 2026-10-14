@@ -91,3 +91,50 @@ questions:
       The total work is 12 × 18 = 216 man-days. For 8 days: 216 ÷ 8 = 27
       men.
     trap: "24 men comes from scaling 12 by the ratio of 18:8 rounded to roughly 2 (12 × 2) instead of computing the exact man-days — 18/8 is not a clean multiple, so the full division has to be done."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-009
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2018
+    year: 2018
+    question: "Six men working 10 hours a day can do a piece of work in 24 days. In how many days will 9 men working 8 hours a day do the same work?"
+    options: ["10 days", "15 days", "20 days", "25 days"]
+    answer: 2
+    explanation: >
+      Total effort is constant: 6 men × 10 hours × 24 days = 1,440
+      man-hours. For 9 men working 8 hours a day: 1,440 ÷ (9 × 8) =
+      1,440 ÷ 72 = 20 days.
+    trap: "10 days comes from assuming more men AND more hours per day both speed things up by a full factor each, double-counting the speed-up instead of dividing the total man-hours once."
+
+  - id: time-and-work-010
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2018
+    year: 2018
+    question: "A can finish a job in 20 days and B can complete it in 30 days. They work together and finish the job. If ₹600 is paid as wages, what is the share of A and B?"
+    options: ["₹240, ₹360", "₹300, ₹300", "₹360, ₹240", "₹400, ₹200"]
+    answer: 2
+    explanation: >
+      Wages split in the ratio of work done, which is the ratio of their
+      rates: (1/20) : (1/30) = 3 : 2 (multiplying both by 60). Splitting
+      ₹600 in a 3:2 ratio gives A ₹360 and B ₹240.
+    trap: "₹300, ₹300 splits the money evenly, ignoring that A works faster than B and so did more of the job — an equal split only makes sense if both took the same number of days."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-011
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2013
+    year: 2013
+    question: "A and B can do a piece of work in 10 days; B and C in 15 days; C and A in 18 days. In how many days can B alone do it?"
+    options: ["30 days", "20 days", "12 days", "18 days"]
+    answer: 3
+    explanation: >
+      (A+B) + (B+C) + (C+A) = 2(A+B+C) = 1/10 + 1/15 + 1/18. Over a common
+      denominator of 90: 9/90 + 6/90 + 5/90 = 20/90 = 2/9, so
+      A+B+C = 1/9. B alone is (A+B+C) − (C+A) = 1/9 − 1/18 = 1/18, so B
+      takes 18 days.
+    trap: "12 days comes from averaging the three given times in some way rather than combining their rates — time-and-work problems with pairs like this need the sum-of-all-three-rates trick, not an average."

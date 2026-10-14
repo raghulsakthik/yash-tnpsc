@@ -80,3 +80,33 @@ questions:
       The gaps between terms shrink by 1 each time: −10, −9, −8, so the
       next gap is −7, giving 73 − 7 = 66.
     trap: "65 applies the previous gap (−8) again instead of continuing the pattern of the gap itself shrinking by one each step."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: number-series-009
+    difficulty: 0.45
+    estimatedSeconds: 70
+    source: tnpsc-2013
+    year: 2013
+    question: "In each figure, two numbers sit side by side in boxes below a single number in a box above them. Row 1: 1 and 2 below, 5 above. Row 2: 2 and 3 below, 13 above. Row 3: 3 and 4 below, 25 above. Row 4: 4 and 5 below, ? above. Find the missing number."
+    options: ["41", "35", "30", "28"]
+    answer: 0
+    explanation: >
+      The top number is the sum of the squares of the two bottom numbers:
+      1² + 2² = 5, 2² + 3² = 13, 3² + 4² = 25. So 4² + 5² = 16 + 25 = 41.
+    trap: "28 comes from adding the two numbers and doubling (4+5=9, not matching any clean rule) rather than squaring each one first — check the rule against all three given rows before applying it to the fourth."
+
+  - id: number-series-010
+    difficulty: 0.50
+    estimatedSeconds: 75
+    source: tnpsc-2013
+    year: 2013
+    question: "In each circle, four numbers sit at the top-left, top-right, bottom-left and bottom-right, surrounding a central number. Circle 1: top-left 5, top-right 3, bottom-left 2, bottom-right 4, centre 26. Circle 2: top-left 4, top-right 2, bottom-left 5, bottom-right 8, centre 42. Circle 3: top-left 3, top-right 1, bottom-left 8, bottom-right ?, centre 44. Find the missing number."
+    options: ["12", "18", "16", "24"]
+    answer: 0
+    explanation: >
+      The centre is (top-left × bottom-right) + (top-right × bottom-left).
+      Check circle 1: (5×4) + (3×2) = 20 + 6 = 26 ✓. Circle 2:
+      (4×8) + (2×5) = 32 + 10 = 42 ✓. Circle 3: (3×?) + (1×8) = 44, so
+      3×? = 36, giving ? = 12.
+    trap: "18 comes from testing the rule against only one of the two given circles instead of both — always confirm a pattern holds for every example before applying it to the unknown one."

@@ -89,3 +89,18 @@ questions:
       common = 2²×3). Pieces: 48/12 + 60/12 + 72/12 = 4 + 5 + 6 = 15 pieces
       of 12 m each.
     trap: "12 pieces of 15 m swaps the piece length and the piece count — but 15 isn't even a common factor of 48, 60 and 72, so it can't be a valid piece length."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: hcf-009
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2018
+    year: 2018
+    question: "Find the G.C.D. (HCF) of a³ − 1 and a² − 1."
+    options: ["a² − 1", "a + 1", "a³ − 1", "a − 1"]
+    answer: 3
+    explanation: >
+      Factorise both: a³ − 1 = (a − 1)(a² + a + 1), and a² − 1 =
+      (a − 1)(a + 1). The only factor common to both is (a − 1).
+    trap: "a² − 1 is one of the two expressions given in the question itself, not their shared factor — factorise both before comparing."

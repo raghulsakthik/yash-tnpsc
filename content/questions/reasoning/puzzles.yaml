@@ -90,3 +90,18 @@ questions:
       then C directly opposite A (two seats away), and the only seat and
       person left — immediately to A's left — is D.
     trap: "C is opposite A, which some mistake for 'facing' in a loose sense that gets confused with being adjacent — opposite and adjacent are different positions around the table."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: puzzles-009
+    difficulty: 0.45
+    estimatedSeconds: 70
+    source: tnpsc-2013
+    year: 2013
+    question: "Five articles A, B, C, D and E are priced differently, and C costs ₹100. A is cheaper than C but costlier than B. E is costlier than C but cheaper than D. Which article is the costliest?"
+    options: ["B", "C", "D", "E"]
+    answer: 2
+    explanation: >
+      From the clues: B < A < C, and C < E < D. Chaining everything
+      together: B < A < C < E < D. D is the costliest.
+    trap: "E is tempting since it's explicitly described as costing more than C — but D is described as costing even more than E, one step further up the chain."

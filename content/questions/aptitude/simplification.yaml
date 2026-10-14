@@ -83,3 +83,72 @@ questions:
     explanation: >
       Move the x terms to one side: 3x − 2x = 8 + 7, so x = 15.
     trap: "1 comes from subtracting the constants in the wrong direction — moving 7 and 8 to the same side as the x terms changes their signs."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-009
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2018
+    year: 2018
+    question: "Find the sum of the series 31 + 33 + .... + 53."
+    options: ["729", "341", "504", "604"]
+    answer: 2
+    explanation: >
+      This is an arithmetic series: first term 31, common difference 2,
+      last term 53. Number of terms = (53 − 31) / 2 + 1 = 12. Sum =
+      (number of terms / 2) × (first + last) = 6 × 84 = 504.
+    trap: "604 comes from using 13 terms instead of 12 — double-check the term count with (last − first) / difference + 1, not by estimating."
+
+  - id: simplification-010
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2018
+    year: 2018
+    question: "Find the value of (9² × 18⁴) / 3¹⁶."
+    options: ["2/3", "4/9", "16/81", "32/243"]
+    answer: 2
+    explanation: >
+      Write everything in prime factors: 9² = 3⁴, and 18⁴ = (2 × 3²)⁴ =
+      2⁴ × 3⁸. The numerator is 2⁴ × 3¹². Dividing by 3¹⁶ leaves
+      2⁴ / 3⁴ = 16/81.
+    trap: "4/9 stops one step early, at 2²/3² instead of 2⁴/3⁴ — recheck that every exponent was carried through fully."
+
+  - id: simplification-011
+    difficulty: 0.45
+    estimatedSeconds: 55
+    source: tnpsc-2018
+    year: 2018
+    question: "The cube root of 0.027 is"
+    options: ["3", "0.003", "0.03", "0.3"]
+    answer: 3
+    explanation: "0.3 × 0.3 × 0.3 = 0.027, so the cube root of 0.027 is 0.3."
+    trap: "0.03 looks like a natural place to put the decimal point, but 0.03³ = 0.000027, not 0.027 — always check by cubing the option back up."
+
+  - id: simplification-012
+    difficulty: 0.65
+    estimatedSeconds: 90
+    source: tnpsc-2018
+    year: 2018
+    question: "Simplify: (3³)⁻² × (2²)⁻³ all divided by (2⁴)⁻² × 3⁻⁴ × 4⁻²."
+    options: ["7 1/9", "7 1/8", "6 2/9", "6 3/8"]
+    answer: 0
+    explanation: >
+      In the numerator: (3³)⁻² = 3⁻⁶, and (2²)⁻³ = 2⁻⁶. In the
+      denominator: (2⁴)⁻² = 2⁻⁸, and 4⁻² = (2²)⁻² = 2⁻⁴, so the
+      denominator is 2⁻¹² × 3⁻⁴. Dividing: 3⁻⁶⁻⁽⁻⁴⁾ × 2⁻⁶⁻⁽⁻¹²⁾ =
+      3⁻² × 2⁶ = 64/9 = 7 1/9.
+    trap: "7 1/8 swaps a 9 for an 8 in the final fraction — recheck that the base left over after cancelling is 3, giving ninths, not eighths."
+
+  - id: simplification-013
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2018
+    year: 2018
+    question: "The average of the values 18, 41, x, 36, 31, 24, 37, 35, 27, 36 is 31. Find the value of x."
+    options: ["25", "24", "30", "26"]
+    answer: 0
+    explanation: >
+      10 values averaging 31 sum to 310. The 9 known values add to 285,
+      so x = 310 − 285 = 25.
+    trap: "30 is close to several of the other values in the list and easy to guess — work out the actual sum of the 9 known values rather than estimating."

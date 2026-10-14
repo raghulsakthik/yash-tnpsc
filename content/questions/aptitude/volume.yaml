@@ -81,3 +81,18 @@ questions:
       r² = volume ÷ (π × h) = 4,620 ÷ (22/7 × 30) = 4,620 ÷ (660/7) =
       4,620 × 7 ÷ 660 = 49. So r = √49 = 7 cm.
     trap: "10 cm comes from skipping the square root at the end and working with a rounded intermediate value instead."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: volume-009
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2018
+    year: 2018
+    question: "The surface areas of two spheres are in the ratio 9 : 25. Find the ratio of their volumes."
+    options: ["27 : 75", "27 : 125", "81 : 625", "729 : 15625"]
+    answer: 1
+    explanation: >
+      Surface area scales with r², so the radius ratio is √9 : √25 = 3 : 5.
+      Volume scales with r³, so the volume ratio is 3³ : 5³ = 27 : 125.
+    trap: "81 : 625 squares the radius ratio (3²:5²) again instead of cubing it — surface area already used up one power of r² to get the radius ratio; volume needs the radius ratio cubed, not squared a second time."

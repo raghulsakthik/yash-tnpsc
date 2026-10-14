@@ -86,3 +86,61 @@ questions:
       Let the parts be 2k, 3k and 5k. C − A = 5k − 2k = 3k = 600, so k = 200.
       The total is (2 + 3 + 5)k = 10 × 200 = ₹2,000.
     trap: "₹1,800 treats the ₹600 difference as spread over all 10 parts instead of just the 3 parts separating A and C."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-009
+    difficulty: 0.60
+    estimatedSeconds: 80
+    source: tnpsc-2018
+    year: 2018
+    question: "If (a+b)/c = (b+c)/a = (c+a)/b = k, then the value of k is"
+    options: ["0", "1", "2", "a + b + c"]
+    answer: 2
+    explanation: >
+      Adding all three numerators and denominators: the sum of the
+      numerators is 2(a+b+c), and the sum of the denominators is
+      (a+b+c). A ratio equal to each of several equal ratios is also
+      equal to the sum of all the numerators over the sum of all the
+      denominators, so k = 2(a+b+c) / (a+b+c) = 2.
+    trap: "1 assumes the numerators and denominators sum to the same thing — but adding all three numerators doubles (a+b+c), while the denominators only add up to (a+b+c) once."
+
+  - id: ratio-and-proportion-010
+    difficulty: 0.25
+    estimatedSeconds: 40
+    source: tnpsc-2018
+    year: 2018
+    question: "The ratio of boys to girls in a class is 4:5. If the number of boys is 20, find the number of girls."
+    options: ["15", "20", "25", "26"]
+    answer: 2
+    explanation: "4 parts = 20 boys, so 1 part = 5. Girls are 5 parts: 5 × 5 = 25."
+    trap: "20 repeats the number of boys instead of scaling it up to find the girls' count."
+
+  - id: ratio-and-proportion-011
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2018
+    year: 2018
+    question: "What number should be subtracted from each of the numbers 54, 71, 75 and 99 so that the remainders are proportional (54−x):(71−x) = (75−x):(99−x)?"
+    options: ["1", "2", "3", "6"]
+    answer: 2
+    explanation: >
+      Cross-multiplying: (54−x)(99−x) = (71−x)(75−x). Expanding both
+      sides: 5,346 − 153x + x² = 5,325 − 146x + x². The x² terms cancel,
+      leaving 5,346 − 153x = 5,325 − 146x, so 21 = 7x, giving x = 3.
+    trap: "6 is double the correct answer — a sign of an arithmetic slip while expanding the cross-multiplication rather than an error in the method itself."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-012
+    difficulty: 0.35
+    estimatedSeconds: 55
+    source: tnpsc-2013
+    year: 2013
+    question: "The difference between the present ages of P and Q is 8 years, and the ratio of their present ages is 2:3. What is P's present age?"
+    options: ["16 yrs", "24 yrs", "12 yrs", "30 yrs"]
+    answer: 0
+    explanation: >
+      Let the ages be 2k and 3k. The difference is 3k − 2k = k = 8. P, the
+      smaller share, is 2k = 16 years.
+    trap: "24 yrs is Q's age (3k = 24), not P's — double-check which of the two the question is actually asking for."

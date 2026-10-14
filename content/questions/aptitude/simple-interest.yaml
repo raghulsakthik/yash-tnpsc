@@ -91,3 +91,48 @@ questions:
       in interest, so ₹400 per year. The principal is 9,200 − 3×400 =
       ₹8,000. Rate = (400 × 100) / 8,000 = 5% per annum.
     trap: "6% comes from dividing the ₹1,200 gap by the wrong base — work out the per-year interest and the principal first, then the rate, in that order."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: simple-interest-009
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2018
+    year: 2018
+    question: "A principal triples itself in a certain time at 8% per annum simple interest. Find the number of years."
+    options: ["20 years", "25 years", "30 years", "35 years"]
+    answer: 1
+    explanation: >
+      If the amount is 3 times the principal P, the interest earned is
+      2P. Time = (SI × 100) / (P × R) = (2P × 100) / (P × 8) = 200/8 =
+      25 years.
+    trap: "20 years is close enough to look plausible but doesn't check out — 8% × 20 years = 160% interest, which would only double the principal (to 2.6×), not triple it."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simple-interest-010
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2013
+    year: 2013
+    question: "A sum was put at simple interest at a certain rate for 2 years. Had it been put at a 3% higher rate, it would have earned ₹300 more. Find the sum."
+    options: ["₹5,000", "₹4,000", "₹10,000", "₹1,000"]
+    answer: 0
+    explanation: >
+      The extra 3% over 2 years is what produces the extra ₹300:
+      P × 3 × 2 / 100 = 300, so P × 6 = 30,000, giving P = ₹5,000.
+    trap: "₹10,000 doubles the correct answer — a sign of dividing by 2 (years) when the step actually needed is dividing by 6 (rate × time)."
+
+  - id: simple-interest-011
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2013
+    year: 2013
+    question: "₹800 amounts to ₹920 in 3 years at simple interest. If the interest rate is increased by 3%, what would the amount become?"
+    options: ["₹1,092", "₹992", "₹1,882", "₹1,182"]
+    answer: 1
+    explanation: >
+      Original interest: 920 − 800 = ₹120 over 3 years, so the rate is
+      (120 × 100)/(800 × 3) = 5%. At 3% more (8%), the interest becomes
+      800 × 8 × 3 / 100 = ₹192, so the new amount is 800 + 192 = ₹992.
+    trap: "₹1,882 comes from a much larger misreading of the rate — recompute the original rate from the 800-to-920 figures first (5%), then add 3% and rework the interest from scratch at 8%."

@@ -183,3 +183,19 @@ questions:
       ago: 2M − 10 = 3(M − 10), so 2M − 10 = 3M − 30, giving M = 20. The
       father is 2 × 20 = 40.
     trap: "16, 32 years satisfies the 'half' relationship today but fails the ten-years-ago condition — check it: 10 years ago that pair would be 6 and 22, and 22 is not three times 6."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: puzzles-015
+    difficulty: 0.35
+    estimatedSeconds: 55
+    source: tnpsc-2017
+    year: 2017
+    question: "A boy is now twice as old as his sister. Four years ago, he was thrice as old as her. What are their ages now?"
+    options: ["18, 9", "14, 7", "16, 8", "12, 6"]
+    answer: 2
+    explanation: >
+      Let the sister's age be S now, so the boy's is 2S. Four years ago:
+      2S − 4 = 3(S − 4), so 2S − 4 = 3S − 12, giving S = 8. The boy is
+      2 × 8 = 16.
+    trap: "18, 9 keeps the right 2:1 ratio for today's ages but fails the four-years-ago check — four years ago that pair would be 14 and 5, and 14 is not three times 5."

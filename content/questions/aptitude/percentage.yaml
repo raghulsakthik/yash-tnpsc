@@ -275,3 +275,16 @@ questions:
       same, the new width must be 1/1.6 = 0.625, i.e. 62.5% of the
       original — a decrease of 100% − 62.5% = 37.5% = 37½%.
     trap: "60% simply reuses the length's percentage increase as the width's percentage decrease — but area stays constant only when the two factors MULTIPLY back to 1, and 1.6 × 0.4 isn't 1, so a straight 60% decrease overcorrects."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-023
+    difficulty: 0.25
+    estimatedSeconds: 40
+    source: tnpsc-2017
+    year: 2017
+    question: "What percent of an hour is 36 seconds?"
+    options: ["6%", "1%", "10%", "36%"]
+    answer: 1
+    explanation: "1 hour = 3,600 seconds. 36/3,600 × 100 = 1%."
+    trap: "36% just reuses the number 36 from the question directly as a percentage, skipping the actual conversion into seconds-per-hour."

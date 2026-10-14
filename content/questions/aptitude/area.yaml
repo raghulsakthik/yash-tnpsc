@@ -179,3 +179,33 @@ questions:
       The altitude of an equilateral triangle is (√3/2) × side:
       (√3/2) × 3√3 = (3 × 3)/2 = 9/2 = 4.5 cm.
     trap: "9 cm drops the division by 2 in the altitude formula — (√3/2) × 3√3 simplifies to 9/2, not 9, since √3 × √3 = 3 cancels the radical before the halving happens."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: area-016
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2017
+    year: 2017
+    question: "Total surface area of hollow hemisphere is equal to"
+    options: ["2π(R²+r²) sq. units", "2π(R²−r²) sq. units", "π(3R²+r²) sq. units", "π(3R²−r²) sq. units"]
+    answer: 2
+    explanation: >
+      A hollow hemisphere has three surfaces: the outer curved surface
+      2πR², the inner curved surface 2πr², and the flat ring-shaped rim
+      connecting them, π(R²−r²). Adding all three: 2πR² + 2πr² +
+      πR² − πr² = 3πR² + πr² = π(3R² + r²).
+    trap: "2π(R²+r²) sq. units only adds the two curved surfaces (outer and inner) and leaves out the flat ring-shaped rim at the top that a HOLLOW hemisphere's shell also exposes."
+
+  - id: area-017
+    difficulty: 0.20
+    estimatedSeconds: 30
+    source: tnpsc-2017
+    year: 2017
+    question: "10 sq. m. is equal to"
+    options: ["100 sq. cm.", "1000 sq. cm.", "10000 sq. cm.", "100000 sq. cm."]
+    answer: 3
+    explanation: >
+      1 m = 100 cm, so 1 sq. m = 100 × 100 = 10,000 sq. cm. Therefore
+      10 sq. m = 10 × 10,000 = 100,000 sq. cm.
+    trap: "10000 sq. cm. is the conversion factor for just 1 sq. m, not 10 sq. m — the question's '10' still needs to be multiplied in after converting the units."

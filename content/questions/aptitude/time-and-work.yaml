@@ -221,3 +221,18 @@ questions:
       B's efficiency is 1.6 times A's, so B takes 1/1.6 of A's time:
       12 / 1.6 = 7.5 = 7½ days.
     trap: "8 days treats the 60% as if it reduced the TIME directly (12 × 0.6 subtracted in a rougher way) rather than scaling the efficiency — a 60% efficiency boost means dividing the time by 1.6, not subtracting 60% of the days."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-018
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2017
+    year: 2017
+    question: "If 100 persons can finish a work in 7 days, how many persons can finish the same work in 35 days?"
+    options: ["20 persons", "50 persons", "30 persons", "25 persons"]
+    answer: 0
+    explanation: >
+      The total effort stays constant: 100 × 7 = 700 person-days. Over
+      35 days: 700 ÷ 35 = 20 persons.
+    trap: "50 persons comes from scaling in the wrong direction — the job now has MORE days to get done (35 instead of 7), so it needs FEWER people, not more."

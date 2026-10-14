@@ -282,3 +282,134 @@ questions:
       root of that is a^(1/(xyz)). That's the same as the single xyz-th
       root of a.
     trap: "ˣʸ√(a^z) only combines the outer two root indices (x and y) and leaves z sitting as an exponent instead of folding it into the combined root — all three indices multiply together into one root, not just two of them."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-023
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2017
+    year: 2017
+    question: "The value of (x² − 2x)/(x² + 2x) × (3x + 6)/(x − 2) is"
+    options: ["3x", "3", "3x + 2", "x − 2"]
+    answer: 1
+    explanation: >
+      Factorise each part: (x² − 2x) = x(x−2), (x² + 2x) = x(x+2), and
+      (3x + 6) = 3(x+2). Substituting: [x(x−2)/x(x+2)] × [3(x+2)/(x−2)]
+      — the x, (x−2) and (x+2) factors all cancel, leaving 3.
+    trap: "3x + 2 keeps a leftover x and constant as if only part of the expression cancelled — every one of the three factors (x, x−2, x+2) appears once on top and once on the bottom, so they all cancel completely, not partially."
+
+  - id: simplification-024
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2017
+    year: 2017
+    question: "Factorization of (x+y)² + 9(x+y) + 8 is"
+    options: ["(x+y+1)(x+y)", "(x+y+1)(x+y+8)", "(x+y+1)(x+y+6)", "(x+y+8)(x+y+2)"]
+    answer: 1
+    explanation: >
+      Treating (x+y) as a single variable u: u² + 9u + 8 factors as
+      (u+1)(u+8), since 1 × 8 = 8 and 1 + 8 = 9. Substituting back:
+      (x+y+1)(x+y+8).
+    trap: "(x+y+1)(x+y+6) picks factors of 8 that don't actually multiply to 8 (6×1=6, not 8) — both the product AND the sum of the two numbers have to match the constant and middle coefficient."
+
+  - id: simplification-025
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2017
+    year: 2017
+    question: "What is the difference between the sum of first 'n' odd natural numbers and that of first 'n' natural numbers?"
+    options: ["n/2 + 1", "n(n−1)/2", "n(n+1)/2", "n(n+1)(2n+1)/6"]
+    answer: 1
+    explanation: >
+      Sum of first n odd naturals = n². Sum of first n naturals =
+      n(n+1)/2. The difference: n² − n(n+1)/2 = [2n² − n(n+1)]/2 =
+      n[2n − (n+1)]/2 = n(n−1)/2.
+    trap: "n(n+1)/2 is simply the sum of the first n natural numbers restated — it's one of the two quantities in the question, not their difference."
+
+  - id: simplification-026
+    difficulty: 0.40
+    estimatedSeconds: 60
+    source: tnpsc-2017
+    year: 2017
+    question: "The arithmetic mean of a group of 75 observations was calculated as 27. It was later found that one observation was wrongly read as 43 instead of the correct value 53. Obtain the correct arithmetic mean of the data."
+    options: ["26.13", "27.13", "28.13", "25.13"]
+    answer: 1
+    explanation: >
+      Original (wrong) sum: 75 × 27 = 2,025. The correction adds
+      53 − 43 = 10 to the sum, giving 2,035. New mean = 2,035 / 75 ≈
+      27.13.
+    trap: "28.13 adds the full value 53 to the original sum instead of only the shortfall (53 − 43 = 10) — the wrongly read 43 is already included in the original total and only needs the 10-point correction, not the whole 53 added on top."
+
+  - id: simplification-027
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2017
+    year: 2017
+    question: "(xᵐ/xⁿ)^(m+n) · (xⁿ/xˡ)^(n+l) · (xˡ/xᵐ)^(l+m) = ..."
+    options: ["1", "−1", "x^(m+n+l)", "1/x^(m+n+l)"]
+    answer: 0
+    explanation: >
+      Each bracket simplifies to x raised to a difference-of-squares
+      exponent: (xᵐ⁻ⁿ)^(m+n) = x^(m²−n²), similarly x^(n²−l²) and
+      x^(l²−m²). Adding all three exponents: (m²−n²)+(n²−l²)+(l²−m²) = 0,
+      so the whole expression is x⁰ = 1.
+    trap: "x^(m+n+l) assumes the exponents just add up directly without expanding each bracket first — working out (m²−n²)+(n²−l²)+(l²−m²) shows every squared term cancels, leaving 0, not m+n+l."
+
+  - id: simplification-028
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2017
+    year: 2017
+    question: "If A = +, B = ÷, C = ×, and D = −, then what is the value of (1/5) C 2 B (1/5) A (1/5) D (1/10) = ?"
+    options: ["2.1", "1.2", "2.5", "1.6"]
+    answer: 0
+    explanation: >
+      Substituting the operators: (1/5) × 2 ÷ (1/5) + (1/5) − (1/10).
+      Following BODMAS, × and ÷ go left to right first: (1/5) × 2 = 2/5,
+      then (2/5) ÷ (1/5) = 2. That leaves 2 + 0.2 − 0.1 = 2.1.
+    trap: "1.2 comes from doing the + and − steps before finishing the × and ÷ chain — all the multiplication and division has to be resolved first, left to right, before any addition or subtraction."
+
+  - id: simplification-029
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2017
+    year: 2017
+    question: "The value of: (x³ − 1)/(x + 3) ÷ (x² + x + 1)/(3x + 9) = ?"
+    options: ["3x − 1", "3(x+1)", "3(x−1)", "3x + 2"]
+    answer: 2
+    explanation: >
+      Dividing by a fraction means multiplying by its reciprocal:
+      [(x³−1)/(x+3)] × [(3x+9)/(x²+x+1)]. Factorise: x³−1 =
+      (x−1)(x²+x+1), and 3x+9 = 3(x+3). The (x+3) and (x²+x+1) factors
+      cancel, leaving (x−1) × 3 = 3(x−1).
+    trap: "3(x+1) gets the factoring right but flips the sign inside the bracket — the difference-of-cubes factorisation x³−1 = (x−1)(x²+x+1) leaves behind (x−1), not (x+1)."
+
+  - id: simplification-030
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2017
+    year: 2017
+    question: "What is the 85th term of the sequence x, x^(3/2), x², x^(5/2), ... ?"
+    options: ["x^(85/2)", "x^(45/2)", "x⁴³", "x⁴⁴"]
+    answer: 2
+    explanation: >
+      The exponents 1, 3/2, 2, 5/2, ... form an arithmetic progression
+      with first term 1 and common difference 1/2. The 85th exponent is
+      1 + 84 × (1/2) = 1 + 42 = 43, so the 85th term is x⁴³.
+    trap: "x^(85/2) uses the term NUMBER (85) directly as if it were the exponent, skipping the actual AP formula that converts position 85 into the exponent 43."
+
+  - id: simplification-031
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2017
+    year: 2017
+    question: "Simplify: (2x⁴ − 162) / [(x² + 9)(2x − 6)]"
+    options: ["x² − 9", "x + 3", "x + 6", "x − 6"]
+    answer: 1
+    explanation: >
+      Factorise the numerator: 2x⁴ − 162 = 2(x⁴ − 81) =
+      2(x²−9)(x²+9) = 2(x−3)(x+3)(x²+9). The denominator is
+      (x²+9) × 2(x−3). The (x²+9), the 2, and the (x−3) factors all
+      cancel, leaving (x + 3).
+    trap: "x² − 9 stops one factoring step early — (x²−9) itself still factors further into (x−3)(x+3), and it's the (x−3) part that needs to cancel with the denominator's (2x−6)."

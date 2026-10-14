@@ -130,3 +130,18 @@ questions:
       270 and 9. Their LCM: 300=2²×3×5², 270=2×3³×5, 9=3². LCM =
       2²×3³×5² = 2,700. Scaling back down (÷100) gives 27.
     trap: "0.027 scales the LCM back down by the wrong amount (÷100,000 instead of ÷100) — the scaling factor used going in must match the one used coming back out."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: lcm-012
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2017
+    year: 2017
+    question: "If the LCM of x and y is z, what is the H.C.F of x and y?"
+    options: ["xy/z", "xz/y", "yz/x", "xy"]
+    answer: 0
+    explanation: >
+      For any two numbers, HCF × LCM = their product: HCF × z = xy, so
+      HCF = xy/z.
+    trap: "xy restates the product of x and y itself, forgetting to divide by the LCM (z) that the HCF × LCM = product rule requires."

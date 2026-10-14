@@ -172,3 +172,18 @@ questions:
       the bases except one are ODD numbers (5, 7, 9, 11, 13, 15) — 6 is
       the only even base, which makes 36 the odd one out.
     trap: "169 and 225 are both perfect squares just like every other term, so being 'a square' alone doesn't mark them as the exception — the real pattern to check is whether each square's BASE is odd, and only 36's base (6) breaks that."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: number-series-015
+    difficulty: 0.25
+    estimatedSeconds: 40
+    source: tnpsc-2017
+    year: 2017
+    question: "What is the 21st term of the sequence 100, 95, 90, 85.....?"
+    options: ["10", "20", "0", "5"]
+    answer: 2
+    explanation: >
+      This is an AP with first term 100 and common difference −5. The
+      21st term = 100 + 20 × (−5) = 100 − 100 = 0.
+    trap: "5 comes from using 19 steps instead of 20 — the 21st term is 20 steps AFTER the first term, not 21 steps."

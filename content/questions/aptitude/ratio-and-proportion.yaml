@@ -215,3 +215,19 @@ questions:
       x + (x+8) + (x+15) = 53, so 3x = 30, giving x = 10. That makes
       C = 10, B = 18, A = 25, a ratio of 25:18:10.
     trap: "18:25:10 swaps A's and B's shares — A is defined as the one who gets MORE than B (by ₹7), so A's share must be the largest of the three, not the second."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-018
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2017
+    year: 2017
+    question: "x^(3/2) : 9 = 16 : √x. What is the value of x?"
+    options: ["±16", "±3", "±4", "±12"]
+    answer: 3
+    explanation: >
+      A proportion a:b = c:d means a×d = b×c. So x^(3/2) × √x = 9 × 16.
+      The left side combines to x^(3/2 + 1/2) = x² (adding exponents of
+      the same base), so x² = 144, giving x = ±12.
+    trap: "±4 comes from treating the proportion's cross-multiplication as if it only involved the plain numbers (9 and 16) without carrying the x-terms through the exponent rule correctly — the left side is x² once the exponents are properly combined, not a smaller power of x."

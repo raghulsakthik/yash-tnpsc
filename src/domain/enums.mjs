@@ -57,3 +57,36 @@ export const SessionStatus = Object.freeze({
 export function isValidEnumValue(enumObject, value) {
   return Object.values(enumObject).includes(value);
 }
+
+// Phase 4 — the Foundation Test Diagnostic Engine's per-topic verdict. A
+// strict superset of the WEAK/STRONG split Phase 3 already computes: CRITICAL
+// and PREREQUISITE_BLOCKED both explain *why* a topic is weak by walking the
+// prerequisite graph, rather than just reporting that it is.
+export const TopicClassification = Object.freeze({
+  STRONG: 'STRONG',
+  WEAK: 'WEAK',
+  CRITICAL: 'CRITICAL',
+  PREREQUISITE_BLOCKED: 'PREREQUISITE_BLOCKED',
+  UNKNOWN: 'UNKNOWN',
+});
+
+export const RecommendationAction = Object.freeze({
+  ADVANCE: 'ADVANCE',
+  REINFORCE_TOPIC: 'REINFORCE_TOPIC',
+  REINFORCE_PREREQUISITE: 'REINFORCE_PREREQUISITE',
+  GATHER_EVIDENCE: 'GATHER_EVIDENCE',
+});
+
+// Phase 11 — the Adaptive Decision Engine's candidate action vocabulary.
+// Richer than RecommendationAction above (which only ever names one of four
+// broad moves): these are the actual things a learning session can be.
+export const AdaptiveAction = Object.freeze({
+  REPEAT_LESSON: 'REPEAT_LESSON',
+  PREREQUISITE_LESSON: 'PREREQUISITE_LESSON',
+  PRACTICE: 'PRACTICE',
+  TIMED_PRACTICE: 'TIMED_PRACTICE',
+  REVISION: 'REVISION',
+  MEMORY_ECHO: 'MEMORY_ECHO',
+  ADVANCE_TOPIC: 'ADVANCE_TOPIC',
+  MINI_ASSESSMENT: 'MINI_ASSESSMENT',
+});

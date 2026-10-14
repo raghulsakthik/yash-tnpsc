@@ -33,6 +33,8 @@ export class RecordAttemptError extends Error {
  * @param {number} input.timeTakenMs
  * @param {number|null} [input.confidence] 1..5
  * @param {'PRACTICE'|'REVISION'|'TEST'} [input.mode]
+ * @param {boolean} [input.hintUsed] whether she opened the AI hint before answering (Phase 8)
+ * @param {string|null} [input.sessionId] the learning_session this attempt belongs to, if any (Phase 8)
  * @returns {Promise<object>} the same shape POST /api/attempts returns, plus `duplicate` when the attemptId was already recorded
  */
 export async function recordAttempt({
@@ -44,6 +46,8 @@ export async function recordAttempt({
   timeTakenMs,
   confidence = null,
   mode = 'PRACTICE',
+  hintUsed = false,
+  sessionId = null,
 }) {
   const { rows: questionRows } = await client.query(
     `SELECT id, topic_id, answer_index, options, explanation, trap, estimated_seconds
@@ -86,10 +90,10 @@ export async function recordAttempt({
   // ON CONFLICT DO NOTHING makes a resubmitted attempt a no-op.
   const insert = await client.query(
     `INSERT INTO question_attempt
-       (id, learner_id, question_id, topic_id, selected_index, correct, time_taken_ms, confidence, mistake_type)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       (id, learner_id, question_id, topic_id, selected_index, correct, time_taken_ms, confidence, mistake_type, hint_used, session_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
      ON CONFLICT (id) DO NOTHING`,
-    [attemptId, learnerId, questionId, topicId, selectedIndex ?? null, correct, timeTakenMs, confidence, mistakeType]
+    [attemptId, learnerId, questionId, topicId, selectedIndex ?? null, correct, timeTakenMs, confidence, mistakeType, hintUsed, sessionId]
   );
   const isDuplicate = insert.rowCount === 0;
 
@@ -250,5 +254,7 @@ export async function recordAttempt({
     },
     nextAction: adaptation.nextAction,
     reason: adaptation.reason,
+    hintUsed,
+    sessionId,
   };
 }

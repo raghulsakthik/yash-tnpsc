@@ -71,9 +71,12 @@ export function toAssessmentDto(row) {
     learnerId: row.learner_id,
     type: row.type,
     status: row.status,
+    questionCount: row.question_count ?? null,
+    score: row.score === null || row.score === undefined ? null : Number(row.score),
     metadata: row.metadata,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    completedAt: row.completed_at ?? null,
   };
 }
 

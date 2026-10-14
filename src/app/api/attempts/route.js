@@ -6,16 +6,21 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/attempts
- * body: { attemptId, questionId, selectedIndex, timeTakenMs, confidence, mode }
+ * body: { attemptId, questionId, selectedIndex, timeTakenMs, confidence, mode, hintUsed, sessionId }
  *
  * Grades the answer, classifies the mistake, updates the learner model and
- * returns what to do next. Every decision is made here, never on the client.
+ * returns what to do next. Every decision is made here, never on the client
+ * — the frontend sends only the raw facts of the attempt (answer,
+ * timeTaken, confidence, hintUsed); everything else (correctness, mistake
+ * type, mastery, difficulty, next action) is computed here, not the client.
  *
  * attemptId is supplied by the client so a retry cannot double-count.
  * mode is 'PRACTICE' (default) or 'REVISION' — REVISION attempts are what
- * advance the spaced-repetition schedule; PRACTICE ones never do. The
- * grading pipeline itself lives in src/lib/attempts.mjs, shared with the
- * weekly test's submit step.
+ * advance the spaced-repetition schedule; PRACTICE ones never do. hintUsed
+ * and sessionId are optional (Phase 8) — an attempt taken outside any
+ * session, or without opening a hint, is still a complete, valid attempt.
+ * The grading pipeline itself lives in src/lib/attempts.mjs, shared with
+ * the weekly test's and the default assessment's submit steps.
  */
 export async function POST(request) {
   let body;
@@ -25,7 +30,16 @@ export async function POST(request) {
     return NextResponse.json({ code: 'BAD_JSON', message: 'Body is not JSON' }, { status: 400 });
   }
 
-  const { attemptId, questionId, selectedIndex, timeTakenMs, confidence = null, mode = 'PRACTICE' } = body;
+  const {
+    attemptId,
+    questionId,
+    selectedIndex,
+    timeTakenMs,
+    confidence = null,
+    mode = 'PRACTICE',
+    hintUsed = false,
+    sessionId = null,
+  } = body;
 
   if (!attemptId || !questionId || typeof timeTakenMs !== 'number') {
     return NextResponse.json(
@@ -46,6 +60,8 @@ export async function POST(request) {
       timeTakenMs,
       confidence,
       mode,
+      hintUsed,
+      sessionId,
     });
     await client.query('COMMIT');
 
@@ -56,6 +72,7 @@ export async function POST(request) {
         mistakeType: result.mistakeType,
         timeTakenMs,
         mode,
+        hintUsed,
       });
     }
 

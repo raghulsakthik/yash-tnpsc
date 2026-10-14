@@ -458,3 +458,18 @@ questions:
       3^(1/2+1/4+1/8+...). The infinite geometric series 1/2+1/4+1/8+...
       sums to 1, so the whole expression is 3¹.
     trap: "3² overshoots by assuming the exponents from each layer add up to something greater than 1 — the infinite sum of halving fractions (1/2, 1/4, 1/8, ...) converges to exactly 1, not more."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-035
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2011
+    year: 2011
+    question: "When 24 is subtracted from a number, it reduces to its four-seventh. What is the sum of the digits of that number?"
+    options: ["1", "9", "11", "10"]
+    answer: 2
+    explanation: >
+      Let the number be N. N − 24 = (4/7)N, so N − (4/7)N = 24, giving
+      (3/7)N = 24, so N = 56. The sum of its digits is 5 + 6 = 11.
+    trap: "10 comes from a slip solving for N (landing near 55 instead of 56) — recheck that (3/7) × 56 = 24 exactly before summing the digits."

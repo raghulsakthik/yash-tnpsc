@@ -316,3 +316,21 @@ questions:
       Total votes = 153 + 245 + 102 = 500. The winner is B with 245
       votes. Percentage = 245/500 × 100 = 49%.
     trap: "50% is a tempting round number since the winner clearly has close to half the votes, but the exact total (500) and B's exact share (245) give 49%, not an even half."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-026
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2011
+    year: 2011
+    question: "Performance of students in an examination (marks out of 50): Tamil — 9 scored 40+, 40 scored 30+, 74 scored 20+. English — 5 scored 40+, 30 scored 30+, 65 scored 20+. Aggregate — 6 scored 40+, 35 scored 30+, 70 scored 20+. The percentage of number of students getting at least 60% marks in English over those getting at least 40% in aggregate is approximately"
+    options: ["43%", "41%", "50%", "45%"]
+    answer: 0
+    explanation: >
+      60% of 50 marks is 30 marks, so 'at least 60% in English' reads
+      off the English/30-and-above cell: 30 students. 40% of 50 marks is
+      20 marks, so 'at least 40% in aggregate' reads off the
+      Aggregate/20-and-above cell: 70 students. The percentage is
+      30/70 × 100 ≈ 43%.
+    trap: "50% comes from eyeballing 30 against a rounder nearby total instead of reading the exact aggregate/20-and-above figure (70) from the table — 30/70 is close to but not exactly a half."

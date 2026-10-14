@@ -187,3 +187,20 @@ questions:
       This is an AP with first term 100 and common difference −5. The
       21st term = 100 + 20 × (−5) = 100 − 100 = 0.
     trap: "5 comes from using 19 steps instead of 20 — the 21st term is 20 steps AFTER the first term, not 21 steps."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: number-series-016
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2022
+    year: 2022
+    question: "Which number replaces the question mark for the following numbers? 2, 7, 17 / 3, 11, 19 / 5, 13, ?"
+    options: ["21", "23", "25", "27"]
+    answer: 1
+    explanation: >
+      Reading down each column: column 1 is 2, 3, 5; column 2 is 7, 11,
+      13; column 3 is 17, 19, ? — every entry in the grid is a prime
+      number. The primes after 19 continue 23, 29, ..., so the missing
+      number is 23.
+    trap: "21 is the next ODD number after 19 but isn't prime (21 = 3×7) — every other entry in the grid is specifically a prime, not just an odd number."

@@ -145,3 +145,32 @@ questions:
       For any two numbers, HCF × LCM = their product: HCF × z = xy, so
       HCF = xy/z.
     trap: "xy restates the product of x and y itself, forgetting to divide by the LCM (z) that the HCF × LCM = product rule requires."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: lcm-013
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2022
+    year: 2022
+    question: "HCF and LCM of two numbers are 16 and 240 respectively. If one of the number is 48, then the other number is"
+    options: ["80", "60", "70", "90"]
+    answer: 0
+    explanation: >
+      For any two numbers, HCF × LCM = their product: 16 × 240 = 3,840.
+      The other number is 3,840 / 48 = 80.
+    trap: "60 is a plausible-looking guess, but check it directly: 48 × 60 = 2,880, not 3,840 — only 80 makes the product match HCF × LCM exactly."
+
+  - id: lcm-014
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2022
+    year: 2022
+    question: "Wilson, Mathan, Guna can complete one round of a circular track in 10, 15 and 20 minutes respectively. If they start together at 7 am from the starting point at what time will they meet together again at the starting point?"
+    options: ["8 am", "8 pm", "5 pm", "9 am"]
+    answer: 0
+    explanation: >
+      They next meet together after the LCM of their lap times. 10=2×5,
+      15=3×5, 20=2²×5. LCM = 2²×3×5 = 60 minutes. 7 am + 60 minutes =
+      8 am.
+    trap: "5 pm adds up the three individual times (10+15+20=45, not matching any option directly, but similar overshoot-style errors land here) instead of taking their LCM — the three runners meet again at the LCM of their lap times, not some sum or multiple of all three combined."

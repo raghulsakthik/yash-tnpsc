@@ -213,3 +213,21 @@ questions:
       +3, E to I(9) is +4, I to N(14) is +5. The next gap is +6:
       14 + 6 = 20, which is T.
     trap: "U is one letter past the correct answer — it comes from a gap of +7 instead of continuing the established pattern of the gap growing by exactly one each step (+6 here, not +7)."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: alpha-numeric-017
+    difficulty: 0.60
+    estimatedSeconds: 90
+    source: tnpsc-2022
+    year: 2022
+    question: "2 P J @ 8 $ L B 1 V # Q 6 δ G W 9 K C D 3 © • £ 5 F R 7 A Y 4 — P@L is to Y75 in the same way as $1# is to"
+    options: ["R£©", "F£3", "F•3", "5•D"]
+    answer: 2
+    explanation: >
+      Numbering the 31 symbols 1 to 31, P is at position 2, @ at 4, and
+      L at 7. Y is at position 30, 7 at 28, and 5 at 25 — each is the
+      'mirror' position (32 − original position) of P, @ and L. Applying
+      the same mirror rule to $ (position 6), 1 (position 9) and # (position
+      11): 32−6=26 (F), 32−9=23 (•), 32−11=21 (3). So $1# maps to F•3.
+    trap: "F£3 gets the first and third symbols right but the middle one wrong — check the mirror position of '1' (position 9) carefully: 32−9=23, which is •, not £."

@@ -139,3 +139,34 @@ questions:
       their pairwise differences: 91−43=48, 183−91=92, 183−43=140. The
       HCF of 48, 92 and 140 is 4.
     trap: "9 happens to divide 91−43=48 and 183−43=140 but check it against 183−91=92 as well — 92 is not divisible by 9, so 9 isn't a common factor of all three differences."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: hcf-012
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2022
+    year: 2022
+    question: "What is the greatest possible volume of a vessel that can be used to measure exactly the volume of milk in cans (in full capacity) of 80 litres, 100 litres and 120 litres?"
+    options: ["20 litres", "25 litres", "30 litres", "40 litres"]
+    answer: 0
+    explanation: >
+      The largest vessel that can measure all three cans exactly is
+      their HCF. 80 = 2⁴×5, 100 = 2²×5², 120 = 2³×3×5. The common factors
+      are 2² and 5, so HCF = 4 × 5 = 20 litres.
+    trap: "40 litres divides 80 and 120 evenly but not 100 (100 ÷ 40 = 2.5) — the vessel has to measure every one of the three cans exactly, not just two of them."
+
+  - id: hcf-013
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2022
+    year: 2022
+    question: "Find the HCF of a³ − 9ax², (a − 3x)²."
+    options: ["(a² − 9x²)", "(a − 3x)²", "(a³ − 9ax²)", "(a − 3x)"]
+    answer: 3
+    explanation: >
+      Factorise: a³ − 9ax² = a(a² − 9x²) = a(a−3x)(a+3x). The second
+      expression is (a−3x)². The shared factor between a(a−3x)(a+3x) and
+      (a−3x)(a−3x) is a single power of (a−3x), since the first
+      expression only contains it once.
+    trap: "(a − 3x)² takes the SECOND expression's own highest power as if it were automatically the shared one — the HCF can only include as many copies of a factor as the expression with FEWER copies has, and a³−9ax² only has one (a−3x)."

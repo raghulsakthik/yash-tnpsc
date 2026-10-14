@@ -236,3 +236,33 @@ questions:
       The total effort stays constant: 100 × 7 = 700 person-days. Over
       35 days: 700 ÷ 35 = 20 persons.
     trap: "50 persons comes from scaling in the wrong direction — the job now has MORE days to get done (35 instead of 7), so it needs FEWER people, not more."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-019
+    difficulty: 0.30
+    estimatedSeconds: 45
+    source: tnpsc-2022
+    year: 2022
+    question: "If 5 persons can do 5 jobs in 5 days then how many days will it take for 50 persons to finish 50 jobs?"
+    options: ["5", "7", "9", "11"]
+    answer: 0
+    explanation: >
+      Each person completes 1 job in 5 days regardless of how many
+      people work in parallel. Scaling both the number of people and the
+      number of jobs by the same factor (×10) doesn't change how long
+      each person's own job takes — it's still 5 days.
+    trap: "9 and 11 both assume more people or more jobs changes the per-person timeline — but since people and jobs scale together (each person still only has to do 1 job), the time stays exactly the same."
+
+  - id: time-and-work-020
+    difficulty: 0.30
+    estimatedSeconds: 45
+    source: tnpsc-2022
+    year: 2022
+    question: "A reader reads 20 pages of a book in 2 hours in an uniform speed. How much time will it take to read 50 pages of the same book in the same speed?"
+    options: ["3 hours", "4 hours", "5 hours", "4½ hours"]
+    answer: 2
+    explanation: >
+      Reading rate = 20 pages / 2 hours = 10 pages per hour. Time for
+      50 pages = 50 / 10 = 5 hours.
+    trap: "4 hours comes from rounding the rate to a tidier 'about 12 pages an hour' instead of computing the exact rate (10 pages/hour) first."

@@ -413,3 +413,48 @@ questions:
       (x²+9) × 2(x−3). The (x²+9), the 2, and the (x−3) factors all
       cancel, leaving (x + 3).
     trap: "x² − 9 stops one factoring step early — (x²−9) itself still factors further into (x−3)(x+3), and it's the (x−3) part that needs to cancel with the denominator's (2x−6)."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-032
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2022
+    year: 2022
+    question: "If × means ÷, − means ×, ÷ means + and + means −, what is the value of (3−15÷19)×8+6?"
+    options: ["8", "4", "2", "−1"]
+    answer: 2
+    explanation: >
+      Substituting the real operations for the disguised symbols turns
+      '−' into ×, '÷' into +, '×' into ÷, and '+' into −. The expression
+      becomes (3 × 15 + 19) ÷ 8 − 6 = (45 + 19) ÷ 8 − 6 = 64 ÷ 8 − 6 =
+      8 − 6 = 2.
+    trap: "8 stops one step early, at 64 ÷ 8, forgetting the final '+6' in the original expression is itself disguised as a subtraction that still needs to be applied."
+
+  - id: simplification-033
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2022
+    year: 2022
+    question: "How many terms of the series 1³ + 2³ + 3³ + ...... should be taken to get the sum 1296?"
+    options: ["6", "7", "8", "9"]
+    answer: 2
+    explanation: >
+      The sum of the first n cubes is [n(n+1)/2]². Setting this to 1296:
+      n(n+1)/2 = √1296 = 36, so n(n+1) = 72. Since 8 × 9 = 72, n = 8.
+    trap: "9 is tempting since 9 is the next whole number after checking 8, but 9×10=90 ≠ 72 — the exact factor pair of 72 that are consecutive integers is 8 and 9, giving n = 8, not 9."
+
+  - id: simplification-034
+    difficulty: 0.50
+    estimatedSeconds: 65
+    source: tnpsc-2022
+    year: 2022
+    question: "Find the value of √(3√(3√3...))"
+    options: ["3¹", "3²", "3³", "3⁴"]
+    answer: 0
+    explanation: >
+      Each layer of the infinite nested root contributes a halved power
+      of 3 to the overall exponent: 3^(1/2) × 3^(1/4) × 3^(1/8) × ... =
+      3^(1/2+1/4+1/8+...). The infinite geometric series 1/2+1/4+1/8+...
+      sums to 1, so the whole expression is 3¹.
+    trap: "3² overshoots by assuming the exponents from each layer add up to something greater than 1 — the infinite sum of halving fractions (1/2, 1/4, 1/8, ...) converges to exactly 1, not more."

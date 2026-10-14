@@ -160,3 +160,32 @@ questions:
       l directly. By the Pythagorean relation, h = √(l² − r²). Volume =
       (1/3)πr²h = (1/3)πr²√(l² − r²).
     trap: "(1/3)πr²√(l²+r²) adds instead of subtracts under the root — the slant height is the HYPOTENUSE of the right triangle formed by the radius and the vertical height, so h² = l² − r², not l² + r²."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: volume-014
+    difficulty: 0.35
+    estimatedSeconds: 55
+    source: tnpsc-2022
+    year: 2022
+    question: "Find the volume of water tank measured 10 m × 5 m × 1.5 m."
+    options: ["75 litre", "750 litre", "7500 litre", "75000 litre"]
+    answer: 3
+    explanation: >
+      Volume = 10 × 5 × 1.5 = 75 m³. Since 1 m³ = 1,000 litres,
+      75 m³ = 75,000 litres.
+    trap: "7500 litre comes from a slip in converting cubic metres to litres (using a factor of 100 instead of 1,000) — 1 m³ holds exactly 1,000 litres, not 100."
+
+  - id: volume-015
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2022
+    year: 2022
+    question: "An aluminium sphere of radius 12 cm is melted to make a cylinder of radius 8 cm. Find the height of the cylinder."
+    options: ["24 cm", "30 cm", "36 cm", "40 cm"]
+    answer: 2
+    explanation: >
+      Melting preserves volume. Sphere volume = (4/3)πR³ =
+      (4/3)π(12³) = (4/3)π(1,728) = 2,304π. Setting this equal to the
+      cylinder's volume πr²h = π(8²)h = 64πh: 64h = 2,304, so h = 36 cm.
+    trap: "24 cm comes from a slip that drops a factor along the way — recompute 12³ = 1,728 carefully (not 12² = 144) before dividing by 3 and by 64."

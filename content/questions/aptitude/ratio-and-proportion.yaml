@@ -231,3 +231,16 @@ questions:
       The left side combines to x^(3/2 + 1/2) = x² (adding exponents of
       the same base), so x² = 144, giving x = ±12.
     trap: "±4 comes from treating the proportion's cross-multiplication as if it only involved the plain numbers (9 and 16) without carrying the x-terms through the exponent rule correctly — the left side is x² once the exponents are properly combined, not a smaller power of x."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-019
+    difficulty: 0.20
+    estimatedSeconds: 35
+    source: tnpsc-2022
+    year: 2022
+    question: "Find the ratio of 3 km to 300 m?"
+    options: ["3:10", "10:3", "1:10", "10:1"]
+    answer: 3
+    explanation: "3 km = 3,000 m. The ratio 3,000:300 simplifies to 10:1."
+    trap: "1:10 inverts the ratio — 3 km is much LARGER than 300 m, so the ratio must put the bigger number first, not the smaller one."

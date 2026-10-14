@@ -172,3 +172,31 @@ questions:
       Growth factor over 2 years: 1,348.32 / 1,200 = 1.1236. The square
       root of 1.1236 is 1.06, so the annual rate is 6%.
     trap: "7% is a tempting round guess, but check it against the actual figures: 1,200 × 1.07² = 1,373.88, which overshoots 1,348.32 — the square root of the growth factor gives an exact 6%, not an estimate."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: compound-interest-015
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2022
+    year: 2022
+    question: "The difference between the S.I. and C.I. for 2 years for a principal of ₹5,000 at the rate of interest 8% p.a. is"
+    options: ["₹32", "₹35", "₹38", "₹42"]
+    answer: 0
+    explanation: >
+      For exactly 2 years, the CI−SI gap is P × (R/100)²:
+      5,000 × 0.08² = 5,000 × 0.0064 = ₹32.
+    trap: "₹35 is a rounder-looking number nearby, but the 2-year shortcut gives an exact value — recompute 5,000 × 0.0064 precisely rather than estimating."
+
+  - id: compound-interest-016
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2022
+    year: 2022
+    question: "The compound interest on ₹5,000 at 12% p.a. for 2 years compounded annually is"
+    options: ["₹1,072", "₹1,172", "₹1,272", "₹1,372"]
+    answer: 2
+    explanation: >
+      Amount = 5,000 × 1.12² = 5,000 × 1.2544 = ₹6,272. Compound interest
+      = 6,272 − 5,000 = ₹1,272.
+    trap: "₹1,172 comes from a slip computing 1.12² (using something closer to 1.1² = 1.21 instead of the correct 1.2544) — recompute 1.12 × 1.12 carefully."

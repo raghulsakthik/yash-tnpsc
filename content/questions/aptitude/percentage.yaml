@@ -288,3 +288,31 @@ questions:
     answer: 1
     explanation: "1 hour = 3,600 seconds. 36/3,600 × 100 = 1%."
     trap: "36% just reuses the number 36 from the question directly as a percentage, skipping the actual conversion into seconds-per-hour."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-024
+    difficulty: 0.30
+    estimatedSeconds: 45
+    source: tnpsc-2022
+    year: 2022
+    question: "If the population in town has increased from 20,000 to 25,000 in a year find the percentage increase in population"
+    options: ["50%", "25%", "75%", "100%"]
+    answer: 1
+    explanation: >
+      Increase = 25,000 − 20,000 = 5,000. As a percentage of the
+      ORIGINAL population: 5,000/20,000 × 100 = 25%.
+    trap: "100% doubles the correct answer — a sign of comparing the increase to the NEW population (5,000/25,000=20%, still not matching) or otherwise mixing up which figure the percentage should be taken of; the increase is always measured against the starting value."
+
+  - id: percentage-025
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2022
+    year: 2022
+    question: "If three candidates A, B and C in a school election got 153, 245 and 102 votes respectively, find the percentage of votes got by the winner?"
+    options: ["48%", "49%", "50%", "55%"]
+    answer: 1
+    explanation: >
+      Total votes = 153 + 245 + 102 = 500. The winner is B with 245
+      votes. Percentage = 245/500 × 100 = 49%.
+    trap: "50% is a tempting round number since the winner clearly has close to half the votes, but the exact total (500) and B's exact share (245) give 49%, not an even half."

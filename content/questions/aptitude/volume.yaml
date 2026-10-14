@@ -1,0 +1,83 @@
+topic: aptitude.volume
+language: en
+source: authored
+# Requires area.
+questions:
+  - id: volume-001
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Find the volume of a cube with side 5 cm."
+    options: ["25 cm³", "125 cm³", "75 cm³", "15 cm³"]
+    answer: 1
+    explanation: "Volume of a cube is side × side × side: 5 × 5 × 5 = 125 cm³."
+    trap: "25 cm³ squares the side instead of cubing it — that's the area of one face, not the volume of the whole cube."
+
+  - id: volume-002
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the volume of a cuboid with length 8 cm, breadth 5 cm and height 3 cm."
+    options: ["80 cm³", "96 cm³", "120 cm³", "40 cm³"]
+    answer: 2
+    explanation: "Volume of a cuboid is length × breadth × height: 8 × 5 × 3 = 120 cm³."
+    trap: "40 cm³ is only length × breadth, the area of the base — the height still has to be multiplied in to get a volume."
+
+  - id: volume-003
+    difficulty: 0.40
+    estimatedSeconds: 60
+    question: "A cylindrical tank has radius 7 m and height 10 m. Find its volume. (Use π = 22/7.)"
+    options: ["154 m³", "3,080 m³", "1,540 m³", "770 m³"]
+    answer: 2
+    explanation: >
+      Volume of a cylinder is πr²h: 22/7 × 7 × 7 × 10 = 22 × 7 × 10 =
+      1,540 m³.
+    trap: "154 m³ is just the base area, πr² — the height still needs to be multiplied in to turn an area into a volume."
+
+  - id: volume-004
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the volume of a cube whose edge is 0.5 m."
+    options: ["1.5 m³", "0.75 m³", "0.25 m³", "0.125 m³"]
+    answer: 3
+    explanation: "0.5 × 0.5 × 0.5 = 0.125 m³."
+    trap: "0.25 m³ comes from 0.5 × 0.5 — squaring instead of cubing, the same slip as treating a volume formula like an area formula."
+
+  - id: volume-005
+    difficulty: 0.45
+    estimatedSeconds: 60
+    question: "A cuboid has volume 360 cm³. If its length is 10 cm and breadth is 6 cm, find its height."
+    options: ["4 cm", "6 cm", "8 cm", "12 cm"]
+    answer: 1
+    explanation: "Height = volume ÷ (length × breadth) = 360 ÷ (10 × 6) = 360 ÷ 60 = 6 cm."
+    trap: "4 cm comes from dividing by length and breadth added together (16) instead of multiplied (60)."
+
+  - id: volume-006
+    difficulty: 0.55
+    estimatedSeconds: 70
+    question: "How many cubes of edge 2 cm can be cut from a cube of edge 8 cm?"
+    options: ["16", "32", "64", "128"]
+    answer: 2
+    explanation: >
+      The edge ratio is 8 ÷ 2 = 4. Volume scales with the CUBE of that
+      ratio, so the number of small cubes is 4³ = 64. (Check by volumes:
+      8³ ÷ 2³ = 512 ÷ 8 = 64.)
+    trap: "16 uses the edge ratio (4) doubled instead of cubed — the count of small cubes grows with the cube of the ratio, not a simple multiple of it."
+
+  - id: volume-007
+    difficulty: 0.50
+    estimatedSeconds: 60
+    question: "A rectangular water tank is 5 m long, 4 m wide and 3 m deep. How many litres of water can it hold? (1 m³ = 1,000 litres)"
+    options: ["60,000 litres", "6,000 litres", "12,000 litres", "600 litres"]
+    answer: 0
+    explanation: "Volume = 5 × 4 × 3 = 60 m³. In litres: 60 × 1,000 = 60,000 litres."
+    trap: "6,000 litres forgets a zero in the 1 m³ = 1,000 litres conversion."
+
+  - id: volume-008
+    difficulty: 0.60
+    estimatedSeconds: 75
+    question: "The volume of a cylinder is 4,620 cm³ and its height is 30 cm. Find its radius. (Use π = 22/7.)"
+    options: ["4 cm", "5 cm", "7 cm", "10 cm"]
+    answer: 2
+    explanation: >
+      r² = volume ÷ (π × h) = 4,620 ÷ (22/7 × 30) = 4,620 ÷ (660/7) =
+      4,620 × 7 ÷ 660 = 49. So r = √49 = 7 cm.
+    trap: "10 cm comes from skipping the square root at the end and working with a rounded intermediate value instead."

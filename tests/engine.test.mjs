@@ -16,6 +16,7 @@ import { classifyMistake, interventionFor } from '../src/domain/mistakes.mjs';
 import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } from '../src/domain/mastery.mjs';
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
+import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
 
 const attempts = (...flags) => flags.map((correct) => ({ correct: Boolean(correct) }));
 
@@ -422,4 +423,63 @@ test('with no due revision and no topic, the plan says so rather than guessing',
   const plan = buildDailyPlan({ topics: [], revisionDueCount: 0, selectedTopic: null });
   assert.equal(plan.primaryAction, 'NONE');
   assert.equal(plan.topicId, null);
+});
+
+// ------------------------------------------------------------------ testGen
+
+test('allocateSlots sums to exactly the target, matching the real exam split', () => {
+  // apt.aptitude: 15 questions over 10 topics. apt.reasoning: 10 over 6.
+  const shares = [
+    ...Array.from({ length: 10 }, (_, i) => ({ id: `apt-${i}`, share: 15 / 10 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `rsn-${i}`, share: 10 / 6 })),
+  ];
+  const slots = allocateSlots(shares, 25);
+  const total = [...slots.values()].reduce((sum, n) => sum + n, 0);
+  assert.equal(total, 25);
+  assert.equal(slots.size, 16);
+  for (const n of slots.values()) assert.ok(n >= 1, 'every examined topic gets at least one slot');
+});
+
+test('allocateSlots handles an empty or zero-total input without throwing', () => {
+  assert.equal(allocateSlots([], 25).size, 0);
+  assert.equal(allocateSlots([{ id: 'a', share: 1 }], 0).size, 0);
+  assert.equal(allocateSlots([{ id: 'a', share: 0 }], 25).size, 0);
+});
+
+test('allocateSlots splits an even split down the middle', () => {
+  const slots = allocateSlots(
+    [
+      { id: 'a', share: 1 },
+      { id: 'b', share: 1 },
+    ],
+    10
+  );
+  assert.equal(slots.get('a'), 5);
+  assert.equal(slots.get('b'), 5);
+});
+
+test('pickTopicQuestions returns everything when the bank is smaller than the count', () => {
+  const questions = [{ id: 'q1', difficulty: 0.2 }, { id: 'q2', difficulty: 0.5 }];
+  const picked = pickTopicQuestions(questions, 5);
+  assert.equal(picked.length, 2);
+});
+
+test('pickTopicQuestions prefers unseen questions over seen ones', () => {
+  const questions = [
+    { id: 'seen-1', difficulty: 0.3 },
+    { id: 'unseen-1', difficulty: 0.3 },
+    { id: 'seen-2', difficulty: 0.3 },
+    { id: 'unseen-2', difficulty: 0.3 },
+  ];
+  const seenIds = new Set(['seen-1', 'seen-2']);
+  const picked = pickTopicQuestions(questions, 2, seenIds);
+  assert.ok(picked.every((q) => q.id.startsWith('unseen')), 'both picks should be unseen questions');
+});
+
+test('pickTopicQuestions spreads picks across the difficulty range', () => {
+  const questions = Array.from({ length: 10 }, (_, i) => ({ id: `q${i}`, difficulty: i / 10 }));
+  const picked = pickTopicQuestions(questions, 5);
+  const difficulties = picked.map((q) => q.difficulty);
+  assert.equal(difficulties[0], 0, 'first pick should be from the easy end');
+  assert.ok(difficulties[difficulties.length - 1] >= 0.8, 'last pick should be from the hard end');
 });

@@ -1,0 +1,82 @@
+topic: reasoning.number-series
+language: en
+source: authored
+# No prerequisite edges — pattern recognition, not the arithmetic chain.
+questions:
+  - id: number-series-001
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "Find the next number: 2, 4, 6, 8, ?"
+    options: ["9", "10", "11", "12"]
+    answer: 1
+    explanation: "Each term increases by 2: 8 + 2 = 10."
+    trap: "9 breaks the +2 pattern — it's only one more than 8, not two."
+
+  - id: number-series-002
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "Find the next number: 5, 10, 15, 20, ?"
+    options: ["22", "24", "25", "30"]
+    answer: 2
+    explanation: "Each term increases by 5: 20 + 5 = 25."
+    trap: "30 jumps by 10 instead of continuing the established step of 5."
+
+  - id: number-series-003
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Find the missing number: 3, 6, 12, 24, ?"
+    options: ["36", "40", "48", "30"]
+    answer: 2
+    explanation: "Each term doubles the one before it: 24 × 2 = 48."
+    trap: "36 continues an ADDING pattern (+12 each time, matching the first couple of gaps by coincidence) rather than the actual DOUBLING pattern the later terms reveal."
+
+  - id: number-series-004
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Find the next number: 1, 4, 9, 16, 25, ?"
+    options: ["30", "36", "49", "32"]
+    answer: 1
+    explanation: "These are perfect squares: 1², 2², 3², 4², 5², so the next is 6² = 36."
+    trap: "30 continues the DIFFERENCES (3, 5, 7, 9...) by adding 5 again at the wrong point in the pattern instead of recognising the squares and computing 6² directly."
+
+  - id: number-series-005
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "Find the missing number: 2, 5, 10, 17, 26, ?"
+    options: ["35", "36", "37", "39"]
+    answer: 2
+    explanation: >
+      Each term is one more than a perfect square: 1²+1, 2²+1, 3²+1,
+      4²+1, 5²+1. The next is 6²+1 = 37. (The differences between terms —
+      3, 5, 7, 9, 11 — confirm it: the next difference is 11, and
+      26 + 11 = 37.)
+    trap: "35 continues the difference pattern by adding 9 again instead of the next odd number, 11."
+
+  - id: number-series-006
+    difficulty: 0.30
+    estimatedSeconds: 35
+    question: "Find the next term: 1, 1, 2, 3, 5, 8, ?"
+    options: ["11", "12", "13", "10"]
+    answer: 2
+    explanation: "This is the Fibonacci sequence — each term is the sum of the two before it: 5 + 8 = 13."
+    trap: "11 comes from adding a constant gap (3) seen between a couple of earlier terms, rather than the actual rule: each term is the SUM of the two preceding ones."
+
+  - id: number-series-007
+    difficulty: 0.30
+    estimatedSeconds: 35
+    question: "Find the missing number: 7, 14, 28, 56, ?"
+    options: ["84", "98", "112", "100"]
+    answer: 2
+    explanation: "Each term doubles the one before: 56 × 2 = 112."
+    trap: "84 adds 28 instead of doubling — it matches the first gap (7 to 14 is +7, but 14 to 28 is +14) only if the growing gap pattern is misread as staying constant."
+
+  - id: number-series-008
+    difficulty: 0.40
+    estimatedSeconds: 45
+    question: "Find the next number: 100, 90, 81, 73, ?"
+    options: ["65", "66", "67", "64"]
+    answer: 1
+    explanation: >
+      The gaps between terms shrink by 1 each time: −10, −9, −8, so the
+      next gap is −7, giving 73 − 7 = 66.
+    trap: "65 applies the previous gap (−8) again instead of continuing the pattern of the gap itself shrinking by one each step."

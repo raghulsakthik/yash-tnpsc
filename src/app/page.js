@@ -67,6 +67,11 @@ export default function Home() {
           {ctaLabel}
         </Link>
       </div>
+
+      <div className="secondary-links">
+        <Link href="/test">Weekly test</Link>
+        <Link href="/mistakes">Review mistakes</Link>
+      </div>
     </main>
   );
 }

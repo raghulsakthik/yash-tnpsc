@@ -1,0 +1,83 @@
+topic: reasoning.visual
+language: en
+source: authored
+# No prerequisite edges. Authored as describable symbol/shape sequences in
+# text, the standard way text-only aptitude material handles this topic
+# without diagrams.
+questions:
+  - id: visual-001
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What comes next in the sequence? □ ■ □ ■ □ ?"
+    options: ["□", "■", "△", "○"]
+    answer: 1
+    explanation: "The pattern alternates hollow and filled squares. After □ comes ■."
+    trap: "□ continues the shape but breaks the alternation — the pattern is about alternating fill, not repeating the last symbol."
+
+  - id: visual-002
+    difficulty: 0.25
+    estimatedSeconds: 30
+    question: "In the sequence ▲ ▲ △ ▲ ▲, which symbol is the odd one out?"
+    options: ["▲ (filled triangle)", "△ (hollow triangle)", "Both are the same", "Cannot be determined"]
+    answer: 1
+    explanation: "Four of the five triangles are filled (▲); one is hollow (△), making it the odd one out."
+    trap: "It's easy to focus on the shape (triangle) and miss that the distinguishing feature here is the fill, not the outline."
+
+  - id: visual-003
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "How many triangles (filled or hollow) appear in this sequence: △ ▲ ○ △ ● △ ▲ □?"
+    options: ["4", "5", "6", "3"]
+    answer: 1
+    explanation: "Counting both △ and ▲: positions 1, 2, 4, 6 and 7 — five triangles in total."
+    trap: "4 undercounts by treating filled (▲) and hollow (△) triangles as different categories to count separately, rather than both counting as 'triangles'."
+
+  - id: visual-004
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "What comes next? ●□ ○■ ●□ ○■ ●□ ?"
+    options: ["●□", "○■", "●■", "○□"]
+    answer: 1
+    explanation: "The sequence repeats a two-step cycle: ●□ then ○■. After ●□, the cycle returns to ○■."
+    trap: "●□ repeats the symbol just shown instead of continuing the two-step cycle — check the full repeating unit, not just the last term."
+
+  - id: visual-005
+    difficulty: 0.30
+    estimatedSeconds: 30
+    question: "Which figure does not belong with the others: Square, Rectangle, Triangle, Rhombus?"
+    options: ["Square", "Rectangle", "Triangle", "Rhombus"]
+    answer: 2
+    explanation: "Square, Rectangle and Rhombus all have 4 sides. Triangle has only 3, making it the odd one out."
+    trap: "Square and Rhombus look different from Rectangle at a glance, which can distract from the actual shared property being tested: the number of sides."
+
+  - id: visual-006
+    difficulty: 0.40
+    estimatedSeconds: 45
+    question: "Which of these letters looks the same as its mirror image (reflected left to right)?"
+    options: ["B", "E", "H", "J"]
+    answer: 2
+    explanation: >
+      H has a vertical line of symmetry, so its left-right mirror image
+      looks identical to itself. B, E and J do not — B and E are
+      symmetric top-to-bottom instead, and J has no symmetry at all.
+    trap: "B and E are symmetric, which makes them tempting — but their symmetry runs top-to-bottom, not left-to-right, which is what a mirror reflection on the side tests."
+
+  - id: visual-007
+    difficulty: 0.40
+    estimatedSeconds: 40
+    question: "In the set ★ ☆ ★ ◆ ☆ ★ ◇ ◆, how many distinct (different) symbols appear, ignoring repeats?"
+    options: ["3", "4", "5", "8"]
+    answer: 1
+    explanation: "The distinct symbols are ★, ☆, ◆ and ◇ — four in total, even though some repeat."
+    trap: "8 counts every symbol in the set including repeats, rather than counting only the distinct ones."
+
+  - id: visual-008
+    difficulty: 0.50
+    estimatedSeconds: 50
+    question: "Three of these four figures share a property that the fourth lacks. Find the one that's different: ■ ● ▲ △"
+    options: ["■", "●", "▲", "△"]
+    answer: 3
+    explanation: >
+      ■, ● and ▲ are all filled shapes. △ is hollow, making it the odd one
+      out by fill, even though it shares a 'triangle' shape with ▲.
+    trap: "▲ looks like the natural pair of △ since both are triangles — but the grouping rule being tested here is fill (filled vs hollow), not shape."

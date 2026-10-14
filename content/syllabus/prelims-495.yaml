@@ -180,3 +180,4 @@ prerequisites:
   - { topic: aptitude.time-and-work,        requires: aptitude.fractions,           strength: 0.75 }
   - { topic: aptitude.time-and-work,        requires: aptitude.lcm,                 strength: 0.60 }
   - { topic: aptitude.volume,               requires: aptitude.area,                strength: 0.80 }
+  - { topic: aptitude.area,                 requires: aptitude.whole-numbers,       strength: 0.60 }

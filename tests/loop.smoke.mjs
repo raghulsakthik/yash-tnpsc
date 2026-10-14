@@ -10,12 +10,9 @@
 
 import crypto from 'node:crypto';
 import pg from 'pg';
-import { weightedAccuracy, speedScore } from '../src/domain/accuracy.mjs';
-import { adaptDifficulty } from '../src/domain/difficulty.mjs';
-import { classifyMistake } from '../src/domain/mistakes.mjs';
 import { selectQuestion, selectTopic } from '../src/domain/selection.mjs';
-import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } from '../src/domain/mastery.mjs';
-import { recallPerformance, nextInterval, retentionValue } from '../src/domain/revision.mjs';
+import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
+import { recordAttempt as sharedRecordAttempt } from '../src/lib/attempts.mjs';
 
 const TOPIC = 'aptitude.fractions';
 const connectionString = process.env.DATABASE_URL;
@@ -71,161 +68,38 @@ async function nextQuestion(learnerId) {
   };
 }
 
-/** Mirrors POST /api/attempts. */
+/**
+ * Mirrors POST /api/attempts by calling the exact same shared pipeline the
+ * real route and the weekly test's submit step use — one transaction per
+ * attempt, same as the route does. No parallel copy of the grading logic
+ * to drift out of sync with it.
+ */
 async function recordAttempt(learnerId, question, { correct, timeTakenMs, confidence, mode = 'PRACTICE' }) {
-  const { rows: priorRows } = await client.query(
-    `SELECT accuracy_score::float8 AS accuracy, consecutive_wrong, attempt_count, correct_count,
-            current_difficulty::float8 AS current_difficulty, retention_score::float8 AS retention_score
-       FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
-    [learnerId, TOPIC]
-  );
-  const prior = priorRows[0] ?? {
-    accuracy: 0,
-    consecutive_wrong: 0,
-    attempt_count: 0,
-    correct_count: 0,
-    current_difficulty: 0.3,
-    retention_score: 0,
-  };
-
-  const mistakeType = classifyMistake({
-    correct,
-    timeTakenMs,
-    expectedSeconds: question.estimated_seconds,
-    confidence,
-    topicAccuracy: prior.accuracy,
-  });
-
   const attemptId = crypto.randomUUID();
-  const inserted = await client.query(
-    `INSERT INTO question_attempt
-       (id, learner_id, question_id, topic_id, selected_index, correct, time_taken_ms, confidence, mistake_type)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-    [
-      attemptId,
-      learnerId,
-      question.id,
-      TOPIC,
-      correct ? question.answer_index : (question.answer_index + 1) % 4,
-      correct,
-      timeTakenMs,
-      confidence,
-      mistakeType,
-    ]
-  );
+  const selectedIndex = correct ? question.answer_index : (question.answer_index + 1) % 4;
 
-  const { rows: recent } = await client.query(
-    `SELECT a.correct, a.time_taken_ms, a.confidence, q.estimated_seconds
-       FROM question_attempt a JOIN question q ON q.id = a.question_id
-      WHERE a.learner_id = $1 AND a.topic_id = $2
-      ORDER BY a.created_at DESC LIMIT 20`,
-    [learnerId, TOPIC]
-  );
-
-  const accuracy = weightedAccuracy(recent.map((r) => ({ correct: r.correct })));
-  const speed = speedScore(
-    recent.map((r) => ({
-      correct: r.correct,
-      timeTakenMs: r.time_taken_ms,
-      expectedSeconds: r.estimated_seconds,
-    }))
-  );
-  const consecutiveWrong = correct ? 0 : Number(prior.consecutive_wrong) + 1;
-  const attemptCount = Number(prior.attempt_count) + 1;
-  const correctCount = Number(prior.correct_count) + (correct ? 1 : 0);
-
-  const concept = conceptScore(correctCount, attemptCount);
-  const consistency = consistencyScore(recent.map((r) => ({ correct: r.correct })));
-  const confidenceCalib = confidenceCalibration(recent.map((r) => ({ correct: r.correct, confidence: r.confidence })));
-
-  const adaptation = adaptDifficulty({
-    currentDifficulty: Number(prior.current_difficulty),
-    accuracy,
-    speed,
-    consecutiveWrong,
-    attemptCount,
+  await client.query('BEGIN');
+  const result = await sharedRecordAttempt({
+    client,
+    learnerId,
+    questionId: question.id,
+    attemptId,
+    selectedIndex,
+    timeTakenMs,
+    confidence,
+    mode,
   });
+  await client.query('COMMIT');
 
-  const { rows: scheduleRows } = await client.query(
-    `SELECT interval_days::float8 AS interval_days FROM revision_schedule WHERE learner_id = $1 AND topic_id = $2`,
-    [learnerId, TOPIC]
-  );
-
-  let retentionScore = Number(prior.retention_score);
-  let performance = null;
-
-  if (scheduleRows.length === 0) {
-    await client.query(
-      `INSERT INTO revision_schedule (learner_id, topic_id, scheduled_at, interval_days, status)
-       VALUES ($1, $2, now() + INTERVAL '1 day', 1, 'SCHEDULED')`,
-      [learnerId, TOPIC]
-    );
-  } else if (mode === 'REVISION') {
-    performance = recallPerformance({
-      correct,
-      timeTakenMs,
-      expectedSeconds: question.estimated_seconds,
-      confidence,
-    });
-    const interval = nextInterval(scheduleRows[0].interval_days, performance);
-    retentionScore = retentionScore * 0.7 + retentionValue(performance) * 0.3;
-
-    await client.query(
-      `UPDATE revision_schedule
-          SET interval_days = $1, scheduled_at = now() + ($2::float8 * INTERVAL '1 day'), updated_at = now()
-        WHERE learner_id = $3 AND topic_id = $4`,
-      [interval, interval, learnerId, TOPIC]
-    );
-  }
-
-  const mastery = masteryScore({
-    concept,
-    accuracy,
-    speed,
-    retention: retentionScore,
-    consistency,
-    confidence: confidenceCalib,
-  });
-
-  await client.query(
-    `INSERT INTO learner_topic_state
-       (learner_id, topic_id, accuracy_score, speed_score, current_difficulty,
-        attempt_count, correct_count, consecutive_wrong, next_action, last_studied_at, updated_at,
-        concept_score, consistency_score, confidence_score, retention_score, mastery_score)
-     VALUES ($1,$2,$3,$4,$5,1,$6,$7,$8, now(), now(), $9,$10,$11,$12,$13)
-     ON CONFLICT (learner_id, topic_id) DO UPDATE SET
-       accuracy_score = EXCLUDED.accuracy_score,
-       speed_score = EXCLUDED.speed_score,
-       current_difficulty = EXCLUDED.current_difficulty,
-       attempt_count = learner_topic_state.attempt_count + 1,
-       correct_count = learner_topic_state.correct_count + $6,
-       consecutive_wrong = EXCLUDED.consecutive_wrong,
-       next_action = EXCLUDED.next_action,
-       last_studied_at = now(),
-       updated_at = now(),
-       concept_score = EXCLUDED.concept_score,
-       consistency_score = EXCLUDED.consistency_score,
-       confidence_score = EXCLUDED.confidence_score,
-       retention_score = EXCLUDED.retention_score,
-       mastery_score = EXCLUDED.mastery_score`,
-    [
-      learnerId,
-      TOPIC,
-      accuracy.toFixed(3),
-      speed.toFixed(3),
-      adaptation.difficulty,
-      correct ? 1 : 0,
-      consecutiveWrong,
-      adaptation.nextAction,
-      concept.toFixed(3),
-      consistency.toFixed(3),
-      confidenceCalib.toFixed(3),
-      retentionScore.toFixed(3),
-      mastery.toFixed(3),
-    ]
-  );
-
-  return { adaptation, mistakeType, accuracy, mastery, performance, attemptId, duplicate: inserted.rowCount === 0 };
+  return {
+    adaptation: { nextAction: result.nextAction, difficulty: result.state?.difficulty, reason: result.reason },
+    mistakeType: result.mistakeType,
+    accuracy: result.state?.accuracy,
+    mastery: result.state?.mastery,
+    performance: result.performance,
+    attemptId,
+    duplicate: Boolean(result.duplicate),
+  };
 }
 
 async function stateOf(learnerId) {
@@ -445,6 +319,159 @@ const polity = weights.find((w) => w.id === 'gs.indian-polity');
 const foundation = weights.find((w) => w.id === 'apt.foundation');
 check('polity carries its real 15 questions', polity?.question_count === 15, `(${polity?.question_count})`);
 check('unexamined foundation carries zero weight', foundation?.question_count === 0, `(${foundation?.question_count})`);
+
+console.log('\na weekly test generates, can be answered, and scores on submit');
+const tester = await makeLearner('smoke-tester');
+{
+  // Mirrors POST /api/tests: allocate slots across the examined chapters,
+  // pick questions, insert the test.
+  const { rows: chapterTopics } = await client.query(
+    `SELECT c.id AS chapter_id, c.question_count, t.id AS topic_id, t.name AS topic_name
+       FROM chapter c JOIN topic t ON t.chapter_id = c.id
+      WHERE c.id IN ('apt.aptitude', 'apt.reasoning')`
+  );
+  const { rows: bankRows } = await client.query(
+    `SELECT topic_id, id, difficulty::float8 AS difficulty, answer_index
+       FROM question WHERE status = 'PUBLISHED'`
+  );
+
+  const topicsByChapter = new Map();
+  for (const row of chapterTopics) {
+    if (!topicsByChapter.has(row.chapter_id)) topicsByChapter.set(row.chapter_id, []);
+    topicsByChapter.get(row.chapter_id).push(row);
+  }
+  const shares = [];
+  const topicIds = new Set();
+  for (const [, topics] of topicsByChapter) {
+    const share = topics[0].question_count / topics.length;
+    for (const t of topics) {
+      shares.push({ id: t.topic_id, share });
+      topicIds.add(t.topic_id);
+    }
+  }
+  const questionsByTopic = new Map();
+  for (const q of bankRows) {
+    if (!topicIds.has(q.topic_id)) continue;
+    if (!questionsByTopic.has(q.topic_id)) questionsByTopic.set(q.topic_id, []);
+    questionsByTopic.get(q.topic_id).push(q);
+  }
+  const availableShares = shares.filter((s) => (questionsByTopic.get(s.id) ?? []).length > 0);
+  const slots = allocateSlots(availableShares, 25);
+
+  let picked = [];
+  for (const [topicId, count] of slots) {
+    if (count > 0) picked.push(...pickTopicQuestions(questionsByTopic.get(topicId) ?? [], count));
+  }
+
+  check('a 25-question test was generated', picked.length === 25, `(${picked.length})`);
+
+  const { rows: testRows } = await client.query(
+    `INSERT INTO test (learner_id, question_count) VALUES ($1, $2) RETURNING id`,
+    [tester, picked.length]
+  );
+  const testId = testRows[0].id;
+  for (const [index, q] of picked.entries()) {
+    await client.query(`INSERT INTO test_question (test_id, question_id, order_index) VALUES ($1, $2, $3)`, [
+      testId,
+      q.id,
+      index,
+    ]);
+  }
+
+  // Answer every question (mirrors POST /api/tests/:id/answers). The first
+  // one is deliberately wrong, to prove submission scores it as wrong and
+  // that it then surfaces in the mistake bank.
+  const wrongQuestionId = picked[0].id;
+  for (const q of picked) {
+    const selectedIndex = q.id === wrongQuestionId ? (q.answer_index + 1) % 4 : q.answer_index;
+    await client.query(
+      `INSERT INTO test_answer (test_id, question_id, selected_index, time_taken_ms)
+       VALUES ($1, $2, $3, $4)`,
+      [testId, q.id, selectedIndex, 20000]
+    );
+  }
+
+  // Submit (mirrors POST /api/tests/:id/submit): grade every answer through
+  // the same shared pipeline, mark the test complete, score it.
+  await client.query('BEGIN');
+  let correctCount = 0;
+  for (const q of picked) {
+    const { rows: ansRows } = await client.query(
+      `SELECT selected_index, time_taken_ms FROM test_answer WHERE test_id = $1 AND question_id = $2`,
+      [testId, q.id]
+    );
+    const answer = ansRows[0];
+    const result = await sharedRecordAttempt({
+      client,
+      learnerId: tester,
+      questionId: q.id,
+      attemptId: crypto.randomUUID(),
+      selectedIndex: answer.selected_index,
+      timeTakenMs: answer.time_taken_ms,
+      confidence: null,
+      mode: 'TEST',
+    });
+    if (result.correct) correctCount += 1;
+  }
+  const score = (correctCount / picked.length) * 100;
+  await client.query(`UPDATE test SET status = 'COMPLETED', completed_at = now(), score = $1 WHERE id = $2`, [
+    score.toFixed(2),
+    testId,
+  ]);
+  await client.query('COMMIT');
+
+  check('exactly one question was wrong, as arranged', correctCount === picked.length - 1, `(${correctCount}/${picked.length})`);
+  check('the score reflects 24/25 correct', Math.abs(score - 96) < 0.01, `(${score})`);
+
+  const { rows: graded } = await client.query(
+    `SELECT COUNT(*)::int AS n FROM question_attempt WHERE learner_id = $1`,
+    [tester]
+  );
+  check('every graded question wrote a question_attempt row', graded[0].n === picked.length, `(${graded[0].n})`);
+
+  console.log('\nthe wrong test answer surfaces in the mistake bank');
+  const { rows: mistakes } = await client.query(
+    `WITH wrong AS (
+       SELECT DISTINCT ON (question_id) question_id, created_at
+         FROM question_attempt
+        WHERE learner_id = $1 AND correct = false
+        ORDER BY question_id, created_at DESC
+     ),
+     resolved AS (
+       SELECT DISTINCT w.question_id
+         FROM question_attempt qa
+         JOIN wrong w ON w.question_id = qa.question_id
+        WHERE qa.learner_id = $1 AND qa.correct = true AND qa.created_at > w.created_at
+     )
+     SELECT w.question_id FROM wrong w
+       LEFT JOIN resolved r ON r.question_id = w.question_id
+      WHERE r.question_id IS NULL
+      ORDER BY w.created_at DESC LIMIT 1`,
+    [tester]
+  );
+  check('the mistake bank surfaces the wrong answer', mistakes[0]?.question_id === wrongQuestionId, `(${mistakes[0]?.question_id})`);
+
+  // Answer it correctly afterward and confirm it drops out of the bank.
+  const { rows: wrongQ } = await client.query(`SELECT id, answer_index, estimated_seconds FROM question WHERE id = $1`, [
+    wrongQuestionId,
+  ]);
+  await recordAttempt(
+    tester,
+    { id: wrongQ[0].id, answer_index: wrongQ[0].answer_index, estimated_seconds: wrongQ[0].estimated_seconds },
+    { correct: true, timeTakenMs: 15000, confidence: 4 }
+  );
+  const { rows: stillOpen } = await client.query(
+    `SELECT 1 FROM question_attempt qa
+      WHERE qa.learner_id = $1 AND qa.question_id = $2 AND qa.correct = false
+        AND NOT EXISTS (
+          SELECT 1 FROM question_attempt later
+           WHERE later.learner_id = $1 AND later.question_id = $2
+             AND later.correct = true AND later.created_at > qa.created_at
+        )`,
+    [tester, wrongQuestionId]
+  );
+  check('the corrected mistake is no longer open', stillOpen.length === 0);
+}
 
 // ------------------------------------------------------------------ cleanup
 await client.query(`DELETE FROM learner WHERE name LIKE 'smoke-%'`);

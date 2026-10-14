@@ -12,6 +12,8 @@
   --accent-soft: #e6efea;
   --correct: #2f6b45;
   --wrong: #a23b2c;
+  --marked: #9c6b1f;
+  --marked-soft: #f3e7d1;
   --radius: 12px;
   --max-width: 34rem;
 }
@@ -27,6 +29,8 @@
     --accent-soft: #233029;
     --correct: #8fc2b0;
     --wrong: #e09080;
+    --marked: #d9ab5c;
+    --marked-soft: #322a1a;
   }
 }
 
@@ -222,6 +226,78 @@ button.hint:disabled {
   padding: 12px 14px;
   background: var(--accent-soft);
   border-radius: var(--radius);
+}
+
+.secondary-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.palette button {
+  font: inherit;
+  font-size: 0.8rem;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.palette button[data-state='current'] {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.palette button[data-state='answered'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.palette button[data-state='marked'] {
+  background: var(--marked-soft);
+  border-color: var(--marked);
+}
+
+.mark-review {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.test-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.test-nav button {
+  font: inherit;
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.test-nav button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 a {

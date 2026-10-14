@@ -1,0 +1,97 @@
+topic: reasoning.logical
+language: en
+source: authored
+# No prerequisite edges — logical reasoning is an independent skill, not a
+# downstream consequence of the arithmetic chain.
+questions:
+  - id: logical-001
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "Which word does not belong with the others?"
+    options: ["Apple", "Carrot", "Banana", "Mango"]
+    answer: 1
+    explanation: "Apple, Banana and Mango are fruits. Carrot is a vegetable, so it is the odd one out."
+    trap: "It's easy to group by 'things you eat' instead of the finer category 'fruit vs vegetable' that the question is actually testing."
+
+  - id: logical-002
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Doctor is to Hospital as Teacher is to ____?"
+    options: ["Classroom", "School", "Student", "Book"]
+    answer: 1
+    explanation: >
+      The relationship is 'profession to workplace/institution'. A doctor's
+      institution is a hospital; a teacher's is a school.
+    trap: "Classroom is tempting but too narrow — it's a room inside the school, not the institution itself, breaking the parallel with 'hospital'."
+
+  - id: logical-003
+    difficulty: 0.25
+    estimatedSeconds: 45
+    question: "Statements: All pens are pencils. All pencils are erasers. Conclusion I: All pens are erasers. Conclusion II: All erasers are pens. Which conclusion(s) follow?"
+    options: ["Only I follows", "Only II follows", "Both follow", "Neither follows"]
+    answer: 0
+    explanation: >
+      Pens ⊆ Pencils ⊆ Erasers, so every pen is an eraser: Conclusion I
+      follows. Conclusion II reverses the relationship — being an eraser
+      doesn't make something a pen — so it does not follow.
+    trap: "Conclusion II is the converse of a true statement, which is a classic logical trap — a chain of 'all X are Y' never runs backwards."
+
+  - id: logical-004
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Statements: Some doctors are engineers. All engineers are rich. Conclusion I: Some doctors are rich. Conclusion II: All doctors are rich. Which conclusion(s) follow?"
+    options: ["Only I follows", "Only II follows", "Both follow", "Neither follows"]
+    answer: 0
+    explanation: >
+      The doctors who are engineers are also rich (since all engineers are
+      rich), so some doctors are rich: Conclusion I follows. Nothing says
+      ALL doctors are engineers, so Conclusion II overreaches.
+    trap: "Conclusion II upgrades 'some' to 'all', which the statements never licensed — a very common overreach in syllogism questions."
+
+  - id: logical-005
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "Pointing to a photograph, Ravi said, 'She is the daughter of my grandfather's only son.' How is the girl related to Ravi?"
+    options: ["Sister", "Daughter", "Cousin", "Niece"]
+    answer: 0
+    explanation: >
+      Ravi's grandfather's only son is Ravi's father. The daughter of
+      Ravi's father is Ravi's sister.
+    trap: "It's tempting to read 'grandfather's only son' as some other relative, but with only one son, that son can only be Ravi's own father."
+
+  - id: logical-006
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Rahul walks 5 km east, then turns left and walks 3 km, then turns left again and walks 5 km. How far is he from his starting point?"
+    options: ["3 km", "5 km", "8 km", "13 km"]
+    answer: 0
+    explanation: >
+      East 5 km, then left (north) 3 km, then left again (west) 5 km. The
+      east and west legs cancel out exactly, leaving only the 3 km north.
+    trap: "13 km simply adds up every leg of the walk — but distance FROM the start is about net displacement, not total distance walked."
+
+  - id: logical-007
+    difficulty: 0.45
+    estimatedSeconds: 55
+    question: "Statements: No cat is a dog. All dogs are animals. Conclusion I: No cat is an animal. Conclusion II: Some animals are not cats. Which conclusion(s) follow?"
+    options: ["Only I follows", "Only II follows", "Both follow", "Neither follows"]
+    answer: 1
+    explanation: >
+      Dogs are animals, and no dog is a cat, so those dogs are animals that
+      are not cats: Conclusion II follows. Conclusion I overreaches — cats
+      not being dogs says nothing about whether cats are animals at all.
+    trap: "Conclusion I sounds like it follows from 'no cat is a dog', but that statement only separates cats from dogs — it says nothing about the broader category of animals."
+
+  - id: logical-008
+    difficulty: 0.55
+    estimatedSeconds: 75
+    question: "Five friends A, B, C, D and E sit in a row facing north. B is immediately to the right of A. C is immediately to the left of D. E is at one of the ends. D is third from the left. Who is at the other end?"
+    options: ["A", "B", "C", "D"]
+    answer: 1
+    explanation: >
+      D is in position 3. Since C is immediately left of D, C is in
+      position 2. That leaves positions 1, 4 and 5 for A, B and E. Since B
+      must be immediately right of A, the only adjacent pair available is
+      4 and 5, so A is in 4 and B is in 5. E, the only one left, takes
+      position 1 — one end. The other end, position 5, is B.
+    trap: "It's easy to place E at position 5 by assumption since it's 'an end' — but position 1 is just as much an end, and the adjacency rule for A and B forces E to position 1, not 5."

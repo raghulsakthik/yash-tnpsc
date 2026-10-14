@@ -1,0 +1,79 @@
+topic: aptitude.area
+language: en
+source: authored
+# Requires whole-numbers (area is multiplication at its core). Also the
+# prerequisite for volume.
+questions:
+  - id: area-001
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 9 cm?"
+    options: ["36 cm²", "18 cm²", "81 cm²", "90 cm²"]
+    answer: 2
+    explanation: "Area of a square is side × side: 9 × 9 = 81 cm²."
+    trap: "36 cm² is the perimeter (4 × 9), not the area — a very common mix-up between the two formulas."
+
+  - id: area-002
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the area of a rectangle with length 12 m and breadth 7 m?"
+    options: ["84 m²", "19 m²", "38 m²", "70 m²"]
+    answer: 0
+    explanation: "Area of a rectangle is length × breadth: 12 × 7 = 84 m²."
+    trap: "19 m² adds the length and breadth instead of multiplying them."
+
+  - id: area-003
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the area of a triangle with base 16 cm and height 9 cm."
+    options: ["144 cm²", "50 cm²", "36 cm²", "72 cm²"]
+    answer: 3
+    explanation: "Area of a triangle is 1/2 × base × height: 1/2 × 16 × 9 = 72 cm²."
+    trap: "144 cm² is base × height without halving — that's the area of a rectangle with the same base and height, not the triangle."
+
+  - id: area-004
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A square has an area of 196 cm². What is the length of its side?"
+    options: ["13 cm", "14 cm", "98 cm", "49 cm"]
+    answer: 1
+    explanation: "The side of a square is the square root of its area: √196 = 14 cm."
+    trap: "98 cm halves the area instead of taking its square root — undoing 'side × side' needs a square root, not a division by 2."
+
+  - id: area-005
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the area of a circle of radius 14 cm. (Use π = 22/7.)"
+    options: ["616 cm²", "440 cm²", "88 cm²", "308 cm²"]
+    answer: 0
+    explanation: >
+      Area of a circle is πr²: 22/7 × 14 × 14 = 22/7 × 196 = 22 × 28 =
+      616 cm².
+    trap: "308 cm² is exactly half of the correct answer — a sign that r² was accidentally computed as r instead (14 used once rather than twice)."
+
+  - id: area-006
+    difficulty: 0.40
+    estimatedSeconds: 50
+    question: "The length of a rectangle is twice its breadth. If the breadth is 8 m, what is the area?"
+    options: ["64 m²", "48 m²", "256 m²", "128 m²"]
+    answer: 3
+    explanation: "Length = 2 × 8 = 16 m. Area = 16 × 8 = 128 m²."
+    trap: "64 m² treats the breadth as if it were also the length — the 'twice the breadth' part of the question gets dropped."
+
+  - id: area-007
+    difficulty: 0.50
+    estimatedSeconds: 65
+    question: "A rectangular field is 40 m long and 25 m wide. Find the cost of levelling it at ₹3 per square metre."
+    options: ["₹1,000", "₹1,950", "₹3,000", "₹2,000"]
+    answer: 2
+    explanation: "Area = 40 × 25 = 1,000 m². Cost = 1,000 × 3 = ₹3,000."
+    trap: "₹2,000 comes from a slip in the area calculation rather than the cost step — always re-check 40 × 25 before multiplying by the rate."
+
+  - id: area-008
+    difficulty: 0.55
+    estimatedSeconds: 60
+    question: "The area of a parallelogram is 240 cm² and its base is 20 cm. Find its height."
+    options: ["10 cm", "12 cm", "24 cm", "15 cm"]
+    answer: 1
+    explanation: "Area of a parallelogram is base × height, so height = 240 ÷ 20 = 12 cm."
+    trap: "24 cm doubles the correct answer — a sign of mixing up the parallelogram formula (base × height) with the triangle formula (1/2 × base × height) and compensating in the wrong direction."

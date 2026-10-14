@@ -4,9 +4,9 @@ A private, personalised practice system for the TNPSC Combined Civil Services
 (Preliminary) Examination – II, Code 495. Built for one learner.
 
 Slice 1 proved the complete learning loop on one topic before anything was
-built on top of it. The phase on top of that — mastery scoring, spaced
-repetition, an on-demand AI tutor, and a daily plan — is now in, still scoped
-to what the existing data actually supports.
+built on top of it. On top of that: mastery scoring, spaced repetition, an
+on-demand AI tutor, a daily plan, and — covering the full aptitude and
+reasoning syllabus — a weekly test and a mistake bank.
 
 ---
 
@@ -15,10 +15,12 @@ to what the existing data actually supports.
 - The prelims syllabus tree (3 subjects, 16 chapters, 40 topics) seeded from
   version-controlled YAML, with each chapter carrying its **real question count**
   from the official paper.
-- 121 verified questions across 12 topics — fractions plus the 11 topics that
-  chain off it (whole-numbers, division, decimals, percentage, simplification,
-  ratio-and-proportion, HCF, LCM, simple interest, compound interest,
-  time-and-work) — each with explanations and distractor feedback.
+- 185 verified questions across all 20 aptitude and reasoning topics —
+  fractions, the 11 topics that chain off it (whole-numbers, division,
+  decimals, percentage, simplification, ratio-and-proportion, HCF, LCM,
+  simple interest, compound interest, time-and-work), area and volume, and
+  all six reasoning topics (logical, puzzles, dice, visual, alpha-numeric,
+  number series) — each with explanations and distractor feedback.
 - A practice screen: question, four options, confidence rating, submit.
 - An adaptive engine that moves difficulty on recency-weighted accuracy, detects
   a struggle streak, classifies the *kind* of mistake, and walks the prerequisite
@@ -36,18 +38,30 @@ to what the existing data actually supports.
 - An on-demand AI hint on a wrong answer ("Why, exactly?"), cached per
   question, backed by Anthropic — and invisible when no key is configured,
   never blocking or erroring the learning flow.
+- A weekly test (`/test`) — 25 questions allocated across all 16 examined
+  topics proportional to their real exam weight (largest-remainder
+  rounding, so it sums to exactly 25 — the aptitude section's real 15 plus
+  reasoning's real 10). Exam UX: a question palette, free navigation,
+  mark-for-review, nothing revealed until submission. Every answered
+  question is graded through the same pipeline practice and revision use,
+  so test performance updates mastery and the revision schedule too.
+- A mistake bank (`/mistakes`) — the most recent still-open wrong answer,
+  from practice, revision or a test alike, with no new schema: it's a query
+  over attempt history that already existed.
 - Idempotent attempt recording, so a flaky connection cannot double-count.
-- 44 unit tests and a DB-backed smoke test covering the adaptive loop,
-  mastery scoring and the revision cycle, all green. CI runs all of it
-  against a real Postgres service container on every push.
+- 50 unit tests and a DB-backed smoke test covering the adaptive loop,
+  mastery scoring, the revision cycle, and a full test generate → answer →
+  submit → mistake-bank cycle, all green. CI runs all of it against a real
+  Postgres service container on every push.
 
 ## What is deliberately absent
 
-No journey visualisation, no weekly-test module, no mobile app, no Redis, no
-auth, no area/volume/reasoning content yet (no prerequisite edges connect
-them to the fractions chain, so they don't exercise the new mechanics — see
-the content files for what's authored). Each is an afternoon's work once
-there's a reason for it; none of them helps if there isn't yet.
+No journey visualisation, no mobile app, no Redis, no auth, no PYQ-tagged
+content (the schema supports it — `question.source`/`source_year`,
+`examRelevance()` in `selection.mjs` — but no fake past-paper content is
+authored; real TNPSC papers are pending OCR tooling to transcribe). Each is
+an afternoon's work once there's a reason for it; none of them helps if
+there isn't yet.
 
 ---
 
@@ -119,7 +133,9 @@ it on — it is never asked for or typed into this codebase.
 ```
 content/
   syllabus/prelims-495.yaml     the authority for the topic tree + exam weights
-  questions/aptitude/*.yaml     authored questions; never typed into the database
+  questions/aptitude/*.yaml     authored aptitude questions
+  questions/reasoning/*.yaml    authored reasoning questions
+  (never typed into the database — content/ is the source of truth)
 db/migrations/                  numbered SQL, applied once each, in a transaction
 scripts/
   migrate.mjs                   ~60 lines you can read in full
@@ -134,15 +150,22 @@ src/
     mastery.mjs                 concept, consistency, confidence-calibration, blended mastery
     revision.mjs                recall performance, interval growth/decay, due check
     planner.mjs                 the daily plan / "Next Best Action"
+    testGen.mjs                 weekly test slot allocation + question picking
     ai/context.mjs              compact prompt context + the hint prompt itself
-  lib/ai/provider.mjs           the one file that changes for a different AI provider
-  app/api/                      questions, attempts, revision, plan, ai/hint
+  lib/
+    attempts.mjs                the shared grading pipeline — practice, revision and test attempts all go through this one function
+    ai/provider.mjs             the one file that changes for a different AI provider
+  app/api/                      questions, attempts, revision, plan, ai/hint, tests, mistakes
   app/practice/                 the practice screen
   app/revision/                 "Memory Echo" — same screen, sourced from the revision queue
-  app/_components/QuestionSession.js  the shared question/answer/feedback state machine
+  app/mistakes/                 the mistake bank — same screen again, sourced from open mistakes
+  app/test/                     the weekly test (exam UX) and its results page
+  app/_components/
+    QuestionSession.js          the shared question/answer/feedback state machine (practice/revision/mistakes)
+    TestSession.js              the exam-style state machine (palette, no immediate feedback)
 tests/
-  engine.test.mjs               44 unit tests
-  loop.smoke.mjs                DB-backed: the adaptive loop, mastery, and the revision cycle
+  engine.test.mjs               50 unit tests
+  loop.smoke.mjs                DB-backed: the adaptive loop, mastery, revision, and a full weekly-test cycle
 ```
 
 `src/domain/` is the part worth protecting. It has no imports from Next.js, no

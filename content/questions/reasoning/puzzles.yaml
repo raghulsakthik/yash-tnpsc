@@ -167,3 +167,19 @@ questions:
       position 57 − 7 + 1 = 51. Richard is at position 15. Boys strictly
       between positions 15 and 51: 51 − 15 − 1 = 35.
     trap: "36 forgets to exclude Richard and the seventh boy themselves from the count — the question asks for boys BETWEEN the two, not the full gap including both endpoints."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: puzzles-014
+    difficulty: 0.35
+    estimatedSeconds: 55
+    source: tnpsc-2016
+    year: 2016
+    question: "Murali's present age is half of his father's age. Before 10 years, his father's age was thrice his age. Find the present age of Murali and his father."
+    options: ["16, 32 years", "15, 30 years", "20, 40 years", "17, 34 years"]
+    answer: 2
+    explanation: >
+      Let Murali's present age be M, so his father's is 2M. Ten years
+      ago: 2M − 10 = 3(M − 10), so 2M − 10 = 3M − 30, giving M = 20. The
+      father is 2 × 20 = 40.
+    trap: "16, 32 years satisfies the 'half' relationship today but fails the ten-years-ago condition — check it: 10 years ago that pair would be 6 and 22, and 22 is not three times 6."

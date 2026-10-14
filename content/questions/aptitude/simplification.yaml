@@ -223,3 +223,62 @@ questions:
       Let fruit-bearing trees be x. Non-fruit-bearing: 3x + 2. Together:
       x + 3x + 2 = 106, so 4x = 104, giving x = 26.
     trap: "24 is close but doesn't satisfy the equation — check that 24 + (3×24+2) = 24 + 74 = 98, not 106; only 26 makes the totals add up exactly."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-019
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2016
+    year: 2016
+    question: "Mean of 25 observations was found to be 78.4. But later it was found that 96 was mis-read as 69. Then the corrected mean is"
+    options: ["79.48", "76.54", "81.32", "78.4"]
+    answer: 0
+    explanation: >
+      The original (wrong) sum was 25 × 78.4 = 1,960. Replacing the
+      misread 69 with the true value 96 adds 96 − 69 = 27 to the sum,
+      giving 1,987. The corrected mean is 1,987 / 25 = 79.48.
+    trap: "81.32 adds the full value 96 to the original sum instead of only the difference (96 − 69 = 27) — the 69 that was wrongly read is already baked into the original mean and must be swapped out, not added on top of."
+
+  - id: simplification-020
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2016
+    year: 2016
+    question: "If x² + 4y² = 4xy, then x:y is"
+    options: ["2:1", "1:2", "1:1", "1:4"]
+    answer: 0
+    explanation: >
+      Rearranging: x² − 4xy + 4y² = 0, which is a perfect square,
+      (x − 2y)² = 0. So x = 2y, giving x:y = 2:1.
+    trap: "1:2 inverts the ratio — solving (x − 2y)² = 0 gives x = 2y (x is the LARGER one), not y = 2x."
+
+  - id: simplification-021
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2016
+    year: 2016
+    question: "If 5ᵃ = 6, 6ᵇ = 7, 7ᶜ = 5, then find the value of abc."
+    options: ["0", "−1", "2", "1"]
+    answer: 3
+    explanation: >
+      Writing each as a logarithm: a = log6/log5, b = log7/log6, and
+      c = log5/log7. Multiplying all three together, every term cancels
+      in a chain (log6, log7 and log5 each appear once on top and once
+      on the bottom): abc = (log6/log5) × (log7/log6) × (log5/log7) = 1.
+    trap: "0 assumes the chain of fractions collapses to nothing, but each factor genuinely cancels against the NEXT factor in the product, leaving exactly 1 behind, not 0."
+
+  - id: simplification-022
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2016
+    year: 2016
+    question: "The value of ˣ√(ʸ√(ᶻ√a)) is"
+    options: ["ˣ√(a^(xz))", "ˣʸ√(a^z)", "ˣʸᶻ√a", "ᶻ√(a^(yz))"]
+    answer: 2
+    explanation: >
+      Each nested root multiplies the overall root index: the z-th root
+      of a is a^(1/z), the y-th root of that is a^(1/(yz)), and the x-th
+      root of that is a^(1/(xyz)). That's the same as the single xyz-th
+      root of a.
+    trap: "ˣʸ√(a^z) only combines the outer two root indices (x and y) and leaves z sitting as an exponent instead of folding it into the combined root — all three indices multiply together into one root, not just two of them."

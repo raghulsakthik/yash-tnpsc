@@ -164,3 +164,21 @@ questions:
       9 months = 0.75 years. 16 2/3% = 1/6 as a fraction. SI = 68,000 ×
       (1/6) × 0.75 = 68,000 × 0.125 = ₹8,500.
     trap: "₹7,500 comes from rounding 16 2/3% down to a plainer-looking 16% before multiplying — keep the exact fraction (1/6) through the calculation."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: simple-interest-014
+    difficulty: 0.60
+    estimatedSeconds: 85
+    source: tnpsc-2016
+    year: 2016
+    question: "A sum of ₹1,550 was lent partly at 5% and partly at 8% per annum at simple interest. The total interest received after 3 years was ₹300. The ratio of the money lent at 5% to that lent at 8% is"
+    options: ["5:8", "8:5", "16:15", "31:6"]
+    answer: 2
+    explanation: >
+      Let ₹x be lent at 5%, so ₹(1,550 − x) is lent at 8%. Over 3 years:
+      (x × 5 × 3)/100 + ((1,550 − x) × 8 × 3)/100 = 300. Simplifying:
+      15x + 24(1,550 − x) = 30,000, so −9x + 37,200 = 30,000, giving
+      x = 800. So ₹800 was lent at 5% and ₹750 at 8%, a ratio of
+      800:750 = 16:15.
+    trap: "5:8 just copies the two given rates directly as if the money were split in the same ratio as the interest rates — the actual split has to come from solving the total-interest equation, not from the rates themselves."

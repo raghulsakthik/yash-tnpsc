@@ -164,3 +164,18 @@ questions:
       New area factor: 0.5 × 1.8 = 0.9, which is 90% of the original —
       a decrease of 10%.
     trap: "increased by 20% simply adds the two raw percentages (−50% and +80%) as if they combined by addition — percentage changes to length and breadth combine by MULTIPLYING their factors, not adding the percentages."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: area-015
+    difficulty: 0.40
+    estimatedSeconds: 55
+    source: tnpsc-2016
+    year: 2016
+    question: "Find the length of the altitude of an equilateral triangle of side 3√3 cm."
+    options: ["27 cm", "9√3 cm", "9 cm", "4.5 cm"]
+    answer: 3
+    explanation: >
+      The altitude of an equilateral triangle is (√3/2) × side:
+      (√3/2) × 3√3 = (3 × 3)/2 = 9/2 = 4.5 cm.
+    trap: "9 cm drops the division by 2 in the altitude formula — (√3/2) × 3√3 simplifies to 9/2, not 9, since √3 × √3 = 3 cancels the radical before the halving happens."

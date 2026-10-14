@@ -179,3 +179,45 @@ questions:
       Using (men × hours)/pages held proportional: 12 × 5 × 200 = M × 20
       × 60, so 12,000 = 1,200 × M, giving M = 10.
     trap: "12 keeps the original number of compositors, missing that 20 hours (4× longer) comfortably covers the extra pages (200 is only a bit more than 3× the original 60), so fewer people are actually needed."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-015
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2016
+    year: 2016
+    question: "First pipe can fill a tank in 12 hours. Second pipe can fill the same tank in 6 hours. Third pipe in 4 hours. How long will it take to fill the tank if all the 3 pipes are opened simultaneously?"
+    options: ["2 hrs.", "3 hrs.", "4 hrs.", "12 hrs."]
+    answer: 0
+    explanation: >
+      Combined rate: 1/12 + 1/6 + 1/4 = 1/12 + 2/12 + 3/12 = 6/12 = 1/2
+      tank per hour. Time to fill = 1 ÷ (1/2) = 2 hours.
+    trap: "4 hrs. is the time for the slowest pipe's partner combination mis-added — adding the three fill TIMES instead of their RATES gives a nonsense figure; rates (reciprocals of time) are what combine by simple addition, not the times themselves."
+
+  - id: time-and-work-016
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2016
+    year: 2016
+    question: "Seven men working 9 hours a day can do a piece of work in 30 days. In how many days will 10 men working for 7 hours a day do the same work?"
+    options: ["28 days", "30 days", "32 days", "27 days"]
+    answer: 3
+    explanation: >
+      Total effort stays constant: 7 × 9 × 30 = 1,890 man-hours. With 10
+      men working 7 hours a day, days = 1,890 / (10 × 7) = 1,890 / 70 =
+      27 days.
+    trap: "32 days assumes fewer total man-hours get the job done more slowly — but 10 men is MORE workers than 7, so even with fewer hours per day the job actually finishes sooner, not later."
+
+  - id: time-and-work-017
+    difficulty: 0.40
+    estimatedSeconds: 60
+    source: tnpsc-2016
+    year: 2016
+    question: "A can do a certain job in 12 days. B is 60% more efficient than A. How many days does B alone take to do the same job?"
+    options: ["6 days", "7½ days", "8 days", "8½ days"]
+    answer: 1
+    explanation: >
+      B's efficiency is 1.6 times A's, so B takes 1/1.6 of A's time:
+      12 / 1.6 = 7.5 = 7½ days.
+    trap: "8 days treats the 60% as if it reduced the TIME directly (12 × 0.6 subtracted in a rougher way) rather than scaling the efficiency — a 60% efficiency boost means dividing the time by 1.6, not subtracting 60% of the days."

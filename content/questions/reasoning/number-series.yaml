@@ -142,3 +142,33 @@ questions:
       time: +12, −24, +36, −48, +60, and so the next difference is −72.
       4278 − 72 = 4206.
     trap: "4264 continues with another +12-style small step instead of spotting that the differences alternate sign AND grow in size by a fixed amount each time."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: number-series-013
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2016
+    year: 2016
+    question: "If 5⊕3 = 34 and 6⊕2 = 40, then the value of 7⊕1 is"
+    options: ["54", "34", "50", "30"]
+    answer: 2
+    explanation: >
+      Testing a⊕b = a² + b²: 5² + 3² = 25 + 9 = 34 ✓, and
+      6² + 2² = 36 + 4 = 40 ✓. Applying the same rule: 7⊕1 =
+      7² + 1² = 49 + 1 = 50.
+    trap: "34 just repeats the first given result instead of applying the confirmed rule (a² + b²) to the new pair 7 and 1."
+
+  - id: number-series-014
+    difficulty: 0.50
+    estimatedSeconds: 75
+    source: tnpsc-2016
+    year: 2016
+    question: "Find out the odd number in the series given: 25, 36, 49, 81, 121, 169, 225"
+    options: ["36", "49", "169", "225"]
+    answer: 0
+    explanation: >
+      Every term is a perfect square: 5², 6², 7², 9², 11², 13², 15². All
+      the bases except one are ODD numbers (5, 7, 9, 11, 13, 15) — 6 is
+      the only even base, which makes 36 the odd one out.
+    trap: "169 and 225 are both perfect squares just like every other term, so being 'a square' alone doesn't mark them as the exception — the real pattern to check is whether each square's BASE is odd, and only 36's base (6) breaks that."

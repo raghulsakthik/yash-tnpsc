@@ -197,3 +197,19 @@ questions:
       agrees with the first word, confirming the code is consistent).
       LINE: L=8, I=2, N=4, E=1, giving 8241.
     trap: "9241 mismatches the first digit — L is coded as 8 (from SOUL), not 9, which belongs to U."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: alpha-numeric-016
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2016
+    year: 2016
+    question: "Find the next alphabet in the sequence: B, E, I, N, ?"
+    options: ["U", "V", "T", "S"]
+    answer: 2
+    explanation: >
+      The gaps between letters grow by one each time: B(2) to E(5) is
+      +3, E to I(9) is +4, I to N(14) is +5. The next gap is +6:
+      14 + 6 = 20, which is T.
+    trap: "U is one letter past the correct answer — it comes from a gap of +7 instead of continuing the established pattern of the gap growing by exactly one each step (+6 here, not +7)."

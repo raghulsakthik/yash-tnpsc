@@ -157,3 +157,18 @@ questions:
       ₹9,680, so CI = ₹1,680. Difference = 1,680 − 1,600 = ₹80. (Matches
       the 2-year shortcut too: 8,000 × (10/100)² = ₹80.)
     trap: "₹100 rounds the growth factor 1.1² to a friendlier number instead of computing 1.21 exactly."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: compound-interest-014
+    difficulty: 0.50
+    estimatedSeconds: 70
+    source: tnpsc-2016
+    year: 2016
+    question: "At what rate of compound interest per annum will a sum of ₹1,200 become ₹1,348.32 in 2 years?"
+    options: ["6%", "6.5%", "7%", "7.5%"]
+    answer: 0
+    explanation: >
+      Growth factor over 2 years: 1,348.32 / 1,200 = 1.1236. The square
+      root of 1.1236 is 1.06, so the annual rate is 6%.
+    trap: "7% is a tempting round guess, but check it against the actual figures: 1,200 × 1.07² = 1,373.88, which overshoots 1,348.32 — the square root of the growth factor gives an exact 6%, not an estimate."

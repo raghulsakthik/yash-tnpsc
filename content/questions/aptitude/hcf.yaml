@@ -123,3 +123,19 @@ questions:
       which is NOT a factor of x³ − 8y³, so it doesn't satisfy the
       condition even though k² = 4 either way.)
     trap: "2 or −2 looks safe since k² = 4 has two roots, but only k = −2 actually makes x + ky equal to the real common factor — the other root fails the condition stated in the question."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: hcf-011
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2016
+    year: 2016
+    question: "Find the greatest number that will divide 43, 91 and 183 so as to leave the same remainder in each case."
+    options: ["4", "7", "9", "13"]
+    answer: 0
+    explanation: >
+      A number dividing all three with the same remainder must divide
+      their pairwise differences: 91−43=48, 183−91=92, 183−43=140. The
+      HCF of 48, 92 and 140 is 4.
+    trap: "9 happens to divide 91−43=48 and 183−43=140 but check it against 183−91=92 as well — 92 is not divisible by 9, so 9 isn't a common factor of all three differences."

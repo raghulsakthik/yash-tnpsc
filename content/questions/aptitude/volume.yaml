@@ -127,3 +127,20 @@ questions:
       length = (22/7) × (25 − 16) × 35 = (22/7) × 9 × 35 = 22 × 9 × 5 =
       990 cm³. Weight = 990 × 7 g = 6,930 g = 6.93 kg.
     trap: "9.90 kg uses the outer radius alone (π × 25 × 35-style volume) without subtracting the hollow inner cylinder — a pipe's cross-section is a ring, not a full circle."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: volume-012
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2016
+    year: 2016
+    question: "A cone, a hemisphere and a cylinder stand on equal bases and have the same height. Find the ratio of their volumes."
+    options: ["3:2:1", "1:2:3", "3:1:2", "1:3:2"]
+    answer: 1
+    explanation: >
+      A hemisphere's height always equals its own radius, so for the
+      cone and cylinder to share that same height, h = r for all three.
+      Cone = (1/3)πr²h = (1/3)πr³. Hemisphere = (2/3)πr³. Cylinder =
+      πr²h = πr³. The ratio (1/3):(2/3):1 simplifies to 1:2:3.
+    trap: "3:2:1 reverses the ratio entirely — the cone (the 'pointiest', most hollowed-out shape) holds the LEAST volume of the three, not the most, so it belongs at the small end of the ratio, not the large end."

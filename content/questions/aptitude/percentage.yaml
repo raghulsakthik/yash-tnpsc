@@ -247,3 +247,31 @@ questions:
       5 rupees 80 paise = 580 paise. 20/580 × 100 = 2000/580 = 100/29,
       which is 3 remainder 13 over 29, i.e. 3 13/29%.
     trap: "2 13/29% is close but comes from a small slip reducing 2000/580 — recompute 100/29 directly (100 ÷ 29 = 3 remainder 13) rather than estimating."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-021
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2016
+    year: 2016
+    question: "If √784 + x = 78% of 500, then the value of x is"
+    options: ["342", "352", "362", "372"]
+    answer: 2
+    explanation: >
+      √784 = 28. 78% of 500 = 390. So x = 390 − 28 = 362.
+    trap: "372 comes from a small slip in the square root or percentage step — recheck both pieces separately (√784 = 28 exactly, and 78% of 500 = 390 exactly) before subtracting."
+
+  - id: percentage-022
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2016
+    year: 2016
+    question: "The length of a rectangle is increased by 60%. By what percent would the width have to be decreased so as to maintain the same area?"
+    options: ["37½%", "60%", "75%", "120%"]
+    answer: 0
+    explanation: >
+      The new length is 1.6 times the original. To keep the area the
+      same, the new width must be 1/1.6 = 0.625, i.e. 62.5% of the
+      original — a decrease of 100% − 62.5% = 37.5% = 37½%.
+    trap: "60% simply reuses the length's percentage increase as the width's percentage decrease — but area stays constant only when the two factors MULTIPLY back to 1, and 1.6 × 0.4 isn't 1, so a straight 60% decrease overcorrects."

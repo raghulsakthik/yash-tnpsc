@@ -171,3 +171,47 @@ questions:
       2/3 : 3/4 : 2 and multiplying all three by 12 (clearing the
       denominators): 8 : 9 : 24.
     trap: "24:9:8 reverses the order of the ratio — recompute each of the three fractions (A/B, then B/C, then C/A) in the order the question actually asks for."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: ratio-and-proportion-015
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2016
+    year: 2016
+    question: "If a:b = 6:7 and b:c = 8:9, then a:c is equal to"
+    options: ["16:21", "6:9", "27:28", "1:2"]
+    answer: 0
+    explanation: >
+      Scale both ratios to share the same b: a:b = 6:7 = 48:56, and
+      b:c = 8:9 = 56:63. Combined, a:b:c = 48:56:63, so a:c = 48:63,
+      which simplifies (÷3) to 16:21.
+    trap: "27:28 comes from multiplying the two given ratios' terms crosswise in the wrong pairing — a:c has to be found by matching both ratios to a common value of b first, not by combining the numbers directly."
+
+  - id: ratio-and-proportion-016
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2016
+    year: 2016
+    question: "If a/b = 4/5 and b/c = 15/16, then the value of (c² − a²)/(c² + a²) is"
+    options: ["1/7", "7/25", "3/4", "1/4"]
+    answer: 1
+    explanation: >
+      a/c = (a/b) × (b/c) = (4/5) × (15/16) = 3/4, so a:c = 3:4. Taking
+      a = 3k and c = 4k: c² − a² = 16k² − 9k² = 7k², and c² + a² =
+      16k² + 9k² = 25k². The ratio is 7/25.
+    trap: "1/4 uses the raw ratio a/c = 3/4 directly in the final fraction's denominator pattern instead of squaring both a and c first, as the expression actually requires."
+
+  - id: ratio-and-proportion-017
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2016
+    year: 2016
+    question: "A sum of ₹53 is divided among A, B and C in such a way that A gets ₹7 more than what B gets and B gets ₹8 more than what C gets. The ratio of their shares is"
+    options: ["16:9:18", "25:18:10", "18:25:10", "15:8:30"]
+    answer: 1
+    explanation: >
+      Let C = x. Then B = x + 8, and A = x + 8 + 7 = x + 15. Together:
+      x + (x+8) + (x+15) = 53, so 3x = 30, giving x = 10. That makes
+      C = 10, B = 18, A = 25, a ratio of 25:18:10.
+    trap: "18:25:10 swaps A's and B's shares — A is defined as the one who gets MORE than B (by ₹7), so A's share must be the largest of the three, not the second."

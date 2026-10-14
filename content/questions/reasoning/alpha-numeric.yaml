@@ -165,3 +165,35 @@ questions:
       (5,7,24)=D,4,5 — all confirmed. Group 4 is (6,8,23), which are
       M, N and Q.
     trap: "4NQ keeps the group-3 first letter's '4' in place of recomputing it — each group's first position shifts by one along the string too, not just the last position."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: alpha-numeric-014
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2015
+    year: 2015
+    question: "Find the missing term in the series: AZ, GT, MN, ?, YB."
+    options: ["JH", "SH", "SK", "TS"]
+    answer: 1
+    explanation: >
+      First letters: A(1), G(7), M(13) — each +6, so the next is 19 = S,
+      and Y(25) confirms the pattern (19+6=25). Second letters: Z(26),
+      T(20), N(14) — each −6, so the next is 8 = H, and B(2) confirms it
+      (8−6=2). The missing term is SH.
+    trap: "TS swaps the order of the two letters — the first letter of each pair climbs the alphabet while the second one descends, so matching which letter goes first matters."
+
+  - id: alpha-numeric-015
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2015
+    year: 2015
+    question: "If ORIENT is written as 532146 and SOUL is written as 7598, how will you write LINE?"
+    options: ["9241", "8341", "8241", "6241"]
+    answer: 2
+    explanation: >
+      Matching letters to digits across both words: O=5, R=3, I=2, E=1,
+      N=4, T=6 (from ORIENT), and S=7, O=5, U=9, L=8 (from SOUL — note O=5
+      agrees with the first word, confirming the code is consistent).
+      LINE: L=8, I=2, N=4, E=1, giving 8241.
+    trap: "9241 mismatches the first digit — L is coded as 8 (from SOUL), not 9, which belongs to U."

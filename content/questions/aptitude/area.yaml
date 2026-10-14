@@ -149,3 +149,18 @@ questions:
       The other side is √(17² − 15²) = √(289 − 225) = √64 = 8 m. Area =
       15 × 8 = 120 m².
     trap: "110 m² comes from a slip while computing the square root step — recheck that 17² − 15² = 64 exactly, giving a clean side length of 8 m."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: area-014
+    difficulty: 0.45
+    estimatedSeconds: 60
+    source: tnpsc-2015
+    year: 2015
+    question: "If the length of a rectangle is decreased by 50% and the breadth is increased by 80%, what is the percentage change in the area?"
+    options: ["decreased by 10%", "increased by 10%", "decreased by 20%", "increased by 20%"]
+    answer: 0
+    explanation: >
+      New area factor: 0.5 × 1.8 = 0.9, which is 90% of the original —
+      a decrease of 10%.
+    trap: "increased by 20% simply adds the two raw percentages (−50% and +80%) as if they combined by addition — percentage changes to length and breadth combine by MULTIPLYING their factors, not adding the percentages."

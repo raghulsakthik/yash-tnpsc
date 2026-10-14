@@ -181,3 +181,45 @@ questions:
       options, √2 ≈ 1.41 (too small), √3 ≈ 1.73 (fits between 1.50 and
       1.91), √4 = 2 and √5 ≈ 2.24 (both too big).
     trap: "√4 = 2 is close to the cube root of 7 (≈1.91) but actually falls just outside the upper end of the range, not inside it."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: simplification-016
+    difficulty: 0.30
+    estimatedSeconds: 45
+    source: tnpsc-2015
+    year: 2015
+    question: "The average of 4 values is 20, and when a quantity is added to each value the average becomes 22. Find the quantity."
+    options: ["1", "2", "3", "4"]
+    answer: 1
+    explanation: >
+      Original sum: 4 × 20 = 80. Adding x to each of the 4 values adds 4x
+      to the total: (80 + 4x)/4 = 20 + x = 22, so x = 2.
+    trap: "4 mistakes the number of values for the answer — adding x to every one of 4 values raises the average by exactly x, not by x divided or multiplied by the count."
+
+  - id: simplification-017
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2015
+    year: 2015
+    question: "If x + 1/x = 2, find the value of x³ + 1/x³."
+    options: ["1", "2", "3", "4"]
+    answer: 1
+    explanation: >
+      Using the identity (x + 1/x)³ = x³ + 1/x³ + 3(x + 1/x):
+      2³ = (x³ + 1/x³) + 3(2), so 8 = (x³ + 1/x³) + 6, giving
+      x³ + 1/x³ = 2.
+    trap: "1 skips the +3(x+1/x) correction term in the cubing identity entirely, treating (x+1/x)³ as if it equalled x³+1/x³ directly."
+
+  - id: simplification-018
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2015
+    year: 2015
+    question: "A voluntary organization planted a total of 106 trees along the road side. Some of the trees were fruit bearing. If the number of non-fruit bearing trees was two more than thrice the number of fruit bearing trees, how many fruit bearing trees were planted?"
+    options: ["20", "22", "24", "26"]
+    answer: 3
+    explanation: >
+      Let fruit-bearing trees be x. Non-fruit-bearing: 3x + 2. Together:
+      x + 3x + 2 = 106, so 4x = 104, giving x = 26.
+    trap: "24 is close but doesn't satisfy the equation — check that 24 + (3×24+2) = 24 + 74 = 98, not 106; only 26 makes the totals add up exactly."

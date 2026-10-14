@@ -92,6 +92,32 @@ questions:
 
   # Real TNPSC past-year questions below, transcribed from scanned papers and
   # independently re-solved (never trusted from the paper's own annotations).
+  - id: compound-interest-012
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2015
+    year: 2015
+    question: "Find the principal that yields a compound interest of ₹1,632 in 2 years at 4% per annum."
+    options: ["₹10,000", "₹20,000", "₹30,000", "₹40,000"]
+    answer: 1
+    explanation: >
+      CI = P × (1.04² − 1) = P × 0.0816. Setting this equal to 1,632:
+      P = 1,632 / 0.0816 = ₹20,000.
+    trap: "₹10,000 halves the correct answer — a sign of mixing up 1.04² − 1 (0.0816) with a simpler but wrong figure like 2 × 0.04 (0.08) along the way."
+
+  - id: compound-interest-013
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2015
+    year: 2015
+    question: "Find the difference between simple and compound interest for a sum of ₹5,000 lent at 12% per annum for 2 years."
+    options: ["₹720", "₹12", "₹72", "₹700"]
+    answer: 2
+    explanation: "For exactly 2 years, the CI-SI gap is P × (R/100)²: 5,000 × 0.12² = 5,000 × 0.0144 = ₹72."
+    trap: "₹720 is 10 times too large — a sign of using (R/100) instead of (R/100)² somewhere, since 5,000 × 0.12 = 600 and similar-looking slips land near 720."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
   - id: compound-interest-009
     difficulty: 0.55
     estimatedSeconds: 70

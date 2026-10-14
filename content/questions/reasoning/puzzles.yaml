@@ -121,3 +121,49 @@ questions:
       minutes after Sunil: 8.30 + 30 min = 9.00. Since that man was 40
       minutes late, the scheduled time was 9.00 − 40 min = 8.20.
     trap: "8.10 mixes up which direction the 30-minute gap goes — Sunil arrived BEFORE the late man, so the late man's arrival time is Sunil's time PLUS 30 minutes, not minus."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: puzzles-011
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2015
+    year: 2015
+    question: "A is richer than B. C is richer than A. D is richer than C. E is the richest of all. If they are seated in order of richness, who is in the central position?"
+    options: ["A", "B", "C", "D"]
+    answer: 2
+    explanation: >
+      Richest to poorest: E, D, C, A, B. With 5 people, the central
+      (3rd) position is C.
+    trap: "A is tempting since A appears first in the clues, but the clues only establish A's rank relative to B and C — working through the full chain puts A 4th, not in the middle."
+
+  - id: puzzles-012
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2015
+    year: 2015
+    question: "Mohan started from point P and walked 2 m towards west. He then took a right turn and walked 3 m, then a left turn and walked 5 m, then a final left turn and walked 3 m, stopping at point Q. How far is Q from P?"
+    options: ["2 m", "6 m", "7 m", "8 m"]
+    answer: 2
+    explanation: >
+      Tracking direction changes from facing west: right turn → facing
+      north (walk 3 m), left turn → facing west (walk 5 m), left turn →
+      facing south (walk 3 m). North-south movements cancel (+3, then
+      −3). East-west movements are 2 m west then 5 m west, both the same
+      direction: 2 + 5 = 7 m west in total. Q is 7 m from P.
+    trap: "8 m adds up every leg of the walk (2+3+5+3=13, not even an option, but close variants like this) instead of tracking which legs point the same direction and which cancel out."
+
+  - id: puzzles-013
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2015
+    year: 2015
+    question: "Richard is fifteenth from the front in a column of boys. There were thrice as many behind him as there were in front. How many boys are there between Richard and the seventh boy from the end of the column?"
+    options: ["33", "34", "35", "36"]
+    answer: 2
+    explanation: >
+      14 boys are in front of Richard, so 3 × 14 = 42 are behind him.
+      Total boys: 14 + 1 + 42 = 57. The seventh from the end is at
+      position 57 − 7 + 1 = 51. Richard is at position 15. Boys strictly
+      between positions 15 and 51: 51 − 15 − 1 = 35.
+    trap: "36 forgets to exclude Richard and the seventh boy themselves from the count — the question asks for boys BETWEEN the two, not the full gap including both endpoints."

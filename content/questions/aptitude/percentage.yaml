@@ -232,3 +232,18 @@ questions:
       After year 1: 80,000 × 0.96 = ₹76,800. After year 2:
       76,800 × 1.04 = ₹79,872.
     trap: "₹80,000 assumes a 4% drop and a 4% rise cancel out exactly — they don't, because the second change applies to a smaller base (76,800), so the value doesn't fully recover."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-020
+    difficulty: 0.45
+    estimatedSeconds: 65
+    source: tnpsc-2015
+    year: 2015
+    question: "What percent is 20 paise of 5 rupees 80 paise?"
+    options: ["2 13/29%", "3 13/29%", "4 13/29%", "5 13/29%"]
+    answer: 1
+    explanation: >
+      5 rupees 80 paise = 580 paise. 20/580 × 100 = 2000/580 = 100/29,
+      which is 3 remainder 13 over 29, i.e. 3 13/29%.
+    trap: "2 13/29% is close but comes from a small slip reducing 2000/580 — recompute 100/29 directly (100 ÷ 29 = 3 remainder 13) rather than estimating."

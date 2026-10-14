@@ -111,3 +111,19 @@ questions:
       Volume of water displaced = length × width × rise = 24 × 15 × 0.01
       = 3.6 m³. Number of men = 3.6 ÷ 0.1 = 36.
     trap: "32 comes from a small slip in the rise conversion — double-check that 1 cm becomes 0.01 m, not 0.1 m, before multiplying."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: volume-011
+    difficulty: 0.65
+    estimatedSeconds: 95
+    source: tnpsc-2015
+    year: 2015
+    question: "A hollow cylindrical iron pipe is 35 cm long. Its outer and inner diameters are 10 cm and 8 cm respectively. Find the weight of the pipe if 1 cu.cm of iron weighs 7 g."
+    options: ["6.93 kg", "9.90 kg", "7.53 kg", "7.93 kg"]
+    answer: 0
+    explanation: >
+      Outer radius 5 cm, inner radius 4 cm. Volume of iron = π(R² − r²) ×
+      length = (22/7) × (25 − 16) × 35 = (22/7) × 9 × 35 = 22 × 9 × 5 =
+      990 cm³. Weight = 990 × 7 g = 6,930 g = 6.93 kg.
+    trap: "9.90 kg uses the outer radius alone (π × 25 × 35-style volume) without subtracting the hollow inner cylinder — a pipe's cross-section is a ring, not a full circle."

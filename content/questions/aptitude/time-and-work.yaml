@@ -153,3 +153,29 @@ questions:
       Combined rate: 1/6 + 1/12 = 2/12 + 1/12 = 3/12 = 1/4, so together
       they take 4 days.
     trap: "6 days repeats A's own time, as if working with a slower partner made no difference at all — working together is always faster than either person alone."
+
+  # Real TNPSC past-year questions below, transcribed from scanned papers and
+  # independently re-solved (never trusted from the paper's own annotations).
+  - id: time-and-work-013
+    difficulty: 0.35
+    estimatedSeconds: 50
+    source: tnpsc-2015
+    year: 2015
+    question: "7 men can complete a work in 52 days. In how many days will 13 men finish the same work?"
+    options: ["20 days", "13 days", "7 days", "28 days"]
+    answer: 3
+    explanation: "Total effort: 7 × 52 = 364 man-days. For 13 men: 364 ÷ 13 = 28 days."
+    trap: "13 days mistakes the number of men for the answer itself — the question asks how many days 13 men take, not for the number 13 restated."
+
+  - id: time-and-work-014
+    difficulty: 0.55
+    estimatedSeconds: 75
+    source: tnpsc-2015
+    year: 2015
+    question: "If 12 compositors can compose 60 pages of a book in 5 hours, how many compositors will compose 200 pages of the book in 20 hours?"
+    options: ["8", "10", "12", "11"]
+    answer: 1
+    explanation: >
+      Using (men × hours)/pages held proportional: 12 × 5 × 200 = M × 20
+      × 60, so 12,000 = 1,200 × M, giving M = 10.
+    trap: "12 keeps the original number of compositors, missing that 20 hours (4× longer) comfortably covers the extra pages (200 is only a bit more than 3× the original 60), so fewer people are actually needed."

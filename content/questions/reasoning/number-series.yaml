@@ -126,3 +126,19 @@ questions:
       5×36=180, 6×49=294, 7×64=448 — a clean fit confirmed by every known
       term, not just the ones next to the gap.
     trap: "58 comes from fitting a pattern using only the nearby terms (100, 180) rather than checking it against every given term, including the ones further away (4, 18, 294, 448)."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: number-series-012
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2015
+    year: 2015
+    question: "Find the missing number: 4242, 4254, 4230, 4266, 4218, 4278, ?"
+    options: ["4264", "4272", "4228", "4206"]
+    answer: 3
+    explanation: >
+      The differences between terms alternate in sign and grow by 12 each
+      time: +12, −24, +36, −48, +60, and so the next difference is −72.
+      4278 − 72 = 4206.
+    trap: "4264 continues with another +12-style small step instead of spotting that the differences alternate sign AND grow in size by a fixed amount each time."

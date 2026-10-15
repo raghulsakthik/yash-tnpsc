@@ -1,28 +1,14 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
+import { useTestDetail } from '../../../../../../hooks/useTestDetail';
 
 export default function TestReview({ params }) {
   const { id } = use(params);
-  const [questions, setQuestions] = useState(null);
   const [current, setCurrent] = useState(0);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/tests/${id}`, { cache: 'no-store' })
-      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not load this test');
-        setQuestions(data.questions);
-      })
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const { test, error } = useTestDetail(id);
+  const questions = test?.questions ?? null;
 
   if (error) {
     return (

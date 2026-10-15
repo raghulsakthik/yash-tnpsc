@@ -1,32 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
 import { ProgressRing } from '../_components/ui';
 import { learner, quickLabModes } from '../_data/mock';
+import { useTodayPlan } from '../../../hooks/useTodayPlan';
 
 export default function Home() {
-  const [plan, setPlan] = useState(null);
-  const [dueItems, setDueItems] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch('/api/plan/today', { cache: 'no-store' }).then((r) => r.json()),
-      fetch('/api/revision/due', { cache: 'no-store' }).then((r) => r.json()),
-    ])
-      .then(([planData, dueData]) => {
-        if (cancelled) return;
-        setPlan(planData);
-        setDueItems(dueData.items ?? []);
-      })
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { plan, dueItems, error } = useTodayPlan();
 
   const practiceItem = plan?.items?.find((i) => i.type === 'PRACTICE');
   const memoryEchoTopic = dueItems[0];
@@ -135,7 +116,7 @@ export default function Home() {
             <div className="label">mastery</div>
           </div>
           <div className="stat"><div className="num">74%</div><div className="label">retention</div></div>
-          <div className="stat"><div className="num" style={{ color: 'var(--warm-accent)' }}>12</div><div className="label">day streak</div></div>
+          <div className="stat"><div className="num" style={{ color: 'var(--warm-accent)' }}>{plan?.streak?.current ?? 0}</div><div className="label">day streak</div></div>
         </div>
       </div>
     </AppShell>

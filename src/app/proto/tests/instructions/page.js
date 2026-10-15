@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { startTest } from '../../../../api/tests.api';
 
 export default function TestInstructions() {
   const router = useRouter();
@@ -13,9 +14,7 @@ export default function TestInstructions() {
     setStarting(true);
     setError(null);
     try {
-      const res = await fetch('/api/tests', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not start a test');
+      const data = await startTest();
       router.push(`/proto/tests/weekly/${data.testId}`);
     } catch (err) {
       setError(err.message);

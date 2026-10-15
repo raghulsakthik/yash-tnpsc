@@ -252,6 +252,7 @@
 .proto .badge-mastered { background: var(--success-tint); color: var(--success); }
 .proto .badge-revision-due { background: var(--secondary-tint); color: var(--secondary); }
 .proto .badge-retained { background: var(--success-tint); color: var(--success); }
+.proto .badge-difficulty { background: var(--paper-sunk); color: var(--ink-muted); }
 
 /* Progress */
 .proto .progress-track {

@@ -1,81 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTest } from '../../../../../hooks/useTest';
 
 /**
  * The real exam UX, driven by the same endpoints as
  * src/app/_components/TestSession.js (GET /api/tests/:id, POST
  * /api/tests/:id/answers on every select-or-mark, POST
  * /api/tests/:id/submit), rebuilt with the proto's grid-palette layout.
+ * All state/fetching lives in src/hooks/useTest.js.
  */
 export default function TestInterface({ testId }) {
-  const router = useRouter();
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-
-  const shownAt = useRef(Date.now());
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/tests/${testId}`, { cache: 'no-store' })
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not load this test');
-        setQuestions(data.questions);
-        const initial = {};
-        for (const q of data.questions) {
-          initial[q.questionId] = { selectedIndex: q.selectedIndex, markedForReview: q.markedForReview };
-        }
-        setAnswers(initial);
-        shownAt.current = Date.now();
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [testId]);
-
-  const saveAnswer = useCallback(
-    (questionId, patch) => {
-      setAnswers((prev) => {
-        const next = { ...prev, [questionId]: { ...prev[questionId], ...patch } };
-        const entry = next[questionId];
-        fetch(`/api/tests/${testId}/answers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            questionId,
-            selectedIndex: entry.selectedIndex ?? null,
-            markedForReview: entry.markedForReview ?? false,
-            timeTakenMs: Date.now() - shownAt.current,
-          }),
-        }).catch(() => {});
-        return next;
-      });
-    },
-    [testId]
-  );
-
-  async function submit() {
-    if (!window.confirm('Submit the test? You cannot change your answers afterward.')) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/tests/${testId}/submit`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not submit the test');
-      router.push(`/proto/tests/weekly/${testId}/result`);
-    } catch (err) {
-      setError(err.message);
-      setSubmitting(false);
-    }
-  }
+  const { questions, answers, current, setCurrent, loading, submitting, error, saveAnswer, submit } = useTest(testId);
 
   if (error) {
     return (

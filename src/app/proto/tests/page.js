@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
+import { listTests } from '../../../api/tests.api';
 
 export default function Tests() {
   const [items, setItems] = useState(null);
@@ -10,8 +11,7 @@ export default function Tests() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/tests', { cache: 'no-store' })
-      .then((r) => r.json())
+    listTests()
       .then((data) => !cancelled && setItems(data.items ?? []))
       .catch((err) => !cancelled && setError(err.message));
     return () => {
@@ -82,7 +82,7 @@ export default function Tests() {
                 href={t.status === 'COMPLETED' ? `/proto/tests/weekly/${t.testId}/result` : `/proto/tests/weekly/${t.testId}`}
                 style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 10 }}
               >
-                {t.status === 'COMPLETED' && <span className="badge badge-mastered">{Math.round(t.score)}%</span>}
+                {t.status === 'COMPLETED' && <span className="badge badge-difficulty">{Math.round(t.score)}%</span>}
                 <span className="muted">›</span>
               </Link>
             </div>

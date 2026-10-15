@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { getQuickLabResult } from '../../../../../api/quickLab.api';
 
 export default function QuickLabResult({ params }) {
   const { mode } = use(params);
@@ -16,13 +17,8 @@ export default function QuickLabResult({ params }) {
       return;
     }
     let cancelled = false;
-    fetch(`/api/quick-lab/result/${sessionId}`, { cache: 'no-store' })
-      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not load this round');
-        setResult(data);
-      })
+    getQuickLabResult(sessionId)
+      .then((data) => !cancelled && setResult(data))
       .catch((err) => !cancelled && setError(err.message));
     return () => {
       cancelled = true;

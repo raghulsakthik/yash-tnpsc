@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
 import { selectQuestion } from '../../../../domain/selection.mjs';
-import { difficultyBand } from '../../../../domain/difficulty.mjs';
+import { difficultyBand, applyDifficultyBias } from '../../../../domain/difficulty.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +15,19 @@ export async function GET(request) {
   const topicId = new URL(request.url).searchParams.get('topic') ?? 'aptitude.fractions';
 
   try {
-    const { rows: stateRows } = await query(
-      `SELECT current_difficulty, attempt_count, next_action
-         FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
-      [LEARNER_ID, topicId]
-    );
+    const [{ rows: stateRows }, { rows: profileRows }] = await Promise.all([
+      query(
+        `SELECT current_difficulty, attempt_count, next_action
+           FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
+        [LEARNER_ID, topicId]
+      ),
+      query(`SELECT difficulty_bias FROM learner_profile WHERE learner_id = $1`, [LEARNER_ID]),
+    ]);
 
-    const targetDifficulty = Number(stateRows[0]?.current_difficulty ?? 0.3);
+    const targetDifficulty = applyDifficultyBias(
+      Number(stateRows[0]?.current_difficulty ?? 0.3),
+      profileRows[0]?.difficulty_bias
+    );
 
     // Candidates, with how often she has seen each and how long ago.
     const { rows: candidates } = await query(

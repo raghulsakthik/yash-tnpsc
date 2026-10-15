@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, LEARNER_ID } from '../../../../lib/db.mjs';
 import { selectQuestion } from '../../../../domain/selection.mjs';
-import { difficultyBand } from '../../../../domain/difficulty.mjs';
+import { difficultyBand, applyDifficultyBias } from '../../../../domain/difficulty.mjs';
 import { QUICK_LAB_MODES } from '../../../../domain/quickLab.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -28,12 +28,18 @@ export async function POST(request) {
   }
 
   try {
-    const { rows: stateRows } = await query(
-      `SELECT current_difficulty::float8 AS current_difficulty
-         FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
-      [LEARNER_ID, mode.topicId]
+    const [{ rows: stateRows }, { rows: profileRows }] = await Promise.all([
+      query(
+        `SELECT current_difficulty::float8 AS current_difficulty
+           FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
+        [LEARNER_ID, mode.topicId]
+      ),
+      query(`SELECT difficulty_bias FROM learner_profile WHERE learner_id = $1`, [LEARNER_ID]),
+    ]);
+    const targetDifficulty = applyDifficultyBias(
+      Number(stateRows[0]?.current_difficulty ?? 0.3),
+      profileRows[0]?.difficulty_bias
     );
-    const targetDifficulty = Number(stateRows[0]?.current_difficulty ?? 0.3);
 
     const { rows: candidates } = await query(
       `SELECT q.id, q.prompt, q.options, q.difficulty::float8 AS difficulty, q.estimated_seconds, q.source,

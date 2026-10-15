@@ -1,111 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-const BANK_BACKED = new Set(['percentage-rush', 'fraction-lab']);
-const ROUND_SECONDS = 120;
+import { useQuickLab, QUICK_LAB_BANK_BACKED } from '../../../../hooks/useQuickLab';
 
 export default function GameRound({ mode }) {
-  const router = useRouter();
-  const [sessionId, setSessionId] = useState(null);
-  const [question, setQuestion] = useState(null);
-  const [combo, setCombo] = useState(0);
-  const [index, setIndex] = useState(1);
-  const [roundLength, setRoundLength] = useState(10);
-  const [picked, setPicked] = useState(null);
-  const [lastResult, setLastResult] = useState(null);
-  const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
-  const [error, setError] = useState(null);
+  const { question, combo, index, roundLength, picked, lastResult, secondsLeft, error, pick } = useQuickLab(mode);
 
-  const shownAt = useRef(Date.now());
-  const finishing = useRef(false);
-
-  const finishOnTimeout = useCallback(async () => {
-    if (finishing.current || !sessionId) return;
-    finishing.current = true;
-    try {
-      await fetch(`/api/quick-lab/session/${sessionId}/complete`, { method: 'POST' });
-    } catch {
-      // the result page re-reads the session either way
-    }
-    router.push(`/proto/quick-lab/${mode}/result?session=${sessionId}`);
-  }, [sessionId, mode, router]);
-
-  useEffect(() => {
-    if (!BANK_BACKED.has(mode)) return;
-    let cancelled = false;
-    fetch('/api/quick-lab/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode }),
-    })
-      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not start a round');
-        setSessionId(data.sessionId);
-        setQuestion(data.question);
-        setRoundLength(data.roundLength);
-        shownAt.current = Date.now();
-      })
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, [mode]);
-
-  useEffect(() => {
-    if (!sessionId || lastResult?.done) return;
-    const timer = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(timer);
-          finishOnTimeout();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [sessionId, lastResult, finishOnTimeout]);
-
-  async function pick(optionIndex) {
-    if (picked !== null || !question) return;
-    setPicked(optionIndex);
-    try {
-      const res = await fetch('/api/quick-lab/attempt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          questionId: question.questionId,
-          selectedIndex: optionIndex,
-          timeTakenMs: Date.now() - shownAt.current,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not record that answer');
-      setLastResult(data);
-      setCombo(data.combo);
-      setIndex((n) => n + 1);
-
-      setTimeout(() => {
-        if (data.done) {
-          router.push(`/proto/quick-lab/${mode}/result?session=${sessionId}`);
-        } else {
-          setQuestion(data.nextQuestion);
-          setPicked(null);
-          setLastResult(null);
-          shownAt.current = Date.now();
-        }
-      }, 500);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  if (!BANK_BACKED.has(mode)) {
+  if (!QUICK_LAB_BANK_BACKED.has(mode)) {
     return (
       <div style={{ minHeight: '100vh', background: '#1e1b16', color: '#f6f3ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
         <h1 style={{ color: '#fff' }}>This mode isn&apos;t wired up yet</h1>

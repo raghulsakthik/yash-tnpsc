@@ -1,24 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
 import { ProgressBar } from '../_components/ui';
+import { useRevision } from '../../../hooks/useRevision';
+
+const STATE_BADGE_CLASS = {
+  NO_CONTENT: 'badge-not-started',
+  NOT_STARTED: 'badge-not-started',
+  LEARNING: 'badge-learning',
+  PRACTISING: 'badge-practising',
+  NEAR_MASTERY: 'badge-near-mastery',
+  MASTERED: 'badge-mastered',
+};
+const STATE_LABEL = {
+  NO_CONTENT: 'No content',
+  NOT_STARTED: 'Not started',
+  LEARNING: 'Learning',
+  PRACTISING: 'Practising',
+  NEAR_MASTERY: 'Near mastery',
+  MASTERED: 'Mastered',
+};
 
 export default function Revision() {
-  const [dueItems, setDueItems] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/revision/due', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => !cancelled && setDueItems(data.items ?? []))
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { dueItems, error } = useRevision();
 
   return (
     <AppShell>
@@ -69,8 +74,9 @@ export default function Revision() {
             <div style={{ flex: 1, minWidth: 240 }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <h3 style={{ fontSize: '1.3rem' }}>{r.topicName}</h3>
-                <span className={`badge ${i === 0 ? 'badge-revision-due' : 'badge-mastered'}`}>
-                  {r.intervalDays.toFixed(0)}-day interval
+                <span className="badge badge-revision-due">Revision due</span>
+                <span className={`badge ${STATE_BADGE_CLASS[r.state] ?? 'badge-not-started'}`}>
+                  {STATE_LABEL[r.state] ?? r.state}
                 </span>
               </div>
               <p className="muted" style={{ marginTop: 8 }}>Due {new Date(r.scheduledAt).toLocaleDateString()}.</p>

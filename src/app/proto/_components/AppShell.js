@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { learner } from '../_data/mock';
+import { useJourney } from '../../../hooks/useJourney';
 
 const topLinks = [
   { href: '/proto/home', label: 'Home' },
@@ -28,6 +28,7 @@ function isActive(pathname, href) {
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const { journey } = useJourney();
 
   return (
     <>
@@ -44,7 +45,7 @@ export default function AppShell({ children }) {
         </nav>
         <div className="right">
           <span className="streak-chip">
-            <span className="dot" /> {learner.streak} day streak
+            <span className="dot" /> {journey?.streak?.current ?? 0} day streak
           </span>
           <Link href="/proto/profile" className="avatar">Y</Link>
         </div>

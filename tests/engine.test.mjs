@@ -17,6 +17,7 @@ import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } f
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
 import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
+import { computeStreak } from '../src/domain/streak.mjs';
 
 const attempts = (...flags) => flags.map((correct) => ({ correct: Boolean(correct) }));
 
@@ -482,4 +483,41 @@ test('pickTopicQuestions spreads picks across the difficulty range', () => {
   const difficulties = picked.map((q) => q.difficulty);
   assert.equal(difficulties[0], 0, 'first pick should be from the easy end');
   assert.ok(difficulties[difficulties.length - 1] >= 0.8, 'last pick should be from the hard end');
+});
+
+// ------------------------------------------------------------------- streak
+
+test('no attempts is no streak', () => {
+  assert.deepEqual(computeStreak([]), { current: 0, longest: 0 });
+});
+
+test('consecutive days build a current streak that matches the longest', () => {
+  const now = new Date('2026-10-16T12:00:00Z');
+  const days = ['2026-10-14', '2026-10-15', '2026-10-16'];
+  assert.deepEqual(computeStreak(days, now), { current: 3, longest: 3 });
+});
+
+test('duplicate attempts on the same day only count once', () => {
+  const now = new Date('2026-10-16T12:00:00Z');
+  const days = ['2026-10-16', '2026-10-16T08:00:00Z', '2026-10-15'];
+  assert.deepEqual(computeStreak(days, now), { current: 2, longest: 2 });
+});
+
+test('a gap of exactly one day (yesterday) keeps the streak alive today', () => {
+  const now = new Date('2026-10-16T09:00:00Z');
+  const days = ['2026-10-13', '2026-10-14', '2026-10-15'];
+  assert.equal(computeStreak(days, now).current, 3);
+});
+
+test('two or more silent days breaks the current streak but not the longest', () => {
+  const now = new Date('2026-10-16T09:00:00Z');
+  const days = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-10'];
+  const result = computeStreak(days, now);
+  assert.equal(result.current, 0, 'last activity was 6 days ago — streak is broken');
+  assert.equal(result.longest, 3, 'the 1st-3rd run is still the longest on record');
+});
+
+test('a single non-consecutive run of days is its own longest streak of 1', () => {
+  const now = new Date('2026-10-16T09:00:00Z');
+  assert.equal(computeStreak(['2026-09-01'], now).longest, 1);
 });

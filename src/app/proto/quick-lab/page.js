@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
 import { quickLabModes } from '../_data/mock';
-
-const BANK_BACKED = new Set(['percentage-rush', 'fraction-lab']);
+import { getQuickLabModes } from '../../../api/quickLab.api';
+import { QUICK_LAB_BANK_BACKED as BANK_BACKED } from '../../../hooks/useQuickLab';
 
 function statFor(real) {
   if (!real?.best) return 'New · no score yet';
@@ -17,8 +17,7 @@ export default function QuickLab() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/quick-lab/modes', { cache: 'no-store' })
-      .then((r) => r.json())
+    getQuickLabModes()
       .then((data) => !cancelled && setRealModes(data.items ?? []))
       .catch(() => !cancelled && setRealModes([]));
     return () => {

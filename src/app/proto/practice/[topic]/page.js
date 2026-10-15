@@ -1,15 +1,12 @@
+'use client';
+
+import { use } from 'react';
 import QuestionSession from '../../_components/QuestionSession';
+import { usePractice } from '../../../../hooks/usePractice';
 
-export default async function Practice({ params }) {
-  const { topic } = await params;
+export default function Practice({ params }) {
+  const { topic } = use(params);
+  const session = usePractice(topic);
 
-  return (
-    <QuestionSession
-      key={topic}
-      nextQuestionUrl={`/api/questions/next?topic=${topic}`}
-      submitUrl="/api/attempts"
-      mode="PRACTICE"
-      backHref="/proto/home"
-    />
-  );
+  return <QuestionSession key={topic} session={session} mode="PRACTICE" backHref="/proto/home" />;
 }

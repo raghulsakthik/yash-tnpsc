@@ -84,6 +84,18 @@ export function adaptDifficulty(state) {
   };
 }
 
+const BIAS_OFFSET = { gentle: -0.1, normal: 0, hard: 0.1 };
+
+/**
+ * Shifts a target difficulty by the learner's stored preference
+ * (learner_profile.difficulty_bias) before question selection. A
+ * preference, not an adaptation rule — adaptDifficulty() itself is
+ * untouched; this only moves the starting point it adapts from.
+ */
+export function applyDifficultyBias(targetDifficulty, bias) {
+  return bounded(targetDifficulty + (BIAS_OFFSET[bias] ?? 0));
+}
+
 /** Display band. Never used for adaptation. */
 export function difficultyBand(difficulty) {
   if (difficulty < 0.35) return 'EASY';

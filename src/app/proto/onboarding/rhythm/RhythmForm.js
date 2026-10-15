@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useProfile } from '../../../../hooks/useProfile';
 
 function PillGroup({ options, value, onChange }) {
   return (
@@ -22,10 +24,22 @@ function PillGroup({ options, value, onChange }) {
 }
 
 export default function RhythmForm() {
+  const router = useRouter();
+  const { save } = useProfile();
   const [duration, setDuration] = useState('30 min');
-  const [time, setTime] = useState('Evening · 7 pm');
+  const [time, setTime] = useState('Evening');
   const [restDay, setRestDay] = useState('Sunday');
-  const [language, setLanguage] = useState('Both, switchable');
+  const [language, setLanguage] = useState('English');
+
+  async function onContinue() {
+    await save({
+      dailyGoalMinutes: Number(duration.split(' ')[0]),
+      preferredTime: time,
+      restDay,
+      language: language === 'Tamil' ? 'ta' : 'en',
+    });
+    router.push('/proto/placement');
+  }
 
   return (
     <>
@@ -39,7 +53,7 @@ export default function RhythmForm() {
         <div>
           <strong>When do you usually study?</strong>
           <div style={{ marginTop: 10 }}>
-            <PillGroup options={['Early morning', 'Afternoon', 'Evening · 7 pm', 'Late night']} value={time} onChange={setTime} />
+            <PillGroup options={['Early morning', 'Afternoon', 'Evening', 'Late night']} value={time} onChange={setTime} />
           </div>
         </div>
         <div>
@@ -50,15 +64,16 @@ export default function RhythmForm() {
         </div>
         <div>
           <strong>Language</strong>
+          <p className="muted" style={{ marginTop: 4, fontSize: '0.8rem' }}>One language paper at a time — switchable later from Profile.</p>
           <div style={{ marginTop: 10 }}>
-            <PillGroup options={['English', 'Tamil', 'Both, switchable']} value={language} onChange={setLanguage} />
+            <PillGroup options={['English', 'Tamil']} value={language} onChange={setLanguage} />
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
         <Link href="/proto/onboarding/exam" className="muted" style={{ textDecoration: 'none' }}>← Back</Link>
-        <Link href="/proto/placement" className="btn btn-primary">Continue</Link>
+        <button type="button" className="btn btn-primary" onClick={onContinue}>Continue</button>
       </div>
     </>
   );

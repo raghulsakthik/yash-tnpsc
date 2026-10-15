@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
+import { useMistakes } from '../../../hooks/useMistakes';
 
 const MISTAKE_LABEL = {
   CONCEPTUAL: 'Conceptual',
@@ -14,40 +15,8 @@ const MISTAKE_LABEL = {
 };
 
 export default function Mistakes() {
-  const [items, setItems] = useState(null);
-  const [error, setError] = useState(null);
+  const { items, error, tutorHint, tutorLoading, askTutor } = useMistakes();
   const [activeTag, setActiveTag] = useState('ALL');
-  const [tutorHint, setTutorHint] = useState(null);
-  const [tutorLoading, setTutorLoading] = useState(false);
-
-  async function askTutor(questionId) {
-    setTutorLoading(true);
-    setTutorHint(null);
-    try {
-      const res = await fetch('/api/ai/hint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId }),
-      });
-      const data = await res.json();
-      setTutorHint(data.available ? data.text : 'No AI tutor configured for this question.');
-    } catch {
-      setTutorHint('Could not reach the tutor right now.');
-    } finally {
-      setTutorLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/mistakes/open', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => !cancelled && setItems(data.items ?? []))
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   if (error) {
     return (

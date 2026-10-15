@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ProgressBar } from './ui';
 
@@ -14,119 +13,37 @@ const MASTERY_DIMENSIONS = [
 ];
 
 /**
- * The real question/answer/feedback loop for the NOVA design — the proto
- * equivalent of src/app/_components/QuestionSession.js, same fetch/submit
- * contract (GET nextQuestionUrl, POST submitUrl, mode, idempotent
- * attemptId), rebuilt with proto's classes instead of globals.css so
- * /proto/practice, /proto/revision and /proto/mistakes can all drive one
- * real session loop through this. The backend still decides everything —
- * this only renders what it's given and posts the answer.
+ * The real question/answer/feedback loop for the NOVA design, shared by
+ * /proto/practice and /proto/revision's session. All state and fetching
+ * lives in src/hooks/useQuestionSession.js (via usePractice/
+ * useRevisionSession) — this component only renders the `session` it's
+ * given and calls its actions. The backend still decides everything.
  */
 export default function QuestionSession({
-  nextQuestionUrl,
-  submitUrl,
+  session,
   mode,
-  sessionLength = 10,
-  emptyCode,
   emptyTitle = 'Nothing here right now',
   emptyMessage = 'Come back later.',
   backHref = '/proto/home',
 }) {
-  const [question, setQuestion] = useState(null);
-  const [selected, setSelected] = useState(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [empty, setEmpty] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [answered, setAnswered] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [aiHint, setAiHint] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiUnavailable, setAiUnavailable] = useState(false);
-
-  const shownAt = useRef(Date.now());
-
-  const loadNext = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setEmpty(false);
-    setSelected(null);
-    setResult(null);
-    setAiHint(null);
-    setAiUnavailable(false);
-    try {
-      const res = await fetch(nextQuestionUrl, { cache: 'no-store' });
-      const data = await res.json();
-      if (!res.ok) {
-        if (emptyCode && data.code === emptyCode) {
-          setEmpty(true);
-          return;
-        }
-        throw new Error(data.message ?? 'Could not load a question');
-      }
-      setQuestion(data);
-      shownAt.current = Date.now();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [nextQuestionUrl, emptyCode]);
-
-  useEffect(() => {
-    loadNext();
-  }, [loadNext]);
-
-  async function submit() {
-    if (selected === null || !question) return;
-    setLoading(true);
-    try {
-      const res = await fetch(submitUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attemptId: crypto.randomUUID(),
-          questionId: question.questionId,
-          selectedIndex: selected,
-          timeTakenMs: Date.now() - shownAt.current,
-          confidence: null,
-          mode,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not record that answer');
-      setResult(data);
-      setAnswered((n) => n + 1);
-      if (data.correct) setCorrectCount((n) => n + 1);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function getAiHint() {
-    if (!result || !question) return;
-    setAiLoading(true);
-    try {
-      const res = await fetch('/api/ai/hint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questionId: question.questionId,
-          selectedIndex: selected,
-          mistakeType: result.mistakeType,
-        }),
-      });
-      const data = await res.json();
-      if (data.available) setAiHint(data.text);
-      else setAiUnavailable(true);
-    } catch {
-      setAiUnavailable(true);
-    } finally {
-      setAiLoading(false);
-    }
-  }
+  const {
+    question,
+    selected,
+    setSelected,
+    result,
+    error,
+    empty,
+    loading,
+    answered,
+    correctCount,
+    sessionLength,
+    aiHint,
+    aiLoading,
+    aiUnavailable,
+    loadNext,
+    submit,
+    getAiHint,
+  } = session;
 
   if (error) {
     return (
@@ -219,7 +136,7 @@ export default function QuestionSession({
         <strong style={{ flex: 1 }}>
           {question.topicName ?? question.topicId} · {mode.toLowerCase()}
         </strong>
-        <span className="badge badge-mastered">{question.difficulty}</span>
+        <span className="badge badge-difficulty">{question.difficulty}</span>
         <span className="muted">
           Question {Math.min(answered + 1, sessionLength)} of {sessionLength}
         </span>

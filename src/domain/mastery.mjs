@@ -103,3 +103,25 @@ export function masteryScore(dims) {
       MASTERY_WEIGHTS.confidence * clamp01(dims.confidence)
   );
 }
+
+/** @typedef {'NO_CONTENT'|'NOT_STARTED'|'LEARNING'|'PRACTISING'|'NEAR_MASTERY'|'MASTERED'} TopicState */
+
+/**
+ * Display tier, never used for adaptation — same spirit as
+ * difficultyBand() in difficulty.mjs. No RETAINED/IMPROVING tier: both
+ * would need a mastery delta over time, which nothing here stores: a
+ * state invented from a trend we don't have would be worse than no state.
+ *
+ * @param {number} masteryScore 0..1
+ * @param {number} attemptCount
+ * @param {number} bankQuestionCount published questions for this topic
+ * @returns {TopicState}
+ */
+export function masteryState(masteryScore, attemptCount, bankQuestionCount) {
+  if (!bankQuestionCount) return 'NO_CONTENT';
+  if (!attemptCount) return 'NOT_STARTED';
+  if (masteryScore >= 0.85) return 'MASTERED';
+  if (masteryScore >= 0.65) return 'NEAR_MASTERY';
+  if (masteryScore >= 0.35) return 'PRACTISING';
+  return 'LEARNING';
+}

@@ -1,28 +1,13 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use } from 'react';
 import Link from 'next/link';
 import { ProgressRing, ProgressBar } from '../../../../_components/ui';
+import { useTestDetail } from '../../../../../../hooks/useTestDetail';
 
 export default function TestResult({ params }) {
   const { id } = use(params);
-  const [test, setTest] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/tests/${id}`, { cache: 'no-store' })
-      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not load this test');
-        setTest(data);
-      })
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const { test, error } = useTestDetail(id);
 
   if (error) {
     return (

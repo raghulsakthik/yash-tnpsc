@@ -59,6 +59,7 @@ export async function GET(request, { params }) {
         estimatedSeconds: q.estimated_seconds,
         selectedIndex: answer?.selected_index ?? null,
         markedForReview: answer?.marked_for_review ?? false,
+        timeTakenMs: answer?.time_taken_ms ?? null,
         ...(revealAnswers
           ? { correctIndex: q.answer_index, explanation: q.explanation, trap: q.trap }
           : {}),

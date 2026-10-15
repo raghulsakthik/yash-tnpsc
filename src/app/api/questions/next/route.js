@@ -31,6 +31,7 @@ export async function GET(request) {
               q.difficulty::float8          AS difficulty,
               q.estimated_seconds,
               q.source,
+              t.name                         AS topic_name,
               COUNT(a.id)::int              AS seen_count,
               COALESCE(
                 (SELECT COUNT(*) FROM question_attempt a2
@@ -38,10 +39,11 @@ export async function GET(request) {
                     AND a2.created_at > MAX(a.created_at)), 999
               )::int                        AS attempts_since_last_seen
          FROM question q
+         JOIN topic t ON t.id = q.topic_id
          LEFT JOIN question_attempt a
            ON a.question_id = q.id AND a.learner_id = $1
         WHERE q.topic_id = $2 AND q.status = 'PUBLISHED'
-        GROUP BY q.id`,
+        GROUP BY q.id, t.name`,
       [LEARNER_ID, topicId]
     );
 
@@ -67,6 +69,7 @@ export async function GET(request) {
     return NextResponse.json({
       questionId: chosen.id,
       topicId,
+      topicName: chosen.topic_name,
       prompt: chosen.prompt,
       options: chosen.options,
       estimatedSeconds: chosen.estimated_seconds,

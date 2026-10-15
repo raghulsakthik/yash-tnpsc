@@ -8,6 +8,36 @@ export const dynamic = 'force-dynamic';
 const TARGET_LENGTH = 25;
 
 /**
+ * GET /api/tests
+ *
+ * Past tests, most recent first — the "Previous tests" list. No scoring or
+ * generation logic here, just the rows POST /api/tests and submit already
+ * produced.
+ */
+export async function GET() {
+  try {
+    const { rows } = await query(
+      `SELECT id, status, question_count, score::float8 AS score, started_at, completed_at
+         FROM test WHERE learner_id = $1 ORDER BY created_at DESC`,
+      [LEARNER_ID]
+    );
+
+    return NextResponse.json({
+      items: rows.map((r) => ({
+        testId: r.id,
+        status: r.status,
+        questionCount: r.question_count,
+        score: r.score,
+        startedAt: r.started_at,
+        completedAt: r.completed_at,
+      })),
+    });
+  } catch (err) {
+    return NextResponse.json({ code: 'TESTS_LIST_FAILED', message: err.message }, { status: 500 });
+  }
+}
+
+/**
  * POST /api/tests
  *
  * Generates a weekly test: 25 questions allocated across the examined

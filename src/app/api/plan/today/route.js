@@ -23,7 +23,7 @@ export async function GET() {
         ),
         query(`SELECT id, name, chapter_id FROM topic`),
         query(
-          `SELECT topic_id, accuracy_score::float8 AS accuracy, attempt_count
+          `SELECT topic_id, accuracy_score::float8 AS accuracy, attempt_count, mastery_score::float8 AS mastery
              FROM learner_topic_state WHERE learner_id = $1`,
           [LEARNER_ID]
         ),
@@ -74,7 +74,13 @@ export async function GET() {
 
     const plan = buildDailyPlan({ topics: candidates, revisionDueCount, selectedTopic });
 
-    return NextResponse.json(plan);
+    const practiced = states.filter((s) => s.attempt_count > 0);
+    const avgMasteryPct =
+      practiced.length > 0
+        ? Math.round((practiced.reduce((sum, s) => sum + s.mastery, 0) / practiced.length) * 100)
+        : null;
+
+    return NextResponse.json({ ...plan, avgMasteryPct });
   } catch (err) {
     return NextResponse.json({ code: 'PLAN_FAILED', message: err.message }, { status: 500 });
   }

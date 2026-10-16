@@ -2,17 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppShell from '../_components/AppShell';
-
-function Toggle({ on }) {
-  return (
-    <span style={{
-      width: 40, height: 22, borderRadius: 11, background: on ? 'var(--primary)' : 'var(--paper-sunk)',
-      position: 'relative', display: 'inline-block',
-    }}>
-      <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: on ? 20 : 2 }} />
-    </span>
-  );
-}
+import PushNotifications from '../_components/PushNotifications';
 
 function Row({ label, note, value }) {
   return (
@@ -99,25 +89,12 @@ export default function Profile() {
         </div>
         <div className="card">
           <span className="eyebrow">Notifications</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
-            {[
-              ['Daily reminder', 'One, at your study time', true],
-              ['Revision due', 'When something needs rescuing', true],
-              ['Streak at risk', 'Only on the evening it would break', true],
-              ['Milestones', 'When you actually earn one', true],
-              ['Weekly review', 'Sunday evening', false],
-            ].map(([label, note, on]) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ display: 'block' }}>{label}</strong>
-                  <span className="muted" style={{ fontSize: '0.8rem' }}>{note}</span>
-                </div>
-                <Toggle on={on} />
-              </div>
-            ))}
+          <div style={{ marginTop: 14 }}>
+            <PushNotifications />
           </div>
           <p className="muted" style={{ marginTop: 14, fontSize: '0.82rem' }}>
-            Not wired up yet — these preferences aren&apos;t saved anywhere.
+            One on/off switch for now — picking which events notify you
+            (revision due, streak at risk, …) isn&apos;t built yet.
           </p>
         </div>
       </div>

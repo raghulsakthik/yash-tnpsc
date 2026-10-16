@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppShell from '../_components/AppShell';
 import PushNotifications from '../_components/PushNotifications';
+import EmailNotifications from '../_components/EmailNotifications';
 
 function Row({ label, note, value }) {
   return (
@@ -92,6 +93,8 @@ export default function Profile() {
           <div style={{ marginTop: 14 }}>
             <PushNotifications />
           </div>
+          <hr className="rule" style={{ margin: '16px 0' }} />
+          <EmailNotifications />
           <p className="muted" style={{ marginTop: 14, fontSize: '0.82rem' }}>
             One on/off switch for now — picking which events notify you
             (revision due, streak at risk, …) isn&apos;t built yet.

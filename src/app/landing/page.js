@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function Landing() {
   return (
     <main className="shell-main narrow" style={{ paddingTop: 80 }}>
-      <p className="eyebrow">NOVA</p>
+      <p className="eyebrow">Yash</p>
       <h1>A calm place to prepare for TNPSC.</h1>
       <p className="muted" style={{ marginTop: 14, fontSize: '1.1rem' }}>
         One small win at a time. Mastery, retention, speed and revision, built into

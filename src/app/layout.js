@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'NOVA',
+  title: 'Yash',
   description: 'A personalised TNPSC prelims practice system.',
 };
 

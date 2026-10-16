@@ -1,19 +1,58 @@
+'use client';
+
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../../_components/AppShell';
 import { ProgressRing } from '../../_components/ui';
-import { subjects, mathematicsPath, stillAhead } from '../../_data/mock';
 
 const STATE_STYLE = {
-  mastered: { bg: 'var(--success-tint)', border: 'var(--success)' },
-  'in-progress': { bg: 'var(--secondary-tint)', border: 'var(--primary)' },
-  'revision-due': { bg: 'var(--secondary-tint)', border: 'var(--secondary)' },
-  locked: { bg: 'var(--paper-sunk)', border: 'var(--border)', dim: true },
+  mastered: { bg: 'var(--success-tint)', border: 'var(--success)', icon: '✓' },
+  retained: { bg: 'var(--success-tint)', border: 'var(--success)', icon: '✓' },
+  'near-mastery': { bg: 'var(--warm-tint)', border: 'var(--warm-accent)' },
+  practising: { bg: 'var(--secondary-tint)', border: 'var(--primary)' },
+  learning: { bg: 'var(--secondary-tint)', border: 'var(--primary)' },
+  'revision-due': { bg: 'var(--secondary-tint)', border: 'var(--secondary)', icon: '↻' },
+  'not-started': { bg: 'var(--paper-sunk)', border: 'var(--border)', dim: true },
 };
 
-export default async function Subject({ params }) {
-  const { subject: subjectSlug } = await params;
-  const subject = subjects.find((s) => s.slug === subjectSlug) || subjects[0];
-  const isMath = subject.slug === 'mathematics';
+export default function Subject({ params }) {
+  const { subject: subjectSlug } = use(params);
+  const [subject, setSubject] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/learn/${subjectSlug}`, { cache: 'no-store' })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) throw new Error(data.message ?? 'Could not load this subject');
+        setSubject(data);
+      })
+      .catch((err) => setError(err.message));
+  }, [subjectSlug]);
+
+  if (error) {
+    return (
+      <AppShell>
+        <div className="card" style={{ background: 'var(--warm-tint)' }}>
+          <p>Could not load this subject: {error}</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!subject) {
+    return (
+      <AppShell>
+        <p className="muted">Loading…</p>
+      </AppShell>
+    );
+  }
+
+  const mastered = subject.topics.filter((t) => t.state === 'mastered' || t.state === 'retained').length;
+  const revisionDue = subject.topics.filter((t) => t.state === 'revision-due').length;
+  const overallMastery = subject.topics.length
+    ? Math.round(subject.topics.reduce((sum, t) => sum + t.mastery, 0) / subject.topics.length)
+    : 0;
 
   return (
     <AppShell>
@@ -25,86 +64,49 @@ export default async function Subject({ params }) {
         <div>
           <h1 style={{ fontSize: '2.25rem' }}>{subject.name}</h1>
           <p className="muted" style={{ marginTop: 10, maxWidth: 480 }}>
-            {isMath
-              ? 'Nineteen topics, ordered so each one only asks for what you already have. You are eight steps in.'
-              : `${subject.topics ?? 'Several'} topics, ordered the same way mathematics is.`}
+            {subject.topics.length} topics in this subject.
           </p>
           <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-            <span className="badge badge-mastered">{subject.mastered ?? 0} mastered</span>
-            <span className="badge badge-learning">1 in progress</span>
-            {subject.revisionDue && <span className="badge badge-revision-due">{subject.revisionDue} revision due</span>}
+            <span className="badge badge-mastered">{mastered} mastered</span>
+            {revisionDue > 0 && <span className="badge badge-revision-due">{revisionDue} revision due</span>}
           </div>
         </div>
-        <ProgressRing value={subject.mastery} label="mastery" />
+        <ProgressRing value={overallMastery} label="mastery" />
       </div>
 
-      {isMath ? (
-        <div className="grid-2" style={{ marginTop: 20, alignItems: 'start' }}>
-          <div>
-            <span className="eyebrow">The path · each step unlocks the next</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-              {mathematicsPath.map((t) => {
-                const style = STATE_STYLE[t.state] || STATE_STYLE.locked;
-                const content = (
-                  <>
-                    <span style={{
-                      width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                      background: t.state === 'locked' ? 'var(--border)' : style.border,
-                      color: t.state === 'locked' ? 'var(--ink-muted)' : '#fff',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem',
-                    }}>
-                      {t.state === 'mastered' ? '✓' : t.state === 'revision-due' ? '↻' : t.n}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ color: style.dim ? 'var(--ink-muted)' : 'var(--ink)' }}>{t.name}</strong>
-                      <div className="muted" style={{ fontSize: '0.8rem' }}>{t.note}</div>
+      <div style={{ marginTop: 20 }}>
+        <span className="eyebrow">Topics</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+          {subject.topics.map((t) => {
+            const style = STATE_STYLE[t.state] || STATE_STYLE['not-started'];
+            return (
+              <Link key={t.slug} href={`/practice/${t.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px',
+                  border: `1px solid ${style.border}`, borderRadius: 14, background: style.bg,
+                }}>
+                  <span style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: style.border, color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem',
+                  }}>
+                    {style.icon ?? t.n}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ color: style.dim ? 'var(--ink-muted)' : 'var(--ink)' }}>{t.name}</strong>
+                    <div className="muted" style={{ fontSize: '0.8rem' }}>
+                      {t.attemptCount === 0 ? 'Not started yet' : `${t.mastery}% mastery · ${t.attemptCount} question${t.attemptCount === 1 ? '' : 's'} answered`}
                     </div>
-                    {t.state === 'in-progress' && <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem' }}>Continue →</span>}
-                    {t.state === 'revision-due' && <span style={{ color: 'var(--secondary)', fontWeight: 600, fontSize: '0.9rem' }}>Review</span>}
-                  </>
-                );
-                const card = (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px',
-                    border: `1px solid ${style.border}`, borderRadius: 14, background: style.bg,
-                  }}>{content}</div>
-                );
-                return t.state === 'locked' ? (
-                  <div key={t.n}>{card}</div>
-                ) : (
-                  <Link key={t.n} href={`/learn/mathematics/${t.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>{card}</Link>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card">
-              <span className="eyebrow">Still ahead</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-                {stillAhead.map((t) => <span key={t} className="muted">{t}</span>)}
-              </div>
-              <hr className="rule" style={{ margin: '14px 0' }} />
-              <p className="muted" style={{ fontSize: '0.85rem' }}>At your current pace, Percentages opens in about four days.</p>
-            </div>
-            <div className="card-tint">
-              <span className="eyebrow" style={{ color: 'var(--secondary)' }}>✦ Why this order</span>
-              <p style={{ marginTop: 10 }}>
-                Percentages is three-quarters fraction work in disguise. Finishing
-                Fractions first is what stops percentage questions from feeling
-                impossible later.
-              </p>
-            </div>
-          </div>
+                  </div>
+                  <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+                    {t.attemptCount === 0 ? 'Start →' : 'Practise →'}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
-      ) : (
-        <div className="card" style={{ marginTop: 20 }}>
-          <p className="muted">
-            This subject follows the same path structure as Mathematics — topics
-            unlock in order, each resting on the one before it. Full topic list
-            omitted from this mock for brevity.
-          </p>
-        </div>
-      )}
+      </div>
     </AppShell>
   );
 }

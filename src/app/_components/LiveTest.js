@@ -7,7 +7,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 /**
  * The real weekly-test session — ported from the original
- * src/app/_components/TestSession.js, restyled with the NOVA design
+ * src/app/_components/TestSession.js, restyled with the design
  * tokens (question palette, free navigation, mark-for-review, nothing
  * revealed until submit).
  */

@@ -1,5 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import AppShell from '../_components/AppShell';
-import { learner } from '../_data/mock';
 
 function Toggle({ on }) {
   return (
@@ -24,41 +26,76 @@ function Row({ label, note, value }) {
   );
 }
 
+const EXAM_LABELS = {
+  'tnpsc-prelims-495': 'TNPSC Group 2 · CCSE-II',
+};
+
 export default function Profile() {
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) throw new Error(data.message ?? 'Could not load your profile');
+        setProfile(data);
+      })
+      .catch((err) => setError(err.message));
+  }, []);
+
+  if (error) {
+    return (
+      <AppShell>
+        <div className="card" style={{ background: 'var(--warm-tint)' }}>
+          <p>Could not load your profile: {error}</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <AppShell>
+        <p className="muted">Loading…</p>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>Y</div>
+        <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
+          {profile.name?.[0]?.toUpperCase() ?? 'Y'}
+        </div>
         <div>
-          <h2>{learner.name}</h2>
-          <p className="muted">Preparing for {learner.exam.split(' · ')[0]} · started {learner.since}</p>
+          <h2>{profile.name}</h2>
+          <p className="muted">
+            Preparing for {EXAM_LABELS[profile.exam] ?? profile.exam} · started{' '}
+            {new Date(profile.since).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <span className="badge" style={{ background: 'var(--warm-tint)', color: 'var(--warm-accent)' }}>{learner.streak} day streak</span>
-            <span className="badge badge-mastered">6 milestones</span>
-            <span className="badge badge-learning">Level {learner.level} · {learner.xp} XP</span>
+            <span className="badge" style={{ background: 'var(--warm-tint)', color: 'var(--warm-accent)' }}>
+              {profile.streak} day streak
+            </span>
           </div>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="stat-row" style={{ justifyContent: 'space-between' }}>
-          <div className="stat"><div className="num">{learner.totalLearning}</div><div className="label">total learning</div></div>
-          <div className="stat"><div className="num">{learner.questionsSolved}</div><div className="label">questions solved</div></div>
-          <div className="stat"><div className="num">{learner.topicsMastered}</div><div className="label">topics mastered</div></div>
-          <div className="stat"><div className="num">{learner.pyqsCompleted}</div><div className="label">PYQs completed</div></div>
-          <div className="stat"><div className="num">{learner.testsCompleted}</div><div className="label">tests completed</div></div>
-          <div className="stat"><div className="num">14</div><div className="label">longest streak</div></div>
+          <div className="stat"><div className="num">{profile.questionsSolved}</div><div className="label">questions solved</div></div>
+          <div className="stat"><div className="num">{profile.topicsMastered}</div><div className="label">topics mastered</div></div>
+          <div className="stat"><div className="num">{profile.testsCompleted}</div><div className="label">tests completed</div></div>
+          <div className="stat"><div className="num">{profile.longestStreak}</div><div className="label">longest streak</div></div>
         </div>
       </div>
 
       <div className="grid-2" style={{ marginTop: 16, alignItems: 'start' }}>
         <div className="card">
           <span className="eyebrow">How you learn</span>
-          <Row label="Daily goal" note="The session is planned to fit this" value="30 minutes" />
-          <Row label="Preferred time" note="Reminders arrive just before" value="Evening · 7pm" />
-          <Row label="Rest day" note="Protects the streak rather than breaking it" value="Sunday" />
-          <Row label="Language" note="Switchable per session" value="Tamil & English" />
-          <Row label="Difficulty" note="How hard the adaptive engine pushes" value="Gentle" />
+          <Row label="Daily goal" note="The session is planned to fit this" value={`${profile.dailyGoalMinutes} minutes`} />
+          <Row label="Language" note="Which paper's content is served" value={profile.language === 'ta' ? 'Tamil' : 'English'} />
         </div>
         <div className="card">
           <span className="eyebrow">Notifications</span>
@@ -79,16 +116,10 @@ export default function Profile() {
               </div>
             ))}
           </div>
-          <p className="muted" style={{ marginTop: 14, fontSize: '0.82rem' }}>Never more than two a day, and none at all on your rest day.</p>
+          <p className="muted" style={{ marginTop: 14, fontSize: '0.82rem' }}>
+            Not wired up yet — these preferences aren&apos;t saved anywhere.
+          </p>
         </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <span className="eyebrow">App</span>
-        <Row label="Download lessons for offline use" note="184 MB cached" value="On" />
-        <Row label="Theme" value="Follow system" />
-        <Row label="Account" value="Manage" />
-        <Row label="Export my learning data" value="Download" />
       </div>
     </AppShell>
   );

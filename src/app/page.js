@@ -5,9 +5,22 @@ import Link from 'next/link';
 import AppShell from './_components/AppShell';
 import { learner } from './_data/mock';
 
+function greeting(hour) {
+  if (hour < 5) return 'Good night';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Good night';
+}
+
 export default function Home() {
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
+  const [greetingText, setGreetingText] = useState('Good morning');
+
+  useEffect(() => {
+    setGreetingText(greeting(new Date().getHours()));
+  }, []);
 
   useEffect(() => {
     fetch('/api/plan/today', { cache: 'no-store' })
@@ -33,7 +46,7 @@ export default function Home() {
       <span className="muted" style={{ fontSize: '0.85rem', letterSpacing: '0.04em' }}>
         {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
       </span>
-      <h1 style={{ marginTop: 14 }}>Good morning, {learner.name}.</h1>
+      <h1 style={{ marginTop: 14 }}>{greetingText}, {learner.name}.</h1>
 
       {error && (
         <div className="card" style={{ marginTop: 20, background: 'var(--warm-tint)' }}>

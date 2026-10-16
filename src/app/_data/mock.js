@@ -1,4 +1,4 @@
-// Static mock data for the NOVA prototype. No API calls, nothing persists.
+// Static mock data for the app. No API calls, nothing persists.
 
 export const learner = {
   name: 'Yash',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { learner } from '../_data/mock';
+import { useEffect, useState } from 'react';
 
 const DEFAULT_PRACTICE_TOPIC = 'aptitude.fractions';
 
@@ -31,12 +31,25 @@ function isActive(pathname, link) {
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const [streak, setStreak] = useState(null);
+  const [initial, setInitial] = useState('Y');
+
+  useEffect(() => {
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setStreak(data.streak);
+        setInitial(data.name?.[0]?.toUpperCase() ?? 'Y');
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <>
       <header className="topnav">
         <Link href="/" className="brand">
-          <span className="spark">✦</span> NOVA
+          <span className="spark">✦</span> Yash
         </Link>
         <nav>
           {topLinks.map((l) => (
@@ -46,10 +59,12 @@ export default function AppShell({ children }) {
           ))}
         </nav>
         <div className="right">
-          <span className="streak-chip">
-            <span className="dot" /> {learner.streak} day streak
-          </span>
-          <Link href="/profile" className="avatar">Y</Link>
+          {streak !== null && (
+            <span className="streak-chip">
+              <span className="dot" /> {streak} day streak
+            </span>
+          )}
+          <Link href="/profile" className="avatar">{initial}</Link>
         </div>
       </header>
 

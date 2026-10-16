@@ -1,4 +1,4 @@
-// Small shared presentational primitives used across the NOVA prototype screens.
+// Small shared presentational primitives used across the app screens.
 
 export function Badge({ status, children }) {
   const cls = `badge badge-${status}`;

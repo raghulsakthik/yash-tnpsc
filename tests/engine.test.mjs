@@ -17,6 +17,7 @@ import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } f
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
 import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
+import { topicStatus, orbitRing } from '../src/domain/progress.mjs';
 
 const attempts = (...flags) => flags.map((correct) => ({ correct: Boolean(correct) }));
 
@@ -482,4 +483,33 @@ test('pickTopicQuestions spreads picks across the difficulty range', () => {
   const difficulties = picked.map((q) => q.difficulty);
   assert.equal(difficulties[0], 0, 'first pick should be from the easy end');
   assert.ok(difficulties[difficulties.length - 1] >= 0.8, 'last pick should be from the hard end');
+});
+
+test('topicStatus: zero attempts is not-started regardless of mastery', () => {
+  assert.equal(topicStatus({ attemptCount: 0, masteryScore: 0.9, revisionDue: false }), 'not-started');
+});
+
+test('topicStatus: a due revision outranks a high mastery score', () => {
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: true }), 'revision-due');
+});
+
+test('topicStatus: mastered vs retained depends on interval length', () => {
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: false, intervalDays: 7 }), 'mastered');
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: false, intervalDays: 30 }), 'retained');
+});
+
+test('topicStatus: mid-range scores land on near-mastery, practising or learning', () => {
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.75, revisionDue: false }), 'near-mastery');
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.5, revisionDue: false }), 'practising');
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.1, revisionDue: false }), 'learning');
+});
+
+test('orbitRing collapses the eight states into the five orbit rings', () => {
+  assert.equal(orbitRing('mastered'), 'mastered');
+  assert.equal(orbitRing('retained'), 'mastered');
+  assert.equal(orbitRing('near-mastery'), 'learning');
+  assert.equal(orbitRing('practising'), 'learning');
+  assert.equal(orbitRing('revision-due'), 'drifting');
+  assert.equal(orbitRing('learning'), 'struggling');
+  assert.equal(orbitRing('not-started'), 'unmet');
 });

@@ -5,13 +5,13 @@ import pg from 'pg';
 const globalForPg = globalThis;
 
 export const pool =
-  globalForPg.__novaPool ??
+  globalForPg.__appPool ??
   new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     max: 5,
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPg.__novaPool = pool;
+if (process.env.NODE_ENV !== 'production') globalForPg.__appPool = pool;
 
 /** @param {string} text @param {Array<unknown>} params */
 export function query(text, params) {
@@ -19,7 +19,7 @@ export function query(text, params) {
 }
 
 export const LEARNER_ID =
-  process.env.NOVA_LEARNER_ID ?? '00000000-0000-0000-0000-000000000001';
+  process.env.APP_LEARNER_ID ?? '00000000-0000-0000-0000-000000000001';
 
 /** Append an analytics event. Never read by the learning engine. */
 export async function recordEvent(learnerId, event, topicId = null, metadata = {}) {

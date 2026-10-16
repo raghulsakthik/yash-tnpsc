@@ -8,7 +8,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 /**
  * The real question/answer/feedback loop against the live backend — ported
  * from the original src/app/_components/QuestionSession.js, restyled with
- * the NOVA design tokens. Backend decides difficulty, correctness,
+ * the design tokens. Backend decides difficulty, correctness,
  * mistake classification and mastery updates; this only renders what it's
  * given and posts the answer. Shared by Practice, Revision and Mistakes.
  */

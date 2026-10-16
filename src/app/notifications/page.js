@@ -7,7 +7,7 @@ export default function Notifications() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
         <div>
           <span className="eyebrow">Notifications</span>
-          <h1 style={{ marginTop: 10 }}>What NOVA has told you</h1>
+          <h1 style={{ marginTop: 10 }}>What Yash has told you</h1>
         </div>
         <button type="button" className="btn btn-secondary">Mark all as read</button>
       </div>
@@ -41,7 +41,7 @@ export default function Notifications() {
         </div>
 
         <div className="card">
-          <span className="eyebrow">How NOVA notifies</span>
+          <span className="eyebrow">How Yash notifies</span>
           <p className="muted" style={{ marginTop: 10 }}>
             One reminder a day at most, at 7 pm, before your usual session.
             Everything else waits here quietly.

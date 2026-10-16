@@ -1,4 +1,4 @@
-# NOVA
+# Yash
 
 A private, personalised practice system for the TNPSC Combined Civil Services
 (Preliminary) Examination – II, Code 495. Built for one learner.
@@ -190,11 +190,11 @@ would survive a change of backend.
 
 | Paper | Code | Dated |
 | --- | --- | --- |
-| Prelims, Group II and IIA (this is what NOVA targets) | 495 | 12.12.2024 |
+| Prelims, Group II and IIA (this is what the app targets) | 495 | 12.12.2024 |
 | Group II Main, General Studies (descriptive — out of scope) | 469 | — |
 | Group IIA Main (objective) | 583 | 04.07.2025 |
 
 The Group II main paper is descriptive: 100- and 200-word written answers. The
-adaptive engine has no input for that and should not pretend otherwise. NOVA
+adaptive engine has no input for that and should not pretend otherwise. The app
 targets the objective papers. If the written paper is ever added, it needs its
 own data model and a human in the scoring loop — not this one.

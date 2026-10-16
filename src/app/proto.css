@@ -1,4 +1,4 @@
-/* NOVA design system tokens — from the design-system board (page 70 of the brief).
+/* design system tokens — from the design-system board (page 70 of the brief).
    Every rule here is scoped under ".proto" (not :root, not bare class names) so
    nothing collides with src/app/globals.css, which defines its own --ink, .card,
    .option, .muted, etc. for the existing single-learner app. */

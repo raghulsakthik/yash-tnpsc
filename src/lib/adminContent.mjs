@@ -1,0 +1,160 @@
+import crypto from 'crypto';
+import YAML from 'yaml';
+import { query } from './db.mjs';
+
+export class ContentUploadError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// Same normalization scripts/seed.mjs uses for normalized_hash, so a
+// question uploaded here and one already seeded from content/ are
+// recognized as the same question rather than silently duplicated.
+const normalize = (text) =>
+  String(text)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Parses and validates one admin-uploaded YAML document. Same shape as a
+ * content/questions/*.yaml file -- an admin is authoring exactly the
+ * content a developer would, just without touching the repo or spending
+ * an AI token on it.
+ *
+ * @param {string} yamlText
+ * @returns {{topic: string, language: string, source: string, questions: Array<object>}}
+ */
+export function parseQuestionYaml(yamlText) {
+  let doc;
+  try {
+    doc = YAML.parse(yamlText);
+  } catch (err) {
+    throw new ContentUploadError('INVALID_YAML', `Could not parse YAML: ${err.message}`);
+  }
+
+  if (!doc || typeof doc !== 'object') {
+    throw new ContentUploadError('INVALID_SHAPE', 'The file must be a YAML document with topic/language/questions.');
+  }
+  if (!doc.topic || typeof doc.topic !== 'string') {
+    throw new ContentUploadError('MISSING_TOPIC', 'A `topic` id is required (e.g. aptitude.averages).');
+  }
+  if (!Array.isArray(doc.questions) || doc.questions.length === 0) {
+    throw new ContentUploadError('MISSING_QUESTIONS', 'At least one question is required under `questions:`.');
+  }
+
+  doc.questions.forEach((q, i) => {
+    const at = `questions[${i}]`;
+    if (!q.id || typeof q.id !== 'string') throw new ContentUploadError('INVALID_QUESTION', `${at}: missing id`);
+    if (!q.question || typeof q.question !== 'string') throw new ContentUploadError('INVALID_QUESTION', `${at}: missing question text`);
+    if (!Array.isArray(q.options) || q.options.length < 2) throw new ContentUploadError('INVALID_QUESTION', `${at}: needs at least 2 options`);
+    if (new Set(q.options.map(String)).size !== q.options.length) throw new ContentUploadError('INVALID_QUESTION', `${at}: options must be distinct`);
+    if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.options.length) {
+      throw new ContentUploadError('INVALID_QUESTION', `${at}: answer must be a valid option index`);
+    }
+    if (!q.explanation || typeof q.explanation !== 'string') throw new ContentUploadError('INVALID_QUESTION', `${at}: missing explanation`);
+  });
+
+  return {
+    topic: doc.topic,
+    language: doc.language ?? 'en',
+    source: doc.source ?? 'admin-upload',
+    questions: doc.questions,
+  };
+}
+
+/**
+ * Creates a brand-new topic (and, if it doesn't exist yet, its chapter)
+ * under an existing subject. Never invents a subject -- an admin picks
+ * one of the real syllabus subjects from /api/admin/syllabus.
+ */
+export async function createTopic({ topicId, topicName, chapterId, chapterName, subjectId }) {
+  const { rows: chapterRows } = await query(`SELECT id, subject_id FROM chapter WHERE id = $1`, [chapterId]);
+
+  if (chapterRows.length === 0) {
+    if (!chapterName || !subjectId) {
+      throw new ContentUploadError('MISSING_CHAPTER', 'Creating a new chapter needs both a chapter name and an existing subject.');
+    }
+    const { rows: subjectRows } = await query(`SELECT id FROM subject WHERE id = $1`, [subjectId]);
+    if (subjectRows.length === 0) throw new ContentUploadError('SUBJECT_NOT_FOUND', `No subject ${subjectId}`);
+
+    const { rows: maxSort } = await query(`SELECT COALESCE(MAX(sort_order), 0)::int AS n FROM chapter WHERE subject_id = $1`, [subjectId]);
+    await query(
+      `INSERT INTO chapter (id, subject_id, name, sort_order, question_count) VALUES ($1, $2, $3, $4, 0)`,
+      [chapterId, subjectId, chapterName, maxSort[0].n + 1]
+    );
+  }
+
+  const { rows: existingTopic } = await query(`SELECT id FROM topic WHERE id = $1`, [topicId]);
+  if (existingTopic.length > 0) {
+    throw new ContentUploadError('TOPIC_EXISTS', `Topic ${topicId} already exists -- upload questions to it directly instead.`);
+  }
+
+  const { rows: maxTopicSort } = await query(`SELECT COALESCE(MAX(sort_order), -1)::int AS n FROM topic WHERE chapter_id = $1`, [chapterId]);
+  await query(`INSERT INTO topic (id, chapter_id, name, sort_order) VALUES ($1, $2, $3, $4)`, [
+    topicId,
+    chapterId,
+    topicName,
+    maxTopicSort[0].n + 1,
+  ]);
+}
+
+/**
+ * Upserts every question in a parsed document against an existing topic.
+ * Mirrors scripts/seed.mjs's question insert exactly, so content uploaded
+ * here behaves identically to content shipped in content/questions/.
+ *
+ * @returns {Promise<{inserted: number, updated: number}>}
+ */
+export async function upsertQuestions({ topic, language, source, questions }) {
+  const { rows: topicRows } = await query(`SELECT id FROM topic WHERE id = $1`, [topic]);
+  if (topicRows.length === 0) {
+    throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topic} -- create it first or check the id.`);
+  }
+
+  let inserted = 0;
+  let updated = 0;
+
+  for (const q of questions) {
+    const hash = crypto.createHash('sha256').update(normalize(q.question)).digest('hex');
+    const { rows } = await query(
+      `INSERT INTO question (
+         id, topic_id, language, prompt, options, answer_index, explanation, trap,
+         difficulty, estimated_seconds, source, source_year, status, normalized_hash
+       ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,'PUBLISHED',$13)
+       ON CONFLICT (id) DO UPDATE SET
+         prompt = EXCLUDED.prompt,
+         options = EXCLUDED.options,
+         answer_index = EXCLUDED.answer_index,
+         explanation = EXCLUDED.explanation,
+         trap = EXCLUDED.trap,
+         difficulty = EXCLUDED.difficulty,
+         estimated_seconds = EXCLUDED.estimated_seconds,
+         normalized_hash = EXCLUDED.normalized_hash,
+         updated_at = now()
+       RETURNING (xmax = 0) AS was_insert`,
+      [
+        q.id,
+        topic,
+        language,
+        q.question,
+        JSON.stringify(q.options),
+        q.answer,
+        q.explanation,
+        q.trap ?? null,
+        q.difficulty ?? 0.3,
+        q.estimatedSeconds ?? 45,
+        q.source ?? source,
+        q.year ?? null,
+        hash,
+      ]
+    );
+    if (rows[0]?.was_insert) inserted += 1;
+    else updated += 1;
+  }
+
+  return { inserted, updated };
+}

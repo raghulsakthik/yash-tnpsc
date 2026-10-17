@@ -67,3 +67,9 @@ export async function requireLearnerId(request) {
   const session = await getSession(request);
   return session?.learnerId ?? null;
 }
+
+/** Resolves the session only if it belongs to an admin account, or null otherwise. The real authorization boundary for every /api/admin/* route -- never trust a client-side role check alone. */
+export async function requireAdmin(request) {
+  const session = await getSession(request);
+  return session?.role === 'admin' ? session : null;
+}

@@ -33,6 +33,7 @@ export default function AppShell({ children }) {
   const pathname = usePathname();
   const [streak, setStreak] = useState(null);
   const [initial, setInitial] = useState('Y');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetch('/api/profile', { cache: 'no-store' })
@@ -41,6 +42,7 @@ export default function AppShell({ children }) {
         if (!data) return;
         setStreak(data.streak);
         setInitial(data.name?.[0]?.toUpperCase() ?? 'Y');
+        setIsAdmin(data.role === 'admin');
       })
       .catch(() => {});
   }, []);
@@ -59,6 +61,11 @@ export default function AppShell({ children }) {
           ))}
         </nav>
         <div className="right">
+          {isAdmin && (
+            <Link href="/admin" className={isActive(pathname, { href: '/admin' }) ? 'active' : ''}>
+              Admin
+            </Link>
+          )}
           {streak !== null && (
             <span className="streak-chip">
               <span className="dot" /> {streak} day streak

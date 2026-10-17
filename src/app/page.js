@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AppShell from './_components/AppShell';
 import { learner } from './_data/mock';
 
@@ -14,6 +15,7 @@ function greeting(hour) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
   const [greetingText, setGreetingText] = useState('Good morning');
@@ -21,6 +23,17 @@ export default function Home() {
   useEffect(() => {
     setGreetingText(greeting(new Date().getHours()));
   }, []);
+
+  // Admin accounts have no learner data -- there's no daily plan to show
+  // them, so they go straight to Profile instead of seeing a plan error.
+  useEffect(() => {
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me) => {
+        if (me?.role === 'admin') router.replace('/profile');
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     fetch('/api/plan/today', { cache: 'no-store' })

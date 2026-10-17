@@ -13,6 +13,7 @@ import {
   weakestPrerequisite,
 } from '../src/domain/selection.mjs';
 import { classifyMistake, interventionFor } from '../src/domain/mistakes.mjs';
+import { earnedAchievementIds } from '../src/domain/achievements.mjs';
 import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } from '../src/domain/mastery.mjs';
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
@@ -512,4 +513,32 @@ test('orbitRing collapses the eight states into the five orbit rings', () => {
   assert.equal(orbitRing('revision-due'), 'drifting');
   assert.equal(orbitRing('learning'), 'struggling');
   assert.equal(orbitRing('not-started'), 'unmet');
+});
+
+test('earnedAchievementIds: a brand-new learner earns nothing', () => {
+  const zero = { questionsSolved: 0, streak: 0, topicsMastered: 0, testsCompleted: 0, bestTestScore: 0, mistakesCleared: 0 };
+  assert.deepEqual(earnedAchievementIds(zero), []);
+});
+
+test('earnedAchievementIds: thresholds are inclusive and each tier implies the ones below it', () => {
+  const stats = { questionsSolved: 100, streak: 7, topicsMastered: 1, testsCompleted: 1, bestTestScore: 85, mistakesCleared: 0 };
+  const ids = earnedAchievementIds(stats);
+  assert.ok(ids.includes('first-step'));
+  assert.ok(ids.includes('streak-3'));
+  assert.ok(ids.includes('streak-7'));
+  assert.ok(!ids.includes('streak-30'));
+  assert.ok(ids.includes('hundred-questions'));
+  assert.ok(!ids.includes('five-hundred-questions'));
+  assert.ok(ids.includes('first-topic-mastered'));
+  assert.ok(!ids.includes('five-topics-mastered'));
+  assert.ok(ids.includes('high-scorer'));
+  assert.ok(!ids.includes('clean-sweep'));
+});
+
+test('earnedAchievementIds: a perfect test score earns clean-sweep but not high-scorer twice', () => {
+  const stats = { questionsSolved: 0, streak: 0, topicsMastered: 0, testsCompleted: 1, bestTestScore: 100, mistakesCleared: 10 };
+  const ids = earnedAchievementIds(stats);
+  assert.ok(ids.includes('high-scorer'));
+  assert.ok(ids.includes('clean-sweep'));
+  assert.ok(ids.includes('mistake-fixer'));
 });

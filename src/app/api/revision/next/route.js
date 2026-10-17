@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
+import { query, recordEvent } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { selectQuestion } from '../../../../domain/selection.mjs';
 import { difficultyBand } from '../../../../domain/difficulty.mjs';
 
@@ -13,7 +14,12 @@ export const dynamic = 'force-dynamic';
  * /api/questions/next except the topic comes from the schedule, not a
  * query param.
  */
-export async function GET() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const { rows: dueRows } = await query(
       `SELECT rs.topic_id, t.name AS topic_name, lts.current_difficulty::float8 AS current_difficulty
@@ -23,7 +29,7 @@ export async function GET() {
         WHERE rs.learner_id = $1 AND rs.scheduled_at <= now()
         ORDER BY rs.scheduled_at ASC
         LIMIT 1`,
-      [LEARNER_ID]
+      [learnerId]
     );
 
     if (dueRows.length === 0) {
@@ -54,7 +60,7 @@ export async function GET() {
            ON a.question_id = q.id AND a.learner_id = $1
         WHERE q.topic_id = $2 AND q.status = 'PUBLISHED'
         GROUP BY q.id`,
-      [LEARNER_ID, topicId]
+      [learnerId, topicId]
     );
 
     if (candidates.length === 0) {
@@ -73,7 +79,7 @@ export async function GET() {
       targetDifficulty
     );
 
-    await recordEvent(LEARNER_ID, 'REVISION_QUESTION_VIEWED', topicId, { questionId: chosen.id });
+    await recordEvent(learnerId, 'REVISION_QUESTION_VIEWED', topicId, { questionId: chosen.id });
 
     return NextResponse.json({
       questionId: chosen.id,

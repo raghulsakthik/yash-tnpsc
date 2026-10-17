@@ -69,6 +69,11 @@ export default function LiveTest() {
       const res = await fetch(`/api/tests/${testId}/submit`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not submit the test');
+      try {
+        sessionStorage.setItem(`test-new-achievements:${testId}`, JSON.stringify(data.newAchievements ?? []));
+      } catch {
+        // sessionStorage can be unavailable (private mode); the result page just shows no banner.
+      }
       router.push(`/tests/${testId}/result`);
     } catch (err) {
       setError(err.message);

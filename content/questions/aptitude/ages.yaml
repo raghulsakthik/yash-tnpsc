@@ -1,0 +1,104 @@
+topic: aptitude.ages
+language: en
+source: authored
+# Present/past/future age ratio problems. Directly examined under Aptitude.
+questions:
+
+  - id: ages-001
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 3:1, and the sum of their ages is 16 years. What is the age of the elder friend?"
+    options: ["4", "8", "12", "16"]
+    answer: 2
+    explanation: "Total ratio parts = 3 + 1 = 4. One part = 16 ÷ 4 = 4 years. The elder friend's age = 3 × 4 = 12."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-002
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 5:2, and the sum of their ages is 28 years. What is the age of the elder friend?"
+    options: ["16", "20", "8", "24"]
+    answer: 1
+    explanation: "Total ratio parts = 5 + 2 = 7. One part = 28 ÷ 7 = 4 years. The elder friend's age = 5 × 4 = 20."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-003
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 4:3, and the sum of their ages is 28 years. What is the age of the elder friend?"
+    options: ["12", "17", "16", "20"]
+    answer: 2
+    explanation: "Total ratio parts = 4 + 3 = 7. One part = 28 ÷ 7 = 4 years. The elder friend's age = 4 × 4 = 16."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-004
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 7:4, and the sum of their ages is 44 years. What is the age of the elder friend?"
+    options: ["24", "16", "28", "32"]
+    answer: 2
+    explanation: "Total ratio parts = 7 + 4 = 11. One part = 44 ÷ 11 = 4 years. The elder friend's age = 7 × 4 = 28."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-005
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 2:1, and the sum of their ages is 12 years. What is the age of the elder friend?"
+    options: ["8", "9", "4", "12"]
+    answer: 0
+    explanation: "Total ratio parts = 2 + 1 = 3. One part = 12 ÷ 3 = 4 years. The elder friend's age = 2 × 4 = 8."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-006
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The ages of two friends are in the ratio 5:3, and the sum of their ages is 32 years. What is the age of the elder friend?"
+    options: ["16", "20", "12", "24"]
+    answer: 1
+    explanation: "Total ratio parts = 5 + 3 = 8. One part = 32 ÷ 8 = 4 years. The elder friend's age = 5 × 4 = 20."
+    trap: "Picking the smaller share instead of the elder friend's share answers a different question than the one asked."
+
+  - id: ages-007
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "A person is 8 years old today. How old will they be in 5 years?"
+    options: ["8", "13", "15", "3"]
+    answer: 1
+    explanation: "Future age = present age + years ahead = 8 + 5 = 13."
+    trap: "Subtracting instead of adding gives a past age, not a future one — check which direction in time the question is asking about."
+
+  - id: ages-008
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "A person is 12 years old today. How old will they be in 6 years?"
+    options: ["20", "18", "6", "12"]
+    answer: 1
+    explanation: "Future age = present age + years ahead = 12 + 6 = 18."
+    trap: "Subtracting instead of adding gives a past age, not a future one — check which direction in time the question is asking about."
+
+  - id: ages-009
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "A person is 20 years old today. How old will they be in 10 years?"
+    options: ["32", "10", "20", "30"]
+    answer: 3
+    explanation: "Future age = present age + years ahead = 20 + 10 = 30."
+    trap: "Subtracting instead of adding gives a past age, not a future one — check which direction in time the question is asking about."
+
+  - id: ages-010
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "A person is 15 years old today. How old will they be in 5 years?"
+    options: ["15", "10", "22", "20"]
+    answer: 3
+    explanation: "Future age = present age + years ahead = 15 + 5 = 20."
+    trap: "Subtracting instead of adding gives a past age, not a future one — check which direction in time the question is asking about."
+
+  - id: ages-011
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "A person is 24 years old today. How old will they be in 8 years?"
+    options: ["24", "16", "34", "32"]
+    answer: 3
+    explanation: "Future age = present age + years ahead = 24 + 8 = 32."
+    trap: "Subtracting instead of adding gives a past age, not a future one — check which direction in time the question is asking about."

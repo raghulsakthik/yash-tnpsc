@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../../lib/db.mjs';
+import { query } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { examWeight, selectTopic, weakestPrerequisite } from '../../../../domain/selection.mjs';
 import { buildDailyPlan } from '../../../../domain/planner.mjs';
 
@@ -12,7 +13,12 @@ export const dynamic = 'force-dynamic';
  * now, built from revision urgency, exam-weighted topic priority and the
  * prerequisite graph. The frontend renders this; it decides nothing.
  */
-export async function GET() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const [{ rows: chapters }, { rows: topics }, { rows: states }, { rows: edges }, { rows: withContent }, { rows: dueCountRows }] =
       await Promise.all([
@@ -25,7 +31,7 @@ export async function GET() {
         query(
           `SELECT topic_id, accuracy_score::float8 AS accuracy, attempt_count
              FROM learner_topic_state WHERE learner_id = $1`,
-          [LEARNER_ID]
+          [learnerId]
         ),
         query(
           `SELECT topic_id, prerequisite_topic_id, strength::float8 AS strength FROM topic_prerequisite`
@@ -33,7 +39,7 @@ export async function GET() {
         query(`SELECT DISTINCT topic_id FROM question WHERE status = 'PUBLISHED'`),
         query(
           `SELECT COUNT(*)::int AS n FROM revision_schedule WHERE learner_id = $1 AND scheduled_at <= now()`,
-          [LEARNER_ID]
+          [learnerId]
         ),
       ]);
 

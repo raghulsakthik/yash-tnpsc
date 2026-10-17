@@ -1,9 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AppShell from '../_components/AppShell';
 import PushNotifications from '../_components/PushNotifications';
 import EmailNotifications from '../_components/EmailNotifications';
+import WhatsAppNotifications from '../_components/WhatsAppNotifications';
+import Achievements from '../_components/Achievements';
+import ActivityGraph from '../_components/ActivityGraph';
+
+const ROLE_LABELS = { learner: 'Learner account', test: 'Test account', admin: 'Admin account' };
+
+function LogoutButton() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogout() {
+    setLoading(true);
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    router.push('/login');
+    router.refresh();
+  }
+
+  return (
+    <button
+      type="button"
+      className="btn"
+      style={{ border: '1px solid var(--border)', background: 'transparent' }}
+      onClick={handleLogout}
+      disabled={loading}
+    >
+      {loading ? 'Logging out…' : 'Log out'}
+    </button>
+  );
+}
 
 function Row({ label, note, value }) {
   return (
@@ -53,24 +83,49 @@ export default function Profile() {
     );
   }
 
+  if (profile.role === 'admin') {
+    return (
+      <AppShell>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
+              {profile.name?.[0]?.toUpperCase() ?? 'A'}
+            </div>
+            <div>
+              <h2>{profile.name}</h2>
+              <p className="muted">{ROLE_LABELS[profile.role]}</p>
+            </div>
+          </div>
+          <LogoutButton />
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
-          {profile.name?.[0]?.toUpperCase() ?? 'Y'}
-        </div>
-        <div>
-          <h2>{profile.name}</h2>
-          <p className="muted">
-            Preparing for {EXAM_LABELS[profile.exam] ?? profile.exam} · started{' '}
-            {new Date(profile.since).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <span className="badge" style={{ background: 'var(--warm-tint)', color: 'var(--warm-accent)' }}>
-              {profile.streak} day streak
-            </span>
+      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
+            {profile.name?.[0]?.toUpperCase() ?? 'Y'}
+          </div>
+          <div>
+            <h2>{profile.name}</h2>
+            <p className="muted">
+              Preparing for {EXAM_LABELS[profile.exam] ?? profile.exam} · started{' '}
+              {new Date(profile.since).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <span className="badge" style={{ background: 'var(--warm-tint)', color: 'var(--warm-accent)' }}>
+                {profile.streak} day streak
+              </span>
+              <span className="badge" style={{ background: 'var(--primary-tint)', color: 'var(--primary)' }}>
+                {ROLE_LABELS[profile.role] ?? profile.role}
+              </span>
+            </div>
           </div>
         </div>
+        <LogoutButton />
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
@@ -80,6 +135,14 @@ export default function Profile() {
           <div className="stat"><div className="num">{profile.testsCompleted}</div><div className="label">tests completed</div></div>
           <div className="stat"><div className="num">{profile.longestStreak}</div><div className="label">longest streak</div></div>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <ActivityGraph />
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <Achievements />
       </div>
 
       <div className="grid-2" style={{ marginTop: 16, alignItems: 'start' }}>
@@ -95,6 +158,8 @@ export default function Profile() {
           </div>
           <hr className="rule" style={{ margin: '16px 0' }} />
           <EmailNotifications />
+          <hr className="rule" style={{ margin: '16px 0' }} />
+          <WhatsAppNotifications />
           <p className="muted" style={{ marginTop: 14, fontSize: '0.82rem' }}>
             One on/off switch for now — picking which events notify you
             (revision due, streak at risk, …) isn&apos;t built yet.

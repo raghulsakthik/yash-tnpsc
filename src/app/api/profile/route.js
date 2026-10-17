@@ -1,50 +1,9 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../lib/db.mjs';
+import { query } from '../../../lib/db.mjs';
+import { getSession } from '../../../lib/auth.mjs';
+import { computeStreak, longestStreak } from '../../../domain/progress.mjs';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * The current daily streak from real attempt history: walk back day by day
- * from today (today itself doesn't break the streak if empty — she just
- * hasn't studied yet today) until a day with no activity is found.
- *
- * @param {string[]} activeDates ISO 'YYYY-MM-DD' strings, any order
- */
-function computeStreak(activeDates) {
-  const days = new Set(activeDates);
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-
-  // Today doesn't have to have activity yet for the streak to still be "alive".
-  if (!days.has(cursor.toISOString().slice(0, 10))) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
-function longestStreak(activeDates) {
-  const days = [...new Set(activeDates)].sort();
-  let longest = 0;
-  let current = 0;
-  let prev = null;
-  for (const day of days) {
-    if (prev) {
-      const gapDays = (new Date(day) - new Date(prev)) / 86_400_000;
-      current = gapDays === 1 ? current + 1 : 1;
-    } else {
-      current = 1;
-    }
-    longest = Math.max(longest, current);
-    prev = day;
-  }
-  return longest;
-}
 
 /**
  * GET /api/profile
@@ -54,23 +13,33 @@ function longestStreak(activeDates) {
  * duration, only per-question time, so a sum of those would overstate
  * real study time (thinking time between questions isn't captured).
  */
-export async function GET() {
+export async function GET(request) {
+  const session = await getSession(request);
+  if (!session) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+  if (!session.learnerId) {
+    // Admin accounts have no learner row -- just identity, no progress stats.
+    return NextResponse.json({ name: session.email, role: session.role, email: session.email });
+  }
+  const learnerId = session.learnerId;
+
   try {
     const [{ rows: learnerRows }, { rows: profileRows }, { rows: activityRows }, { rows: totals }, { rows: masteredRows }, { rows: testRows }] =
       await Promise.all([
-        query(`SELECT id, name, created_at FROM learner WHERE id = $1`, [LEARNER_ID]),
-        query(`SELECT exam, language, daily_goal_minutes FROM learner_profile WHERE learner_id = $1`, [LEARNER_ID]),
+        query(`SELECT id, name, created_at FROM learner WHERE id = $1`, [learnerId]),
+        query(`SELECT exam, language, daily_goal_minutes FROM learner_profile WHERE learner_id = $1`, [learnerId]),
         query(
           `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day
              FROM question_attempt WHERE learner_id = $1`,
-          [LEARNER_ID]
+          [learnerId]
         ),
-        query(`SELECT COUNT(*)::int AS n FROM question_attempt WHERE learner_id = $1`, [LEARNER_ID]),
+        query(`SELECT COUNT(*)::int AS n FROM question_attempt WHERE learner_id = $1`, [learnerId]),
         query(
           `SELECT COUNT(*)::int AS n FROM learner_topic_state WHERE learner_id = $1 AND mastery_score >= 0.85`,
-          [LEARNER_ID]
+          [learnerId]
         ),
-        query(`SELECT COUNT(*)::int AS n FROM test WHERE learner_id = $1 AND status = 'COMPLETED'`, [LEARNER_ID]),
+        query(`SELECT COUNT(*)::int AS n FROM test WHERE learner_id = $1 AND status = 'COMPLETED'`, [learnerId]),
       ]);
 
     if (learnerRows.length === 0) {
@@ -81,6 +50,8 @@ export async function GET() {
 
     return NextResponse.json({
       name: learnerRows[0].name,
+      role: session.role,
+      email: session.email,
       since: learnerRows[0].created_at,
       exam: profileRows[0]?.exam ?? null,
       language: profileRows[0]?.language ?? 'en',

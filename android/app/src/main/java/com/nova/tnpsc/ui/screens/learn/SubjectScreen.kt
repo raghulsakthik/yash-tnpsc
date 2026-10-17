@@ -1,6 +1,7 @@
 package com.nova.tnpsc.ui.screens.learn
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +17,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nova.tnpsc.data.mathematicsPath
+import androidx.navigation.NavHostController
+import com.nova.tnpsc.TnpscApplication
+import com.nova.tnpsc.data.learn.SubjectDetailResponse
+import com.nova.tnpsc.data.learn.TopicSummary
+import com.nova.tnpsc.navigation.practiceRoute
 import com.nova.tnpsc.ui.components.Eyebrow
 import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.theme.NovaBorder
@@ -33,11 +44,31 @@ import com.nova.tnpsc.ui.theme.NovaSecondary
 import com.nova.tnpsc.ui.theme.NovaSecondaryTint
 import com.nova.tnpsc.ui.theme.NovaSuccess
 import com.nova.tnpsc.ui.theme.NovaSuccessTint
+import com.nova.tnpsc.ui.theme.NovaWarmAccent
+
+private fun colorsFor(state: String): Pair<Color, Color> = when (state) {
+    "mastered", "retained" -> NovaSuccessTint to NovaSuccess
+    "near-mastery", "practising" -> NovaSecondaryTint to NovaPrimary
+    "revision-due" -> NovaSecondaryTint to NovaSecondary
+    "not-started" -> NovaPaperSunk to NovaBorder
+    else -> NovaPaperSunk to NovaBorder
+}
 
 @Composable
-fun SubjectScreen(subject: String) {
-    val isMath = subject == "mathematics"
-    val title = subject.replaceFirstChar { it.uppercase() }
+fun SubjectScreen(subject: String, navController: NavHostController) {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    var detail by remember { mutableStateOf<SubjectDetailResponse?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(subject) {
+        try {
+            val res = app.learnApi.subject(subject)
+            if (res.isSuccessful) detail = res.body()
+            else error = res.body()?.message ?: "Could not load this subject"
+        } catch (e: Exception) {
+            error = e.message ?: "Could not reach the server"
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
@@ -45,60 +76,50 @@ fun SubjectScreen(subject: String) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
+            val title = detail?.name ?: subject.replaceFirstChar { it.uppercase() }
             Text("Learn / $title", color = NovaInkMuted, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(10.dp))
             Text(title, style = MaterialTheme.typography.displayLarge)
-            Spacer(Modifier.height(8.dp))
-            if (isMath) {
-                Text(
-                    "Nineteen topics, ordered so each one only asks for what you already have. You are eight steps in.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = NovaInkMuted,
-                )
-            }
             Spacer(Modifier.height(10.dp))
-            Eyebrow("The path · each step unlocks the next")
+            when {
+                error != null -> Text(error!!, color = NovaWarmAccent, style = MaterialTheme.typography.bodyMedium)
+                detail == null -> Text("Loading…", color = NovaInkMuted, style = MaterialTheme.typography.bodyMedium)
+                else -> Eyebrow("The path · each topic shows your real mastery")
+            }
             Spacer(Modifier.height(10.dp))
         }
 
-        if (isMath) {
-            items(mathematicsPath) { t ->
-                val (bg, accent) = when (t.state) {
-                    "mastered" -> NovaSuccessTint to NovaSuccess
-                    "in-progress" -> NovaSecondaryTint to NovaPrimary
-                    "revision-due" -> NovaSecondaryTint to NovaSecondary
-                    else -> NovaPaperSunk to NovaBorder
-                }
-                NovaCard(background = bg, border = accent) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val dotLabel = when (t.state) {
-                            "mastered" -> "✓"
-                            "revision-due" -> "↻"
-                            else -> t.n.toString()
-                        }
-                        Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape).background(if (t.state == "locked") NovaBorder else accent),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(dotLabel, color = Color.White, fontWeight = FontWeight.SemiBold)
-                        }
-                        Spacer(Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(t.name, fontWeight = FontWeight.SemiBold)
-                            Text(t.note, style = MaterialTheme.typography.bodySmall, color = NovaInkMuted)
-                        }
-                        if (t.state == "in-progress") Text("Continue →", color = NovaPrimary, fontWeight = FontWeight.SemiBold)
-                        if (t.state == "revision-due") Text("Review", color = NovaSecondary, fontWeight = FontWeight.SemiBold)
+        items(detail?.topics ?: emptyList()) { t: TopicSummary ->
+            val (bg, accent) = colorsFor(t.state)
+            NovaCard(
+                background = bg,
+                border = accent,
+                modifier = Modifier.clickable { navController.navigate(practiceRoute(topic = t.slug)) },
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val dotLabel = when (t.state) {
+                        "mastered", "retained" -> "✓"
+                        "revision-due" -> "↻"
+                        else -> t.n.toString()
                     }
-                }
-            }
-        } else {
-            item {
-                NovaCard {
-                    Text(
-                        "This subject follows the same path structure as Mathematics — topics unlock in order, each resting on the one before it.",
-                        color = NovaInkMuted,
-                    )
+                    Box(
+                        modifier = Modifier.size(32.dp).clip(CircleShape).background(if (t.state == "not-started") NovaBorder else accent),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(dotLabel, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(t.name, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (t.attemptCount == 0) "Not started yet" else "${t.mastery}% mastery · ${t.attemptCount} question${if (t.attemptCount == 1) "" else "s"} answered",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = NovaInkMuted,
+                        )
+                    }
+                    if (t.state == "revision-due") Text("Review", color = NovaSecondary, fontWeight = FontWeight.SemiBold)
+                    else if (t.attemptCount > 0) Text("Continue →", color = NovaPrimary, fontWeight = FontWeight.SemiBold)
+                    else Text("Start →", color = NovaPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

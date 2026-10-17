@@ -2,11 +2,13 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import AchievementUnlockBanner from '../../../_components/AchievementUnlockBanner';
 
 export default function TestResult({ params }) {
   const { id } = use(params);
   const [test, setTest] = useState(null);
   const [error, setError] = useState(null);
+  const [newAchievements, setNewAchievements] = useState([]);
 
   useEffect(() => {
     fetch(`/api/tests/${id}`, { cache: 'no-store' })
@@ -16,6 +18,13 @@ export default function TestResult({ params }) {
         setTest(data);
       })
       .catch((err) => setError(err.message));
+
+    try {
+      const raw = sessionStorage.getItem(`test-new-achievements:${id}`);
+      if (raw) setNewAchievements(JSON.parse(raw));
+    } catch {
+      // No banner if sessionStorage isn't readable -- not worth erroring the page over.
+    }
   }, [id]);
 
   if (error) {
@@ -63,6 +72,8 @@ export default function TestResult({ params }) {
     <main className="shell-main" style={{ maxWidth: 760, paddingTop: 48 }}>
       <span className="eyebrow">Weekly test</span>
       <h1 style={{ marginTop: 14 }}>{test.score}% — {correctCount} of {test.questionCount} correct</h1>
+
+      <AchievementUnlockBanner achievements={newAchievements} />
 
       <div className="card" style={{ marginTop: 20 }}>
         <span className="eyebrow">By topic</span>

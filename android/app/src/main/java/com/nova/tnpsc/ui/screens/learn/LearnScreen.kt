@@ -8,25 +8,46 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.nova.tnpsc.data.subjects
+import com.nova.tnpsc.TnpscApplication
+import com.nova.tnpsc.data.learn.SubjectSummary
 import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.components.NovaProgressBar
 import com.nova.tnpsc.ui.components.StatusBadge
 import com.nova.tnpsc.ui.theme.NovaInkMuted
 import com.nova.tnpsc.ui.theme.NovaPrimary
+import com.nova.tnpsc.ui.theme.NovaWarmAccent
 
 @Composable
 fun LearnScreen(navController: NavHostController) {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    var subjects by remember { mutableStateOf<List<SubjectSummary>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val res = app.learnApi.subjects()
+            if (res.isSuccessful) subjects = res.body()?.subjects ?: emptyList()
+            else error = "Could not load subjects"
+        } catch (e: Exception) {
+            error = e.message ?: "Could not reach the server"
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
@@ -37,15 +58,19 @@ fun LearnScreen(navController: NavHostController) {
             Spacer(Modifier.height(10.dp))
             Text("Learn", style = MaterialTheme.typography.displayLarge)
             Spacer(Modifier.height(8.dp))
-            Text(
-                "Ten subjects, one path at a time. Mathematics is where you are building right now.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = NovaInkMuted,
-            )
+            when {
+                error != null -> Text(error!!, color = NovaWarmAccent, style = MaterialTheme.typography.bodyMedium)
+                subjects == null -> Text("Loading…", color = NovaInkMuted, style = MaterialTheme.typography.bodyMedium)
+                else -> Text(
+                    "${subjects!!.size} subjects, each a real path through real content.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = NovaInkMuted,
+                )
+            }
             Spacer(Modifier.height(6.dp))
         }
 
-        items(subjects) { subject ->
+        items(subjects ?: emptyList()) { subject ->
             NovaCard(
                 modifier = Modifier.clickable { navController.navigate("learn/${subject.slug}") },
             ) {

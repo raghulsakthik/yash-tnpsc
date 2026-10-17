@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../../lib/db.mjs';
+import { query } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { topicStatus } from '../../../../domain/progress.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request, { params }) {
   const { subject } = await params;
+
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
 
   try {
     const { rows: subjectRows } = await query(`SELECT id, name FROM subject WHERE id = $1`, [subject]);
@@ -35,7 +41,7 @@ export async function GET(request, { params }) {
          FROM learner_topic_state lts
          LEFT JOIN revision_schedule rs ON rs.learner_id = lts.learner_id AND rs.topic_id = lts.topic_id
         WHERE lts.learner_id = $1`,
-      [LEARNER_ID]
+      [learnerId]
     );
     const stateByTopic = new Map(states.map((s) => [s.topic_id, s]));
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
+import { query, recordEvent } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { selectQuestion } from '../../../../domain/selection.mjs';
 import { difficultyBand } from '../../../../domain/difficulty.mjs';
 
@@ -14,11 +15,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   const topicId = new URL(request.url).searchParams.get('topic') ?? 'aptitude.fractions';
 
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const { rows: stateRows } = await query(
       `SELECT current_difficulty, attempt_count, next_action
          FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
-      [LEARNER_ID, topicId]
+      [learnerId, topicId]
     );
 
     const targetDifficulty = Number(stateRows[0]?.current_difficulty ?? 0.3);
@@ -42,7 +48,7 @@ export async function GET(request) {
            ON a.question_id = q.id AND a.learner_id = $1
         WHERE q.topic_id = $2 AND q.status = 'PUBLISHED'
         GROUP BY q.id`,
-      [LEARNER_ID, topicId]
+      [learnerId, topicId]
     );
 
     if (candidates.length === 0) {
@@ -61,7 +67,7 @@ export async function GET(request) {
       targetDifficulty
     );
 
-    await recordEvent(LEARNER_ID, 'QUESTION_VIEWED', topicId, { questionId: chosen.id });
+    await recordEvent(learnerId, 'QUESTION_VIEWED', topicId, { questionId: chosen.id });
 
     // The answer index is deliberately not in this payload.
     return NextResponse.json({

@@ -1,0 +1,86 @@
+topic: aptitude.average
+language: en
+source: authored
+# Mean of a set of numbers, including a changing-group variant. Directly examined under Aptitude.
+questions:
+
+  - id: average-001
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the average of: 12, 18, 24, 30, 36."
+    options: ["22", "36", "24", "26"]
+    answer: 2
+    explanation: "Average = sum of all values ÷ count = 120 ÷ 5 = 24."
+    trap: "Forgetting to divide by the count after adding (just stating the sum) is the most common slip here."
+
+  - id: average-002
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the average of: 15, 22, 19, 28."
+    options: ["28", "21", "23", "19"]
+    answer: 1
+    explanation: "Average = sum of all values ÷ count = 84 ÷ 4 = 21."
+    trap: "Forgetting to divide by the count after adding (just stating the sum) is the most common slip here."
+
+  - id: average-003
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the average of: 8, 14, 20, 26, 32, 38."
+    options: ["23", "25", "38", "21"]
+    answer: 0
+    explanation: "Average = sum of all values ÷ count = 138 ÷ 6 = 23."
+    trap: "Forgetting to divide by the count after adding (just stating the sum) is the most common slip here."
+
+  - id: average-004
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the average of: 45, 52, 38, 61."
+    options: ["51", "61", "47", "49"]
+    answer: 3
+    explanation: "Average = sum of all values ÷ count = 196 ÷ 4 = 49."
+    trap: "Forgetting to divide by the count after adding (just stating the sum) is the most common slip here."
+
+  - id: average-005
+    difficulty: 0.25
+    estimatedSeconds: 40
+    question: "Find the average of: 10, 20, 30, 40, 50, 60."
+    options: ["60", "35", "33", "37"]
+    answer: 1
+    explanation: "Average = sum of all values ÷ count = 210 ÷ 6 = 35."
+    trap: "Forgetting to divide by the count after adding (just stating the sum) is the most common slip here."
+
+  - id: average-006
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The average of 20 numbers is 30, and the average of another 25 numbers is 40. What is the average of all of them together?"
+    options: ["36.56", "35.56", "35", "34.56"]
+    answer: 1
+    explanation: "Total of first group = 20 × 30 = 600. Total of second group = 25 × 40 = 1000. Combined average = (600 + 1000) ÷ (20 + 25) = 35.56."
+    trap: "Simply averaging the two averages (ignoring that the groups are different sizes) only works when both groups have the same count."
+
+  - id: average-007
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The average of 15 numbers is 28, and the average of another 20 numbers is 35. What is the average of all of them together?"
+    options: ["31", "32", "34", "33"]
+    answer: 1
+    explanation: "Total of first group = 15 × 28 = 420. Total of second group = 20 × 35 = 700. Combined average = (420 + 700) ÷ (15 + 20) = 32."
+    trap: "Simply averaging the two averages (ignoring that the groups are different sizes) only works when both groups have the same count."
+
+  - id: average-008
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The average of 25 numbers is 32, and the average of another 30 numbers is 45. What is the average of all of them together?"
+    options: ["39.09", "38.09", "39", "40.09"]
+    answer: 0
+    explanation: "Total of first group = 25 × 32 = 800. Total of second group = 30 × 45 = 1350. Combined average = (800 + 1350) ÷ (25 + 30) = 39.09."
+    trap: "Simply averaging the two averages (ignoring that the groups are different sizes) only works when both groups have the same count."
+
+  - id: average-009
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "The average of 18 numbers is 24, and the average of another 22 numbers is 38. What is the average of all of them together?"
+    options: ["31.7", "32.7", "30.7", "31"]
+    answer: 0
+    explanation: "Total of first group = 18 × 24 = 432. Total of second group = 22 × 38 = 836. Combined average = (432 + 836) ÷ (18 + 22) = 31.7."
+    trap: "Simply averaging the two averages (ignoring that the groups are different sizes) only works when both groups have the same count."

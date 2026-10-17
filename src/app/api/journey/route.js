@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../lib/db.mjs';
-import { topicStatus, orbitRing } from '../../../domain/progress.mjs';
+import { query } from '../../../lib/db.mjs';
+import { requireLearnerId } from '../../../lib/auth.mjs';
+import { topicStatus, orbitRing, longestStreak } from '../../../domain/progress.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,12 @@ function angleFor(topicId) {
  * her own best numbers). Topics with zero attempts are left out: an
  * untouched topic has nothing to show on the orbit yet.
  */
-export async function GET() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const [{ rows: states }, { rows: due }, { rows: bestTest }, { rows: fastest }, { rows: streakRows }] = await Promise.all([
       query(
@@ -30,17 +36,17 @@ export async function GET() {
            JOIN topic t ON t.id = lts.topic_id
            LEFT JOIN revision_schedule rs ON rs.learner_id = lts.learner_id AND rs.topic_id = lts.topic_id
           WHERE lts.learner_id = $1 AND lts.attempt_count > 0`,
-        [LEARNER_ID]
+        [learnerId]
       ),
-      query(`SELECT topic_id FROM revision_schedule WHERE learner_id = $1 AND scheduled_at <= now()`, [LEARNER_ID]),
-      query(`SELECT MAX(score)::float8 AS best FROM test WHERE learner_id = $1 AND status = 'COMPLETED'`, [LEARNER_ID]),
+      query(`SELECT topic_id FROM revision_schedule WHERE learner_id = $1 AND scheduled_at <= now()`, [learnerId]),
+      query(`SELECT MAX(score)::float8 AS best FROM test WHERE learner_id = $1 AND status = 'COMPLETED'`, [learnerId]),
       query(
         `SELECT MIN(time_taken_ms)::int AS fastest FROM question_attempt WHERE learner_id = $1 AND correct = true`,
-        [LEARNER_ID]
+        [learnerId]
       ),
       query(
         `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day FROM question_attempt WHERE learner_id = $1`,
-        [LEARNER_ID]
+        [learnerId]
       ),
     ]);
 
@@ -56,16 +62,7 @@ export async function GET() {
       return { name: s.name, ring: orbitRing(status), angleDeg: angleFor(s.topic_id) };
     });
 
-    // Longest streak, same logic as /api/profile.
-    const days = [...new Set(streakRows.map((r) => r.day.toISOString().slice(0, 10)))].sort();
-    let longest = 0;
-    let current = 0;
-    let prev = null;
-    for (const day of days) {
-      current = prev && (new Date(day) - new Date(prev)) / 86_400_000 === 1 ? current + 1 : 1;
-      longest = Math.max(longest, current);
-      prev = day;
-    }
+    const longest = longestStreak(streakRows.map((r) => r.day.toISOString().slice(0, 10)));
 
     const bestRetained = states
       .filter((s) => s.interval_days !== null)

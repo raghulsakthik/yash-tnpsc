@@ -1,0 +1,158 @@
+topic: aptitude.speed-time-distance
+language: en
+source: authored
+# Distance = Speed x Time, plus km/h <-> m/s conversion. Directly examined under Aptitude.
+questions:
+
+  - id: speed-time-distance-001
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 60 km/h for 3 hours. How far does it travel?"
+    options: ["180", "63", "177", "240"]
+    answer: 0
+    explanation: "Distance = Speed × Time = 60 × 3 = 180 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-002
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 45 km/h for 4 hours. How far does it travel?"
+    options: ["180", "225", "176", "49"]
+    answer: 0
+    explanation: "Distance = Speed × Time = 45 × 4 = 180 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-003
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 80 km/h for 2.5 hours. How far does it travel?"
+    options: ["197.5", "200", "82.5", "280"]
+    answer: 1
+    explanation: "Distance = Speed × Time = 80 × 2.5 = 200 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-004
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 36 km/h for 5 hours. How far does it travel?"
+    options: ["41", "216", "175", "180"]
+    answer: 3
+    explanation: "Distance = Speed × Time = 36 × 5 = 180 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-005
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 72 km/h for 1.5 hours. How far does it travel?"
+    options: ["73.5", "106.5", "180", "108"]
+    answer: 3
+    explanation: "Distance = Speed × Time = 72 × 1.5 = 108 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-006
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 90 km/h for 4 hours. How far does it travel?"
+    options: ["356", "94", "360", "450"]
+    answer: 2
+    explanation: "Distance = Speed × Time = 90 × 4 = 360 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-007
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 54 km/h for 6 hours. How far does it travel?"
+    options: ["378", "60", "318", "324"]
+    answer: 3
+    explanation: "Distance = Speed × Time = 54 × 6 = 324 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-008
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "A car travels at 100 km/h for 3.5 hours. How far does it travel?"
+    options: ["103.5", "450", "346.5", "350"]
+    answer: 3
+    explanation: "Distance = Speed × Time = 100 × 3.5 = 350 km."
+    trap: "Adding speed and time instead of multiplying them is a simple but common slip under time pressure."
+
+  - id: speed-time-distance-009
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 36 km/h to m/s."
+    options: ["10", "11", "36", "129.6"]
+    answer: 0
+    explanation: "To convert km/h to m/s, multiply by 5/18: 36 × 5/18 = 10 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-010
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 54 km/h to m/s."
+    options: ["54", "15", "16", "194.4"]
+    answer: 1
+    explanation: "To convert km/h to m/s, multiply by 5/18: 54 × 5/18 = 15 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-011
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 72 km/h to m/s."
+    options: ["259.2", "20", "72", "21"]
+    answer: 1
+    explanation: "To convert km/h to m/s, multiply by 5/18: 72 × 5/18 = 20 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-012
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 90 km/h to m/s."
+    options: ["324", "90", "26", "25"]
+    answer: 3
+    explanation: "To convert km/h to m/s, multiply by 5/18: 90 × 5/18 = 25 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-013
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 108 km/h to m/s."
+    options: ["31", "30", "388.8", "108"]
+    answer: 1
+    explanation: "To convert km/h to m/s, multiply by 5/18: 108 × 5/18 = 30 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-014
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Convert 126 km/h to m/s."
+    options: ["453.6", "36", "126", "35"]
+    answer: 3
+    explanation: "To convert km/h to m/s, multiply by 5/18: 126 × 5/18 = 35 m/s."
+    trap: "Multiplying by 18/5 instead of 5/18 inverts the conversion — that direction is for m/s to km/h instead."
+
+  - id: speed-time-distance-015
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Two towns are 240 km apart. A train leaves each town at the same time, travelling towards each other at 60 km/h and 40 km/h. After how many hours do they meet?"
+    options: ["1.4", "2.4", "3.4", "12"]
+    answer: 1
+    explanation: "Travelling towards each other, their speeds add: combined speed = 60 + 40 = 100 km/h. Time to meet = distance ÷ combined speed = 240 ÷ 100 = 2.4 hours."
+    trap: "Subtracting the speeds instead of adding them is the formula for one train catching up to another moving the same direction, not two moving towards each other."
+
+  - id: speed-time-distance-016
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Two towns are 360 km apart. A train leaves each town at the same time, travelling towards each other at 80 km/h and 70 km/h. After how many hours do they meet?"
+    options: ["3.4", "36", "2.4", "1.4"]
+    answer: 2
+    explanation: "Travelling towards each other, their speeds add: combined speed = 80 + 70 = 150 km/h. Time to meet = distance ÷ combined speed = 360 ÷ 150 = 2.4 hours."
+    trap: "Subtracting the speeds instead of adding them is the formula for one train catching up to another moving the same direction, not two moving towards each other."
+
+  - id: speed-time-distance-017
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Two towns are 300 km apart. A train leaves each town at the same time, travelling towards each other at 50 km/h and 55 km/h. After how many hours do they meet?"
+    options: ["3.36", "1.8599999999999999", "2.86", "3.86"]
+    answer: 2
+    explanation: "Travelling towards each other, their speeds add: combined speed = 50 + 55 = 105 km/h. Time to meet = distance ÷ combined speed = 300 ÷ 105 = 2.86 hours."
+    trap: "Subtracting the speeds instead of adding them is the formula for one train catching up to another moving the same direction, not two moving towards each other."

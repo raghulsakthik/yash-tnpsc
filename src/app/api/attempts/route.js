@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { pool, LEARNER_ID, recordEvent } from '../../../lib/db.mjs';
+import { pool, recordEvent } from '../../../lib/db.mjs';
+import { requireLearnerId } from '../../../lib/auth.mjs';
 import { recordAttempt, RecordAttemptError } from '../../../lib/attempts.mjs';
+import { checkAndUnlockAchievements } from '../../../lib/achievements.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,12 +36,17 @@ export async function POST(request) {
     );
   }
 
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const result = await recordAttempt({
       client,
-      learnerId: LEARNER_ID,
+      learnerId,
       questionId,
       attemptId,
       selectedIndex,
@@ -50,7 +57,7 @@ export async function POST(request) {
     await client.query('COMMIT');
 
     if (!result.duplicate) {
-      await recordEvent(LEARNER_ID, 'QUESTION_ANSWERED', result.topicId, {
+      await recordEvent(learnerId, 'QUESTION_ANSWERED', result.topicId, {
         questionId,
         correct: result.correct,
         mistakeType: result.mistakeType,
@@ -59,8 +66,10 @@ export async function POST(request) {
       });
     }
 
+    const newAchievements = result.duplicate ? [] : await checkAndUnlockAchievements(learnerId).catch(() => []);
+
     const { topicId, ...response } = result;
-    return NextResponse.json(response);
+    return NextResponse.json({ ...response, newAchievements });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err instanceof RecordAttemptError) {

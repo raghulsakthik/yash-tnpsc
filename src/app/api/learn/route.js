@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../lib/db.mjs';
+import { query } from '../../../lib/db.mjs';
+import { requireLearnerId } from '../../../lib/auth.mjs';
 import { topicStatus } from '../../../domain/progress.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,12 @@ export const dynamic = 'force-dynamic';
  * mastered/retained, overall mastery (mean across topics with at least one
  * attempt), and how many are due for revision right now.
  */
-export async function GET() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const [{ rows: subjects }, { rows: topics }, { rows: states }, { rows: due }] = await Promise.all([
       query(`SELECT id, name, sort_order FROM subject ORDER BY sort_order`),
@@ -22,11 +28,11 @@ export async function GET() {
       query(
         `SELECT topic_id, attempt_count, mastery_score::float8 AS mastery_score
            FROM learner_topic_state WHERE learner_id = $1`,
-        [LEARNER_ID]
+        [learnerId]
       ),
       query(
         `SELECT topic_id FROM revision_schedule WHERE learner_id = $1 AND scheduled_at <= now()`,
-        [LEARNER_ID]
+        [learnerId]
       ),
     ]);
 

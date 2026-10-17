@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { sendPushToLearner, pushConfigured } from '../../../../lib/push.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * "Enable notifications" flow has something to confirm with immediately
  * rather than trusting that it'll work days later when revision comes due.
  */
-export async function POST() {
+export async function POST(request) {
   if (!pushConfigured) {
     return NextResponse.json(
       { code: 'PUSH_NOT_CONFIGURED', message: 'VAPID keys are not set on the server' },
@@ -19,8 +19,13 @@ export async function POST() {
     );
   }
 
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
-    const result = await sendPushToLearner(LEARNER_ID, {
+    const result = await sendPushToLearner(learnerId, {
       title: 'Notifications are on',
       body: "You'll hear from here when something needs you.",
       tag: 'test',

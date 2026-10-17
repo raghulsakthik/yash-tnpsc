@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, pool, LEARNER_ID } from '../../../lib/db.mjs';
+import { query, pool } from '../../../lib/db.mjs';
+import { requireLearnerId } from '../../../lib/auth.mjs';
 import { difficultyBand } from '../../../domain/difficulty.mjs';
 import { allocateSlots, pickTopicQuestions } from '../../../domain/testGen.mjs';
 
@@ -17,7 +18,12 @@ const TARGET_LENGTH = 25;
  * prerequisite-only and never appear here, same as they never become the
  * plan's primary action.
  */
-export async function POST() {
+export async function POST(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const [{ rows: chapters }, { rows: withContent }, { rows: seenRows }] = await Promise.all([
       query(
@@ -27,7 +33,7 @@ export async function POST() {
       ),
       query(`SELECT DISTINCT topic_id, id, difficulty::float8 AS difficulty, prompt, options, estimated_seconds
                FROM question WHERE status = 'PUBLISHED'`),
-      query(`SELECT DISTINCT question_id FROM question_attempt WHERE learner_id = $1`, [LEARNER_ID]),
+      query(`SELECT DISTINCT question_id FROM question_attempt WHERE learner_id = $1`, [learnerId]),
     ]);
 
     const seenIds = new Set(seenRows.map((r) => r.question_id));
@@ -85,7 +91,7 @@ export async function POST() {
       await client.query('BEGIN');
       const { rows: testRows } = await client.query(
         `INSERT INTO test (learner_id, question_count) VALUES ($1, $2) RETURNING id`,
-        [LEARNER_ID, picked.length]
+        [learnerId, picked.length]
       );
       const testId = testRows[0].id;
 

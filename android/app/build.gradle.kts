@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -13,6 +14,17 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+
+        // 10.0.2.2 is the Android emulator's alias for the host machine's
+        // localhost -- this is what lets the emulator reach `npm run dev`
+        // running on the host. A real build points this at the deployed
+        // server instead (https://, no cleartext exception needed there).
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/\"")
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -28,10 +40,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-    }
-
-    buildFeatures {
-        compose = true
     }
 
     composeOptions {
@@ -57,6 +65,24 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Networking: Retrofit over OkHttp, kotlinx.serialization for JSON. The
+    // backend's session is an httpOnly cookie (see src/lib/auth.mjs on the
+    // server), not a bearer token, so OkHttp's CookieJar -- backed by
+    // DataStore so it survives process death -- carries auth on every
+    // request instead of an Authorization header.
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Android push. Compiles and links without google-services.json; at
+    // runtime FirebaseApp simply never initializes until that file (from a
+    // real Firebase project) is dropped into app/ -- see push/FcmTokenRegistrar.kt.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

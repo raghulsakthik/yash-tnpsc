@@ -31,6 +31,52 @@ export function topicStatus({ attemptCount, masteryScore, revisionDue, intervalD
   return 'learning';
 }
 
+/**
+ * Current daily streak from a learner's active dates: walk back day by day
+ * from today (today itself doesn't break the streak if empty -- she just
+ * hasn't studied yet today) until a day with no activity is found.
+ *
+ * @param {string[]} activeDates ISO 'YYYY-MM-DD' strings, any order
+ * @returns {number}
+ */
+export function computeStreak(activeDates) {
+  const days = new Set(activeDates);
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!days.has(cursor.toISOString().slice(0, 10))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  let streak = 0;
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+/**
+ * Longest daily streak ever achieved from a learner's active dates.
+ * @param {string[]} activeDates ISO 'YYYY-MM-DD' strings, any order
+ * @returns {number}
+ */
+export function longestStreak(activeDates) {
+  const days = [...new Set(activeDates)].sort();
+  let longest = 0;
+  let current = 0;
+  let prev = null;
+  for (const day of days) {
+    if (prev) {
+      const gapDays = (new Date(day) - new Date(prev)) / 86_400_000;
+      current = gapDays === 1 ? current + 1 : 1;
+    } else {
+      current = 1;
+    }
+    longest = Math.max(longest, current);
+    prev = day;
+  }
+  return longest;
+}
+
 /** The Journey orbit's five rings, coarser than the eight display states. */
 export function orbitRing(status) {
   switch (status) {

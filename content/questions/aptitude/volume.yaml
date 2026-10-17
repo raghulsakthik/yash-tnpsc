@@ -189,3 +189,93 @@ questions:
       (4/3)π(12³) = (4/3)π(1,728) = 2,304π. Setting this equal to the
       cylinder's volume πr²h = π(8²)h = 64πh: 64h = 2,304, so h = 36 cm.
     trap: "24 cm comes from a slip that drops a factor along the way — recompute 12³ = 1,728 carefully (not 12² = 144) before dividing by 3 and by 64."
+
+  - id: volume-016
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is the volume of a cube with side 6 cm?"
+    options: ["217", "210", "216", "36"]
+    answer: 2
+    explanation: "Volume of a cube = side³ = 6³ = 216 cubic cm."
+    trap: "36 is the area of one face, not the volume of the whole cube."
+
+  - id: volume-017
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is the volume of a cube with side 9 cm?"
+    options: ["720", "81", "486", "729"]
+    answer: 3
+    explanation: "Volume of a cube = side³ = 9³ = 729 cubic cm."
+    trap: "81 is the area of one face, not the volume of the whole cube."
+
+  - id: volume-018
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is the volume of a cube with side 11 cm?"
+    options: ["121", "726", "1320", "1331"]
+    answer: 3
+    explanation: "Volume of a cube = side³ = 11³ = 1331 cubic cm."
+    trap: "121 is the area of one face, not the volume of the whole cube."
+
+  - id: volume-019
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is the volume of a cube with side 14 cm?"
+    options: ["2730", "196", "1176", "2744"]
+    answer: 3
+    explanation: "Volume of a cube = side³ = 14³ = 2744 cubic cm."
+    trap: "196 is the area of one face, not the volume of the whole cube."
+
+  - id: volume-020
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is the volume of a cube with side 17 cm?"
+    options: ["289", "1734", "4896", "4913"]
+    answer: 3
+    explanation: "Volume of a cube = side³ = 17³ = 4913 cubic cm."
+    trap: "289 is the area of one face, not the volume of the whole cube."
+
+  - id: volume-021
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the volume of a cuboid of length 12 cm, width 8 cm and height 5 cm."
+    options: ["480", "96", "475", "392"]
+    answer: 0
+    explanation: "Volume of a cuboid = l × w × h = 12 × 8 × 5 = 480 cubic cm."
+    trap: "96 stops after multiplying just two dimensions — a cuboid's volume needs all three."
+
+  - id: volume-022
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the volume of a cuboid of length 15 cm, width 10 cm and height 6 cm."
+    options: ["894", "600", "150", "900"]
+    answer: 3
+    explanation: "Volume of a cuboid = l × w × h = 15 × 10 × 6 = 900 cubic cm."
+    trap: "150 stops after multiplying just two dimensions — a cuboid's volume needs all three."
+
+  - id: volume-023
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the volume of a cuboid of length 20 cm, width 12 cm and height 7 cm."
+    options: ["1673", "240", "928", "1680"]
+    answer: 3
+    explanation: "Volume of a cuboid = l × w × h = 20 × 12 × 7 = 1680 cubic cm."
+    trap: "240 stops after multiplying just two dimensions — a cuboid's volume needs all three."
+
+  - id: volume-024
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the volume of a cuboid of length 18 cm, width 9 cm and height 4 cm."
+    options: ["644", "162", "540", "648"]
+    answer: 3
+    explanation: "Volume of a cuboid = l × w × h = 18 × 9 × 4 = 648 cubic cm."
+    trap: "162 stops after multiplying just two dimensions — a cuboid's volume needs all three."
+
+  - id: volume-025
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the volume of a cuboid of length 25 cm, width 14 cm and height 8 cm."
+    options: ["350", "2792", "2800", "1324"]
+    answer: 2
+    explanation: "Volume of a cuboid = l × w × h = 25 × 14 × 8 = 2800 cubic cm."
+    trap: "350 stops after multiplying just two dimensions — a cuboid's volume needs all three."

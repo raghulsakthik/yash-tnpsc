@@ -15,10 +15,13 @@
     "validate:content": "node scripts/validate-content.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
+    "db:seed-accounts": "node scripts/seed-accounts.mjs",
     "setup": "npm run db:migrate && npm run validate:content && npm run db:seed",
-    "engagement:start": "node scripts/engagement-scheduler.mjs"
+    "engagement:start": "node scripts/engagement-scheduler.mjs",
+    "activity:start": "node scripts/activity-notifications-scheduler.mjs"
   },
   "dependencies": {
+    "firebase-admin": "^14.5.0",
     "next": "^15.0.0",
     "nodemailer": "^10.1.2",
     "pg": "^8.23.1",

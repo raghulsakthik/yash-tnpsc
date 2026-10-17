@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../../lib/auth.mjs';
 import { sendEmailToLearner, emailConfigured } from '../../../../../lib/email.mjs';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(request) {
   if (!emailConfigured) {
     return NextResponse.json({ code: 'EMAIL_NOT_CONFIGURED', message: 'SMTP is not set up on the server' }, { status: 503 });
   }
 
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
-    const result = await sendEmailToLearner(LEARNER_ID, {
+    const result = await sendEmailToLearner(learnerId, {
       subject: 'Notifications are on',
       text: "You'll hear from here by email when something needs you.",
     });

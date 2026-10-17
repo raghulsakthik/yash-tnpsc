@@ -1,6 +1,15 @@
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
-import { quickLabModes } from '../_data/mock';
+
+const MODES = [
+  { slug: 'quick-math', name: 'Quick Math', desc: 'Addition, subtraction and multiplication, one tap each. A fresh pair of numbers every round.' },
+  { slug: 'number-rush', name: 'Number Rush', desc: 'The same idea with bigger numbers — three-digit arithmetic under time pressure.' },
+  { slug: 'percentage-rush', name: 'Percentage Rush', desc: 'Of, increase, and reverse. The three shapes TNPSC keeps asking for.', recommended: true },
+  { slug: 'fraction-lab', name: 'Fraction Lab', desc: 'Compare two fractions or simplify one to its lowest terms.' },
+  { slug: 'missing-number', name: 'Missing Number', desc: 'Find the pattern — arithmetic or geometric — and complete the sequence.' },
+  { slug: 'memory-math', name: 'Memory Math', desc: 'Hold a few digits in your head, then recall their sum. Trains working memory, not arithmetic.' },
+  { slug: 'formula-match', name: 'Formula Match', desc: 'Match the real formula to the concept — SI, CI, area, volume, time and work.' },
+];
 
 export default function QuickLab() {
   return (
@@ -8,24 +17,12 @@ export default function QuickLab() {
       <span className="eyebrow">Quick Lab</span>
       <h1 style={{ marginTop: 10 }}>Two minutes, sharper arithmetic</h1>
       <p className="muted" style={{ marginTop: 10 }}>
-        The exam is won on speed as much as accuracy. Every round here also tells
-        the system where your calculation is slow — it isn&apos;t a separate toy.
+        Every round generates fresh questions — never the same drill twice. The
+        exam is won on speed as much as accuracy.
       </p>
 
-      <div className="card-dark" style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <div>
-          <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Today&apos;s challenge · chosen for you</span>
-          <h2 style={{ marginTop: 10, color: '#fff' }}>Percentage Rush · 10 questions in 2 minutes</h2>
-          <p className="muted" style={{ marginTop: 10, maxWidth: 520 }}>
-            Your percentage accuracy is 92% but your average answer takes 8.4
-            seconds. Accuracy is not the problem — this is where the time goes.
-          </p>
-        </div>
-        <Link href="/quick-lab/percentage-rush" className="btn btn-light">Start challenge</Link>
-      </div>
-
-      <div className="grid-3" style={{ marginTop: 20 }}>
-        {quickLabModes.map((m) => (
+      <div className="grid-3" style={{ marginTop: 24 }}>
+        {MODES.map((m) => (
           <Link
             key={m.slug}
             href={`/quick-lab/${m.slug}`}
@@ -43,25 +40,19 @@ export default function QuickLab() {
             <p className="muted" style={{ marginTop: 8, fontSize: '0.88rem' }}>{m.desc}</p>
             <hr className="rule" style={{ margin: '14px 0 10px' }} />
             <span style={{ fontSize: '0.85rem', color: m.recommended ? 'var(--warm-accent)' : 'var(--ink-muted)', fontWeight: m.recommended ? 600 : 400 }}>
-              {m.stat}
+              10 questions, generated fresh
             </span>
           </Link>
         ))}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <span className="eyebrow">What a round changes</span>
+        <span className="eyebrow">What a round is for</span>
         <p style={{ marginTop: 10 }}>
-          Every answer sends accuracy, response time and difficulty back to the same
-          learner model your lessons and tests feed. Which is why yesterday&apos;s
-          Percentage Rush is the reason today&apos;s home screen says &quot;build
-          speed&quot; instead of &quot;practise more&quot;.
+          Each round is 10 freshly generated questions — timed, scored, and
+          summarised at the end with your accuracy, average answer time, and
+          best combo.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          {['accuracy', 'response time', 'combo', 'difficulty reached', 'improvement'].map((t) => (
-            <span key={t} className="badge" style={{ background: 'var(--paper-sunk)', color: 'var(--ink-muted)' }}>{t}</span>
-          ))}
-        </div>
       </div>
     </AppShell>
   );

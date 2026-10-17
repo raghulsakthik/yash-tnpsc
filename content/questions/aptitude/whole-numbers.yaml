@@ -88,3 +88,237 @@ questions:
     explanation: >
       Total seats: 48 × 35 = 1,680. Remaining: 1,680 − 1,308 = 372.
     trap: "382 comes from a small slip in 48 × 35 before subtracting — always re-check the multiplication of a word problem before trusting the final subtraction."
+
+  - id: whole-numbers-009
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 3 in 2,384?"
+    options: ["30", "3", "3000", "300"]
+    answer: 3
+    explanation: "In 2,384, the digit 3 sits in the hundreds place, so its place value is 3 × 100 = 300."
+    trap: "Confusing the bare digit 3 with its place value (300) is the most common slip here."
+
+  - id: whole-numbers-010
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 9 in 5,917?"
+    options: ["90", "9", "9000", "900"]
+    answer: 3
+    explanation: "In 5,917, the digit 9 sits in the hundreds place, so its place value is 9 × 100 = 900."
+    trap: "Confusing the bare digit 9 with its place value (900) is the most common slip here."
+
+  - id: whole-numbers-011
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 0 in 6,042?"
+    options: ["1", "3", "2", "0"]
+    answer: 3
+    explanation: "In 6,042, the digit 0 sits in the hundreds place, so its place value is 0 × 100 = 0."
+    trap: "Confusing the bare digit 0 with its place value (0) is the most common slip here."
+
+  - id: whole-numbers-012
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 1 in 8,135?"
+    options: ["1000", "10", "1", "100"]
+    answer: 3
+    explanation: "In 8,135, the digit 1 sits in the hundreds place, so its place value is 1 × 100 = 100."
+    trap: "Confusing the bare digit 1 with its place value (100) is the most common slip here."
+
+  - id: whole-numbers-013
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 9 in 71,926?"
+    options: ["90", "9", "9000", "900"]
+    answer: 3
+    explanation: "In 71,926, the digit 9 sits in the hundreds place, so its place value is 9 × 100 = 900."
+    trap: "Confusing the bare digit 9 with its place value (900) is the most common slip here."
+
+  - id: whole-numbers-014
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 2 in 48,203?"
+    options: ["20", "2", "2000", "200"]
+    answer: 3
+    explanation: "In 48,203, the digit 2 sits in the hundreds place, so its place value is 2 × 100 = 200."
+    trap: "Confusing the bare digit 2 with its place value (200) is the most common slip here."
+
+  - id: whole-numbers-015
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 5 in 93,517?"
+    options: ["5", "50", "5000", "500"]
+    answer: 3
+    explanation: "In 93,517, the digit 5 sits in the hundreds place, so its place value is 5 × 100 = 500."
+    trap: "Confusing the bare digit 5 with its place value (500) is the most common slip here."
+
+  - id: whole-numbers-016
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 6 in 25,648?"
+    options: ["60", "6", "6000", "600"]
+    answer: 3
+    explanation: "In 25,648, the digit 6 sits in the hundreds place, so its place value is 6 × 100 = 600."
+    trap: "Confusing the bare digit 6 with its place value (600) is the most common slip here."
+
+  - id: whole-numbers-017
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 2 in 61,279?"
+    options: ["20", "2", "2000", "200"]
+    answer: 3
+    explanation: "In 61,279, the digit 2 sits in the hundreds place, so its place value is 2 × 100 = 200."
+    trap: "Confusing the bare digit 2 with its place value (200) is the most common slip here."
+
+  - id: whole-numbers-018
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 0 in 37,084?"
+    options: ["1", "3", "2", "0"]
+    answer: 3
+    explanation: "In 37,084, the digit 0 sits in the hundreds place, so its place value is 0 × 100 = 0."
+    trap: "Confusing the bare digit 0 with its place value (0) is the most common slip here."
+
+  - id: whole-numbers-019
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 9 in 54,938?"
+    options: ["90", "9", "9000", "900"]
+    answer: 3
+    explanation: "In 54,938, the digit 9 sits in the hundreds place, so its place value is 9 × 100 = 900."
+    trap: "Confusing the bare digit 9 with its place value (900) is the most common slip here."
+
+  - id: whole-numbers-020
+    difficulty: 0.15
+    estimatedSeconds: 30
+    question: "What is the place value of the digit 1 in 82,163?"
+    options: ["1000", "10", "1", "100"]
+    answer: 3
+    explanation: "In 82,163, the digit 1 sits in the hundreds place, so its place value is 1 × 100 = 100."
+    trap: "Confusing the bare digit 1 with its place value (100) is the most common slip here."
+
+  - id: whole-numbers-021
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 3,461 to the nearest hundred."
+    options: ["3000", "3600", "3500", "3460"]
+    answer: 2
+    explanation: "The tens digit of 3461 decides the rounding. 3461 rounds to 3500 at the nearest hundred."
+    trap: "3460 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-022
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 7,825 to the nearest hundred."
+    options: ["8000", "7800", "7830", "7900"]
+    answer: 1
+    explanation: "The tens digit of 7825 decides the rounding. 7825 rounds to 7800 at the nearest hundred."
+    trap: "7830 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-023
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 12,046 to the nearest hundred."
+    options: ["12050", "12000", "12100", "12001"]
+    answer: 1
+    explanation: "The tens digit of 12046 decides the rounding. 12046 rounds to 12000 at the nearest hundred."
+    trap: "12050 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-024
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 29,573 to the nearest hundred."
+    options: ["30000", "29600", "29570", "29700"]
+    answer: 1
+    explanation: "The tens digit of 29573 decides the rounding. 29573 rounds to 29600 at the nearest hundred."
+    trap: "29570 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-025
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 54,811 to the nearest hundred."
+    options: ["55000", "54810", "54800", "54900"]
+    answer: 2
+    explanation: "The tens digit of 54811 decides the rounding. 54811 rounds to 54800 at the nearest hundred."
+    trap: "54810 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-026
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 68,290 to the nearest hundred."
+    options: ["68400", "68000", "68300", "68290"]
+    answer: 2
+    explanation: "The tens digit of 68290 decides the rounding. 68290 rounds to 68300 at the nearest hundred."
+    trap: "68290 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-027
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 91,347 to the nearest hundred."
+    options: ["91400", "91350", "91000", "91300"]
+    answer: 3
+    explanation: "The tens digit of 91347 decides the rounding. 91347 rounds to 91300 at the nearest hundred."
+    trap: "91350 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-028
+    difficulty: 0.20
+    estimatedSeconds: 35
+    question: "Round 40,625 to the nearest hundred."
+    options: ["40630", "40600", "40700", "41000"]
+    answer: 1
+    explanation: "The tens digit of 40625 decides the rounding. 40625 rounds to 40600 at the nearest hundred."
+    trap: "40630 rounds to the nearest ten instead of the nearest hundred — rounding to the wrong place value is as common a mistake as rounding the wrong way."
+
+  - id: whole-numbers-029
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 24 + 6 × 3?"
+    options: ["42", "45", "36", "90"]
+    answer: 0
+    explanation: "6 × 3 is done first by order of operations, giving 42."
+    trap: "90 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."
+
+  - id: whole-numbers-030
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 100 - 4 × 12?"
+    options: ["52", "64", "48", "1152"]
+    answer: 0
+    explanation: "4 × 12 is done first by order of operations, giving 52."
+    trap: "1152 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."
+
+  - id: whole-numbers-031
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 18 × 2 + 7?"
+    options: ["44", "50", "43", "41"]
+    answer: 2
+    explanation: "18 × 2 is done first by order of operations, giving 43."
+    trap: "43 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."
+
+  - id: whole-numbers-032
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 90 ÷ 6 + 5?"
+    options: ["20", "25", "21", "14"]
+    answer: 0
+    explanation: "90 ÷ 6 is done first by order of operations, giving 20."
+    trap: "20 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."
+
+  - id: whole-numbers-033
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 45 - 15 ÷ 3?"
+    options: ["43", "10", "40", "25"]
+    answer: 2
+    explanation: "15 ÷ 3 is done first by order of operations, giving 40."
+    trap: "10 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."
+
+  - id: whole-numbers-034
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "What is 12 × 4 - 9?"
+    options: ["48", "35", "40", "39"]
+    answer: 3
+    explanation: "12 × 4 is done first by order of operations, giving 39."
+    trap: "39 comes from evaluating strictly left to right instead of respecting multiplication/division before addition/subtraction."

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import AchievementUnlockBanner from './AchievementUnlockBanner';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -32,8 +33,11 @@ export default function LiveQuestion({
   const [answered, setAnswered] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [aiHint, setAiHint] = useState(null);
+  const [aiHintName, setAiHintName] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiUnavailable, setAiUnavailable] = useState(false);
+  const [newAchievements, setNewAchievements] = useState([]);
+  const lastTimeTakenMs = useRef(null);
 
   const shownAt = useRef(Date.now());
 
@@ -45,6 +49,8 @@ export default function LiveQuestion({
     setConfidence(null);
     setResult(null);
     setAiHint(null);
+    setAiHintName(null);
+    setNewAchievements([]);
     setAiUnavailable(false);
     try {
       const res = await fetch(nextQuestionUrl, { cache: 'no-store' });
@@ -72,6 +78,8 @@ export default function LiveQuestion({
   async function submit() {
     if (selected === null || !question) return;
     setLoading(true);
+    const timeTakenMs = Date.now() - shownAt.current;
+    lastTimeTakenMs.current = timeTakenMs;
     try {
       const res = await fetch(submitUrl, {
         method: 'POST',
@@ -80,7 +88,7 @@ export default function LiveQuestion({
           attemptId: crypto.randomUUID(),
           questionId: question.questionId,
           selectedIndex: selected,
-          timeTakenMs: Date.now() - shownAt.current,
+          timeTakenMs,
           confidence,
           mode,
         }),
@@ -90,6 +98,7 @@ export default function LiveQuestion({
       setResult(data);
       setAnswered((n) => n + 1);
       if (data.correct) setCorrectCount((n) => n + 1);
+      setNewAchievements(data.newAchievements ?? []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -108,11 +117,17 @@ export default function LiveQuestion({
           questionId: question.questionId,
           selectedIndex: selected,
           mistakeType: result.mistakeType,
+          confidence,
+          timeTakenMs: lastTimeTakenMs.current,
         }),
       });
       const data = await res.json();
-      if (data.available) setAiHint(data.text);
-      else setAiUnavailable(true);
+      if (data.available) {
+        setAiHint(data.text);
+        setAiHintName(data.learnerName ?? null);
+      } else {
+        setAiUnavailable(true);
+      }
     } catch {
       setAiUnavailable(true);
     } finally {
@@ -235,16 +250,25 @@ export default function LiveQuestion({
           <p style={{ marginTop: 10 }}>{result.explanation}</p>
           {result.trap && <p className="muted" style={{ marginTop: 8 }}>{result.trap}</p>}
 
-          {!result.correct && !aiHint && !aiUnavailable && (
+          {!aiHint &&
+            !aiUnavailable &&
+            (!result.correct ||
+              (confidence !== null && confidence <= 2) ||
+              (lastTimeTakenMs.current !== null && question.estimatedSeconds && lastTimeTakenMs.current / 1000 > question.estimatedSeconds * 1.5)) && (
             <button type="button" className="btn btn-secondary" style={{ marginTop: 16 }} onClick={getAiHint} disabled={aiLoading}>
-              {aiLoading ? 'Thinking…' : '✦ Why, exactly?'}
+              {aiLoading ? 'Thinking…' : result.correct ? '✦ Make this faster next time' : '✦ Why, exactly?'}
             </button>
           )}
           {aiHint && (
             <div className="card-tint" style={{ marginTop: 16 }}>
-              <p>{aiHint}</p>
+              {aiHintName && (
+                <span className="eyebrow" style={{ color: 'var(--secondary)' }}>✦ {aiHintName}, here's one more angle</span>
+              )}
+              <p style={{ marginTop: aiHintName ? 8 : 0 }}>{aiHint}</p>
             </div>
           )}
+
+          <AchievementUnlockBanner achievements={newAchievements} />
 
           <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={loadNext} disabled={loading}>
             Next question

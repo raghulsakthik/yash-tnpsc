@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID } from '../../../../lib/db.mjs';
+import { query } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,11 @@ export async function POST(request) {
     return NextResponse.json({ code: 'INVALID_SUBSCRIPTION', message: 'A valid push subscription is required' }, { status: 400 });
   }
 
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     await query(
       `INSERT INTO push_subscription (learner_id, endpoint, p256dh, auth, user_agent)
@@ -36,7 +42,7 @@ export async function POST(request) {
          p256dh = EXCLUDED.p256dh,
          auth = EXCLUDED.auth,
          user_agent = EXCLUDED.user_agent`,
-      [LEARNER_ID, endpoint, p256dh, auth, userAgent ?? null]
+      [learnerId, endpoint, p256dh, auth, userAgent ?? null]
     );
     return NextResponse.json({ subscribed: true });
   } catch (err) {

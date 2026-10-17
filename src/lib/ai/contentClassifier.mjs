@@ -7,7 +7,14 @@ export class ClassifyError extends Error {
   }
 }
 
-const MAX_SOURCE_CHARS = 60000; // ~15k tokens of source text, well under the model's input budget
+// Per AI call, not per document -- a document bigger than this is split into
+// several calls (see splitIntoChunks) instead of being truncated. Kept well
+// under the model's real input budget so a chunk's output also comfortably
+// fits the JSON_MAX_TOKENS response budget (a dense chunk of ~45k chars has
+// produced well under half of that in testing).
+const CHUNK_CHARS = 45000;
+const CHUNK_CONCURRENCY = 3;
+const MAX_CHUNKS = 40; // sanity cap -- ~1.8M chars of source text, far beyond any real bulk upload
 
 function buildPrompt(markedText, syllabusTree) {
   const topicList = syllabusTree.flatMap((subject) =>
@@ -153,28 +160,12 @@ function sanitizeResource(raw, validTopicIds, maxPage) {
   };
 }
 
-/**
- * Classifies pages of text extracted from an admin-uploaded document into
- * MCQs and study-note resources, each pointed at an existing topic or
- * flagged as needing a new one, and each flagged when it depends on a
- * diagram the text can't carry (so the caller can go capture that page as
- * an image). This is the one place in the content pipeline that spends an
- * AI call -- deliberately opt-in (an admin uploads a document) rather than
- * something that runs automatically, since the manual YAML path already
- * covers routine content growth at zero AI cost.
- *
- * @param {Array<{pageNumber: number, text: string}>} pages
- * @returns {Promise<{mcqs: Array<object>, resources: Array<object>, truncated: boolean}>}
- */
-export async function classifyContent(pages, syllabusTree) {
+/** Classifies a single chunk (one AI call's worth of pages). */
+async function classifyChunk(pages, syllabusTree) {
   const maxPage = pages.length > 0 ? Math.max(...pages.map((p) => p.pageNumber)) : 0;
-  const fullMarkedText = pages.map((p) => `=== PAGE ${p.pageNumber} ===\n${p.text}`).join('\n\n');
-  const truncated = fullMarkedText.length > MAX_SOURCE_CHARS;
-  const markedText = truncated ? fullMarkedText.slice(0, MAX_SOURCE_CHARS) : fullMarkedText;
+  const markedText = pages.map((p) => `=== PAGE ${p.pageNumber} ===\n${p.text}`).join('\n\n');
 
-  if (!markedText.trim()) {
-    throw new ClassifyError('EMPTY_TEXT', 'No text could be extracted from that file.');
-  }
+  if (!markedText.trim()) return { mcqs: [], resources: [] };
 
   const prompt = buildPrompt(markedText, syllabusTree);
   const result = await generateJson(prompt);
@@ -190,5 +181,107 @@ export async function classifyContent(pages, syllabusTree) {
     ? result.resources.map((r) => sanitizeResource(r, validTopicIds, maxPage)).filter(Boolean)
     : [];
 
-  return { mcqs, resources, truncated };
+  return { mcqs, resources };
+}
+
+/**
+ * Groups pages into chunks of roughly `maxChars` each, preserving page
+ * boundaries (so a PDF page's real number -- and any later diagram
+ * capture keyed on it -- always stays intact). A single oversized page
+ * (a huge .docx/.txt with no real page breaks, which extractText reports
+ * as one synthetic "page") is itself split on paragraph boundaries rather
+ * than mid-sentence.
+ */
+function splitIntoChunks(pages, maxChars) {
+  const chunks = [];
+  let current = [];
+  let currentChars = 0;
+
+  const flush = () => {
+    if (current.length > 0) {
+      chunks.push(current);
+      current = [];
+      currentChars = 0;
+    }
+  };
+
+  for (const page of pages) {
+    if (page.text.length <= maxChars) {
+      if (currentChars + page.text.length > maxChars) flush();
+      current.push(page);
+      currentChars += page.text.length;
+      continue;
+    }
+
+    // One oversized "page" (typically a whole .txt/.docx with no real page
+    // breaks) -- split it on blank-line paragraph boundaries instead.
+    flush();
+    const paragraphs = page.text.split(/\n\s*\n/);
+    let buffer = '';
+    for (const para of paragraphs) {
+      if (buffer && buffer.length + para.length + 2 > maxChars) {
+        chunks.push([{ pageNumber: page.pageNumber, text: buffer }]);
+        buffer = '';
+      }
+      buffer += (buffer ? '\n\n' : '') + para;
+    }
+    if (buffer) chunks.push([{ pageNumber: page.pageNumber, text: buffer }]);
+  }
+  flush();
+
+  return chunks;
+}
+
+async function runWithConcurrency(tasks, limit) {
+  const results = new Array(tasks.length);
+  let next = 0;
+  async function worker() {
+    while (next < tasks.length) {
+      const i = next;
+      next += 1;
+      results[i] = await tasks[i]();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+  return results;
+}
+
+/**
+ * Classifies pages of text extracted from an admin-uploaded document into
+ * MCQs and study-note resources, each pointed at an existing topic or
+ * flagged as needing a new one, and each flagged when it depends on a
+ * diagram the text can't carry (so the caller can go capture that page as
+ * an image). This is the one place in the content pipeline that spends an
+ * AI call -- deliberately opt-in (an admin uploads a document) rather than
+ * something that runs automatically, since the manual YAML path already
+ * covers routine content growth at zero AI cost.
+ *
+ * Large documents (a bulk-exported mock test, a multi-chapter PDF) are
+ * split into several AI calls rather than silently truncated -- a single
+ * call's input and output budgets can only cover so much, but a 200-
+ * question export is a completely normal thing for an admin to upload.
+ *
+ * @param {Array<{pageNumber: number, text: string}>} pages
+ * @returns {Promise<{mcqs: Array<object>, resources: Array<object>, truncated: boolean, chunkCount: number}>}
+ */
+export async function classifyContent(pages, syllabusTree) {
+  const allChunks = splitIntoChunks(pages, CHUNK_CHARS);
+  const truncated = allChunks.length > MAX_CHUNKS;
+  const chunks = truncated ? allChunks.slice(0, MAX_CHUNKS) : allChunks;
+
+  if (chunks.length === 0) {
+    throw new ClassifyError('EMPTY_TEXT', 'No text could be extracted from that file.');
+  }
+
+  const results = await runWithConcurrency(
+    chunks.map((chunkPages) => () => classifyChunk(chunkPages, syllabusTree)),
+    CHUNK_CONCURRENCY
+  );
+
+  return {
+    mcqs: results.flatMap((r) => r.mcqs),
+    resources: results.flatMap((r) => r.resources),
+    truncated,
+    chunkCount: chunks.length,
+  };
 }

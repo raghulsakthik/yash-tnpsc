@@ -201,7 +201,7 @@ export default function PdfClassifyPanel() {
         <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
           <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" />
           <button type="button" className="btn btn-primary" onClick={analyze} disabled={analyzing}>
-            {analyzing ? 'Reading and classifying…' : 'Analyze'}
+            {analyzing ? 'Reading and classifying… large files (100+ questions) can take a few minutes' : 'Analyze'}
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@ export default function PdfClassifyPanel() {
         <>
           {proposal.truncated && (
             <div className="card" style={{ background: 'var(--warm-tint)' }}>
-              <p>This PDF was long -- only the first portion of the text was analyzed. Split it and upload the rest separately if anything is missing.</p>
+              <p>This file was extremely large -- only the first ~40 batches of content were analyzed. Split it into smaller files and upload the rest separately to get everything.</p>
             </div>
           )}
 

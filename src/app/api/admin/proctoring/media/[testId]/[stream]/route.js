@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/admin/proctoring/media/:testId/:stream (stream = camera|screen)
+ * query: ?download=1 -- forces a browser download (Content-Disposition:
+ *   attachment) with a sensible filename, instead of playing inline.
  *
  * Streams the recording file, with HTTP Range support so the <video>
  * player can seek -- without it, browsers can download but not scrub.
@@ -24,8 +26,11 @@ export async function GET(request, { params }) {
     return new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'No recording for this test/stream' }), { status: 404 });
   }
 
+  const download = new URL(request.url).searchParams.get('download');
+  const contentDisposition = download ? `attachment; filename="${testId}-${stream}.webm"` : 'inline';
+
   const rangeHeader = request.headers.get('range');
-  if (rangeHeader) {
+  if (rangeHeader && !download) {
     const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
     const start = match[1] ? Number(match[1]) : 0;
     const end = match[2] ? Number(match[2]) : size - 1;
@@ -38,6 +43,7 @@ export async function GET(request, { params }) {
         'Content-Range': `bytes ${start}-${end}/${size}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': String(end - start + 1),
+        'Content-Disposition': contentDisposition,
       },
     });
   }
@@ -49,6 +55,7 @@ export async function GET(request, { params }) {
       'Content-Type': 'video/webm',
       'Accept-Ranges': 'bytes',
       'Content-Length': String(size),
+      'Content-Disposition': contentDisposition,
     },
   });
 }

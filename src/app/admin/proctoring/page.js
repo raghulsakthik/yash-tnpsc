@@ -7,9 +7,10 @@ function formatDate(iso) {
   return new Date(iso).toLocaleString();
 }
 
-function SessionDetail({ testId, onClose }) {
+function SessionDetail({ testId, onClose, onDeleted }) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/proctoring/sessions/${testId}`, { cache: 'no-store' })
@@ -21,11 +22,35 @@ function SessionDetail({ testId, onClose }) {
       .catch((err) => setError(err.message));
   }, [testId]);
 
+  async function handleDelete() {
+    if (!confirm('Permanently delete these recordings and this session\'s event log? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/proctoring/sessions/${testId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).message ?? 'Could not delete session');
+      onDeleted(testId);
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="card" style={{ marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="eyebrow">Session detail</span>
-        <button type="button" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={onClose}>Close</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ padding: '4px 10px', fontSize: '0.8rem', color: 'var(--warm-accent)' }}
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting…' : 'Delete recordings'}
+          </button>
+          <button type="button" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={onClose}>Close</button>
+        </div>
       </div>
 
       {error && <p style={{ color: 'var(--warm-accent)', marginTop: 10 }}>{error}</p>}
@@ -43,7 +68,14 @@ function SessionDetail({ testId, onClose }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
             <div>
-              <span className="eyebrow" style={{ fontSize: '0.75rem' }}>Camera</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="eyebrow" style={{ fontSize: '0.75rem' }}>Camera</span>
+                {detail.hasCamera && (
+                  <a href={`/api/admin/proctoring/media/${testId}/camera?download=1`} style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>
+                    ↓ Download
+                  </a>
+                )}
+              </div>
               {detail.hasCamera ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video controls style={{ width: '100%', marginTop: 8, borderRadius: 8, background: '#000' }} src={`/api/admin/proctoring/media/${testId}/camera`} />
@@ -52,7 +84,14 @@ function SessionDetail({ testId, onClose }) {
               )}
             </div>
             <div>
-              <span className="eyebrow" style={{ fontSize: '0.75rem' }}>Screen</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="eyebrow" style={{ fontSize: '0.75rem' }}>Screen</span>
+                {detail.hasScreen && (
+                  <a href={`/api/admin/proctoring/media/${testId}/screen?download=1`} style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>
+                    ↓ Download
+                  </a>
+                )}
+              </div>
               {detail.hasScreen ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video controls style={{ width: '100%', marginTop: 8, borderRadius: 8, background: '#000' }} src={`/api/admin/proctoring/media/${testId}/screen`} />
@@ -93,6 +132,11 @@ export default function AdminProctoring() {
       .catch((err) => setError(err.message));
   }, []);
 
+  function handleDeleted(testId) {
+    setSessions((prev) => prev.filter((s) => s.testId !== testId));
+    setOpenTestId(null);
+  }
+
   return (
     <AdminGuard>
       <h1>Proctoring</h1>
@@ -123,7 +167,7 @@ export default function AdminProctoring() {
               Review
             </button>
           </div>
-          {openTestId === s.testId && <SessionDetail testId={s.testId} onClose={() => setOpenTestId(null)} />}
+          {openTestId === s.testId && <SessionDetail testId={s.testId} onClose={() => setOpenTestId(null)} onDeleted={handleDeleted} />}
         </div>
       ))}
     </AdminGuard>

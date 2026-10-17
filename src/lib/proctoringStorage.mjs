@@ -16,7 +16,7 @@
  * about testId/stream, not the storage mechanism.
  */
 
-import { mkdir, appendFile, stat, open } from 'node:fs/promises';
+import { mkdir, appendFile, stat, open, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { createReadStream } from 'node:fs';
 
@@ -46,6 +46,11 @@ export async function getRecordingStats(testId, stream) {
   } catch {
     return { exists: false, size: 0 };
   }
+}
+
+/** Permanently removes both recordings for a test. Safe to call even if nothing was ever recorded. */
+export async function deleteRecordings(testId) {
+  await rm(sessionDir(testId), { recursive: true, force: true });
 }
 
 /** Opens the file for streaming playback; caller is responsible for closing it via the returned stream's lifecycle. */

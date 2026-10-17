@@ -1,4 +1,5 @@
 import { query } from './db.mjs';
+import { deleteRecordings } from './proctoringStorage.mjs';
 
 export class ProctoringError extends Error {
   constructor(code, message) {
@@ -105,4 +106,11 @@ export async function getSessionDetail(testId) {
     questionCount: s.question_count,
     events: eventRows.map((e) => ({ type: e.event_type, metadata: e.metadata, at: e.created_at })),
   };
+}
+
+/** Permanently deletes a session's recordings (disk) and its DB row (cascades to its events). */
+export async function deleteSession(testId) {
+  const { rows } = await query('DELETE FROM proctoring_session WHERE test_id = $1 RETURNING id', [testId]);
+  if (rows.length === 0) throw new ProctoringError('SESSION_NOT_FOUND', `No proctoring session for test ${testId}`);
+  await deleteRecordings(testId);
 }

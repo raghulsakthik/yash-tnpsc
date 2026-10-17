@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useProctoring } from './useProctoring';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -10,40 +11,51 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
  * src/app/_components/TestSession.js, restyled with the design
  * tokens (question palette, free navigation, mark-for-review, nothing
  * revealed until submit).
+ *
+ * Gated behind a proctoring consent screen: camera + screen recording is
+ * required before the test is created, matching how real proctored exams
+ * work. Nothing is captured until the learner explicitly clicks through —
+ * the browser's own permission prompts are the actual consent mechanism.
  */
 export default function LiveTest({ templateId = null }) {
   const router = useRouter();
+  const proctoring = useProctoring();
+  const [phase, setPhase] = useState('consent'); // consent | starting | active | denied
   const [testId, setTestId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   const shownAt = useRef(Date.now());
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/tests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(templateId ? { templateId } : {}),
-    })
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(data.message ?? 'Could not start a test');
-        setTestId(data.testId);
-        setQuestions(data.questions);
-        shownAt.current = Date.now();
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  async function acceptAndBegin() {
+    setPhase('starting');
+    const granted = await proctoring.requestConsent();
+    if (!granted) {
+      setPhase('denied');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateId ? { templateId } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not start a test');
+      setTestId(data.testId);
+      setQuestions(data.questions);
+      shownAt.current = Date.now();
+      proctoring.startRecording(data.testId);
+      setPhase('active');
+    } catch (err) {
+      setError(err.message);
+      setPhase('consent');
+    }
+  }
 
   const saveAnswer = useCallback(
     (questionId, patch) => {
@@ -73,6 +85,7 @@ export default function LiveTest({ templateId = null }) {
       const res = await fetch(`/api/tests/${testId}/submit`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not submit the test');
+      proctoring.stopRecording();
       try {
         sessionStorage.setItem(`test-new-achievements:${testId}`, JSON.stringify(data.newAchievements ?? []));
       } catch {
@@ -94,7 +107,36 @@ export default function LiveTest({ templateId = null }) {
     );
   }
 
-  if (loading || !testId) {
+  if (phase === 'consent' || phase === 'starting') {
+    return (
+      <div className="card" style={{ margin: 24, maxWidth: 560 }}>
+        <span className="eyebrow">Before you begin</span>
+        <h2 style={{ marginTop: 10 }}>This test is proctored</h2>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Your camera and screen are recorded for the duration of the test, for later review. Recording starts
+          only after you click below and your browser grants access — nothing is captured before that.
+        </p>
+        <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={acceptAndBegin} disabled={phase === 'starting'}>
+          {phase === 'starting' ? 'Requesting access…' : 'Allow camera & screen, and begin'}
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === 'denied') {
+    return (
+      <div className="card" style={{ margin: 24, maxWidth: 560, background: 'var(--warm-tint)' }}>
+        <h3>Camera and screen access are required</h3>
+        <p className="muted" style={{ marginTop: 10 }}>
+          This test needs both to start. If you denied the browser prompt, you can try again — check your
+          browser&apos;s site settings if it doesn&apos;t ask a second time.
+        </p>
+        <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setPhase('consent')}>Try again</button>
+      </div>
+    );
+  }
+
+  if (!testId) {
     return <p className="muted" style={{ padding: 24 }}>Preparing your test…</p>;
   }
 

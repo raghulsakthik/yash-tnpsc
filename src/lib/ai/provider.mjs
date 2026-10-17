@@ -15,11 +15,15 @@ const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/
 const MAX_TOKENS = 300;
 const TIMEOUT_MS = 12000;
 
-// A classification pass over a whole PDF's worth of text is a much bigger
-// job than a one-line hint: longer timeout, much larger output budget, and
-// JSON-mode so the response can be parsed without free-text wrangling.
-const JSON_MAX_TOKENS = 8000;
-const JSON_TIMEOUT_MS = 45000;
+// A classification pass over a whole document's worth of text is a much
+// bigger job than a one-line hint: longer timeout, much larger output
+// budget, and JSON-mode so the response can be parsed without free-text
+// wrangling. 8000 was too tight -- a real multi-section study-material PDF
+// has far more than 8000 tokens' worth of questions, and the model would
+// quietly return only a partial sample instead of erroring, which is worse
+// than slow. 32000 is this model's accepted ceiling.
+const JSON_MAX_TOKENS = 32000;
+const JSON_TIMEOUT_MS = 90000;
 
 /**
  * @param {{system: string, user: string}} prompt

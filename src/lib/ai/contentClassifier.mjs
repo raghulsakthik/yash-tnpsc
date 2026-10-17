@@ -21,11 +21,22 @@ function buildPrompt(sourceText, syllabusTree) {
   const system = `You are sorting raw study material for a TNPSC exam-prep app into its existing syllabus.
 You will get a list of real topics that already exist, and raw text extracted from an admin-uploaded document.
 The document may mix multiple choice questions (with answers) and plain study notes/explanations, across several
-different topics, in any order.
+different topics and sections, in any order, and may run to many pages.
 
 Your job: split the text into individual MCQs and individual study-note chunks, and for each one, point it at
 the single best-matching existing topic id. Only propose a brand new topic when nothing in the existing list is
 a reasonable match -- reusing an existing topic is always preferred over inventing one.
+
+CRITICAL -- be exhaustive, not a representative sample: extract EVERY numbered question in the document
+(worked examples AND "practice questions" sections both count), not just the first few or one per section.
+A document with 50 questions across 6 sections must produce roughly 50 mcqs, grouped under several different
+topics/sections as appropriate -- never stop early or summarize because there are many. Each distinct
+section heading (e.g. "PUZZLES", "DICE", "CUBES", "ALPHA NUMBER SERIES", "CODING-DECODING") is its own batch
+of questions and usually maps to its own topic -- don't let one section's topic choice bleed into another's.
+When a question's answer is only derivable from a diagram/figure image the extracted text can't show you,
+still extract the question, options and the stated answer letter/number exactly as given (look for "Ans:" or
+"Solution:" markers) -- write a brief honest explanation (e.g. "Answer given in the source material; derived
+from the accompanying diagram.") rather than inventing reasoning you can't actually verify from text alone.
 
 Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
 {

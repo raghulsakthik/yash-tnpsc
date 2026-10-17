@@ -15,6 +15,12 @@ const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/
 const MAX_TOKENS = 300;
 const TIMEOUT_MS = 12000;
 
+// A classification pass over a whole PDF's worth of text is a much bigger
+// job than a one-line hint: longer timeout, much larger output budget, and
+// JSON-mode so the response can be parsed without free-text wrangling.
+const JSON_MAX_TOKENS = 8000;
+const JSON_TIMEOUT_MS = 45000;
+
 /**
  * @param {{system: string, user: string}} prompt
  * @returns {Promise<{text: string, model: string}|null>} null when the
@@ -50,6 +56,58 @@ export async function generateHint(prompt) {
     if (!text) return null;
 
     return { text: text.trim(), model: MODEL };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Same model, but asks for strict JSON back and parses it for the caller.
+ * Used for structured extraction (e.g. classifying bulk-uploaded content)
+ * rather than short free-text tutoring replies.
+ *
+ * @param {{system: string, user: string}} prompt
+ * @returns {Promise<unknown|null>} the parsed JSON value, or null when the
+ *   provider is unconfigured, unreachable, or returns something that isn't
+ *   valid JSON — callers must treat that as "classification unavailable",
+ *   not crash.
+ */
+export async function generateJson(prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), JSON_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: prompt.system }] },
+        contents: [{ role: 'user', parts: [{ text: prompt.user }] }],
+        generationConfig: {
+          maxOutputTokens: JSON_MAX_TOKENS,
+          thinkingConfig: { thinkingBudget: 0 },
+          responseMimeType: 'application/json',
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
   } catch {
     return null;
   } finally {

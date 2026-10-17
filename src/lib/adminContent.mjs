@@ -158,3 +158,65 @@ export async function upsertQuestions({ topic, language, source, questions }) {
 
   return { inserted, updated };
 }
+
+/**
+ * Inserts one study-resource note against an existing topic. Never
+ * deduped/upserted by title -- a PDF commonly contributes several distinct
+ * notes to the same topic over time, and re-running a commit is rare
+ * enough that a stray duplicate is a cheaper mistake than silently
+ * dropping a second genuinely different note with the same title.
+ */
+export async function upsertResource({ topicId, title, body, source }) {
+  const { rows: topicRows } = await query(`SELECT id FROM topic WHERE id = $1`, [topicId]);
+  if (topicRows.length === 0) {
+    throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topicId} -- create it first or check the id.`);
+  }
+  await query(
+    `INSERT INTO topic_resource (topic_id, title, body, source) VALUES ($1, $2, $3, $4)`,
+    [topicId, title, body, source ?? 'admin-upload']
+  );
+}
+
+/**
+ * Creates the topic (and chapter, if needed) only if it doesn't already
+ * exist -- unlike createTopic, which errors on a collision. The PDF
+ * classify/commit flow calls this because the same new topic can be the
+ * destination for several items in one upload.
+ */
+export async function createTopicIfMissing({ topicId, topicName, chapterId, chapterName, subjectId }) {
+  const { rows } = await query(`SELECT id FROM topic WHERE id = $1`, [topicId]);
+  if (rows.length > 0) return;
+  await createTopic({ topicId, topicName, chapterId, chapterName, subjectId });
+}
+
+/**
+ * The full subject -> chapter -> topic tree, same shape /api/admin/syllabus
+ * returns. Shared so the PDF classifier can tell the AI exactly which real
+ * topics already exist, instead of it guessing at ids.
+ */
+export async function getSyllabusTree() {
+  const { rows } = await query(`
+    SELECT s.id AS subject_id, s.name AS subject_name, s.sort_order AS subject_sort,
+           c.id AS chapter_id, c.name AS chapter_name, c.sort_order AS chapter_sort,
+           t.id AS topic_id, t.name AS topic_name, t.sort_order AS topic_sort,
+           (SELECT COUNT(*)::int FROM question q WHERE q.topic_id = t.id AND q.status = 'PUBLISHED') AS question_count
+      FROM subject s
+      JOIN chapter c ON c.subject_id = s.id
+      JOIN topic t ON t.chapter_id = c.id
+     ORDER BY s.sort_order, c.sort_order, t.sort_order
+  `);
+
+  const subjects = new Map();
+  for (const r of rows) {
+    if (!subjects.has(r.subject_id)) {
+      subjects.set(r.subject_id, { id: r.subject_id, name: r.subject_name, chapters: new Map() });
+    }
+    const subject = subjects.get(r.subject_id);
+    if (!subject.chapters.has(r.chapter_id)) {
+      subject.chapters.set(r.chapter_id, { id: r.chapter_id, name: r.chapter_name, subjectId: r.subject_id, topics: [] });
+    }
+    subject.chapters.get(r.chapter_id).topics.push({ id: r.topic_id, name: r.topic_name, questionCount: r.question_count });
+  }
+
+  return [...subjects.values()].map((s) => ({ ...s, chapters: [...s.chapters.values()] }));
+}

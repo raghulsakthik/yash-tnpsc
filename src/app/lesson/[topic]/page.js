@@ -62,27 +62,47 @@ export default function Lesson({ params }) {
 
       {lesson && (
         <div style={{ paddingTop: 40 }}>
-          <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>The idea</span>
-          <h1 style={{ marginTop: 10 }}>{lesson.title}</h1>
-          <p style={{ marginTop: 16, fontSize: '1.05rem' }}>{lesson.concept}</p>
+          {lesson.concept && (
+            <>
+              <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>The idea</span>
+              <h1 style={{ marginTop: 10 }}>{lesson.title}</h1>
+              <p style={{ marginTop: 16, fontSize: '1.05rem' }}>{lesson.concept}</p>
+            </>
+          )}
 
-          <div className="card-tint" style={{ marginTop: 24 }}>
-            <span className="eyebrow" style={{ color: 'var(--secondary)' }}>Worked example</span>
-            <p style={{ marginTop: 10, fontWeight: 600 }}>{lesson.example.problem}</p>
-            <ol style={{ marginTop: 10, paddingLeft: 20 }}>
-              {lesson.example.steps.map((step, i) => (
-                <li key={i} style={{ marginTop: 6 }}>{step}</li>
-              ))}
-            </ol>
-            <div className="num" style={{ fontSize: '1.3rem', color: 'var(--primary)', marginTop: 14 }}>
-              Answer: {lesson.example.answer}
+          {lesson.example && (
+            <div className="card-tint" style={{ marginTop: 24 }}>
+              <span className="eyebrow" style={{ color: 'var(--secondary)' }}>Worked example</span>
+              <p style={{ marginTop: 10, fontWeight: 600 }}>{lesson.example.problem}</p>
+              <ol style={{ marginTop: 10, paddingLeft: 20 }}>
+                {lesson.example.steps.map((step, i) => (
+                  <li key={i} style={{ marginTop: 6 }}>{step}</li>
+                ))}
+              </ol>
+              <div className="num" style={{ fontSize: '1.3rem', color: 'var(--primary)', marginTop: 14 }}>
+                Answer: {lesson.example.answer}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="card" style={{ marginTop: 20, borderLeft: '3px solid var(--warm-accent)' }}>
-            <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Common mistake</span>
-            <p style={{ marginTop: 10 }}>{lesson.tip}</p>
-          </div>
+          {lesson.tip && (
+            <div className="card" style={{ marginTop: 20, borderLeft: '3px solid var(--warm-accent)' }}>
+              <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Common mistake</span>
+              <p style={{ marginTop: 10 }}>{lesson.tip}</p>
+            </div>
+          )}
+
+          {lesson.resources?.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <span className="eyebrow" style={{ color: 'var(--primary)' }}>Study notes</span>
+              {lesson.resources.map((r, i) => (
+                <div key={i} className="card" style={{ marginTop: 12 }}>
+                  <strong>{r.title}</strong>
+                  <p style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{r.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {!altExplanation && !altUnavailable && (
             <button type="button" className="btn btn-secondary" style={{ marginTop: 16 }} onClick={explainDifferently} disabled={altLoading}>

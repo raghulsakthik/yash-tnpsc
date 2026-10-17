@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import AdminGuard from '../_components/AdminGuard';
+import PdfClassifyPanel from './PdfClassifyPanel';
 
 const SAMPLE_YAML = `topic: aptitude.averages
 language: en
@@ -200,13 +201,26 @@ function slugify(text) {
 }
 
 export default function AdminUpload() {
+  const [mode, setMode] = useState('yaml'); // yaml | pdf
+
   return (
     <AdminGuard>
       <h1>Upload content</h1>
       <p className="muted" style={{ marginTop: 8, marginBottom: 20 }}>
-        Bulk-add real questions by hand -- no AI call, no tokens spent. Goes straight into the live question bank.
+        Grow the question bank and study notes without an AI call every time -- or let a PDF be read and sorted
+        automatically when that is what you have.
       </p>
-      <UploadBody />
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button type="button" className={`pill-tab ${mode === 'yaml' ? 'active' : ''}`} onClick={() => setMode('yaml')}>
+          Manual YAML (free)
+        </button>
+        <button type="button" className={`pill-tab ${mode === 'pdf' ? 'active' : ''}`} onClick={() => setMode('pdf')}>
+          Upload a PDF (AI-sorted)
+        </button>
+      </div>
+
+      {mode === 'yaml' ? <UploadBody /> : <PdfClassifyPanel />}
     </AdminGuard>
   );
 }

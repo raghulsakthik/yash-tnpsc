@@ -1,17 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
+const NAV = [
+  { href: '/admin', label: 'Dashboard', icon: '◆' },
+  { href: '/admin/subjects', label: 'Subjects & Topics', icon: '▤' },
+  { href: '/admin/lessons', label: 'Lessons', icon: '✎' },
+  { href: '/admin/questions', label: 'Questions', icon: '?' },
+  { href: '/admin/tests', label: 'Tests', icon: '▦' },
+  { href: '/admin/quicklab', label: 'Quick Lab', icon: '⚡' },
+  { href: '/admin/upload', label: 'Bulk Upload', icon: '⇪' },
+  { href: '/admin/proctoring', label: 'Proctoring', icon: '◉' },
+];
+
+function isActive(pathname, href) {
+  return pathname === href || (href !== '/admin' && pathname.startsWith(href));
+}
+
 /**
- * Client-side gate for the /admin pages: not a security boundary (every
- * /api/admin/* route re-checks requireAdmin server-side regardless), just
- * keeps a non-admin from landing on a page full of empty states and
- * permission errors. Redirects anyone who isn't an admin back to Home.
+ * The admin area's own chrome -- deliberately NOT a reskin of the learner
+ * AppShell (top nav + bottom tabs). An admin manages the whole platform's
+ * content, not their own progress, so this is a sidebar workspace layout
+ * instead. Not a security boundary either way -- every /api/admin/* route
+ * re-checks requireAdmin server-side regardless; this just keeps a
+ * non-admin from landing on a page full of empty states and 403s.
  */
 export default function AdminGuard({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState('checking'); // checking | allowed | denied
 
   useEffect(() => {
@@ -39,19 +57,46 @@ export default function AdminGuard({ children }) {
   }
 
   return (
-    <main className="shell-main" style={{ maxWidth: 960, paddingTop: 36, paddingBottom: 60 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 18, alignItems: 'baseline' }}>
-          <Link href="/admin" style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', textDecoration: 'none' }}>
-            Admin
-          </Link>
-          <Link href="/admin/upload" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
-            Upload content
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--paper-sunk)' }}>
+      <aside
+        style={{
+          width: 230, flexShrink: 0, background: 'var(--ink)', color: '#fff',
+          display: 'flex', flexDirection: 'column', padding: '24px 0', position: 'sticky', top: 0, height: '100vh',
+        }}
+      >
+        <div style={{ padding: '0 20px 20px', fontWeight: 700, fontSize: '1.05rem', letterSpacing: '0.02em' }}>
+          ✦ Admin
+        </div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {NAV.map((item) => {
+            const active = isActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 20px', fontSize: '0.9rem',
+                  color: active ? '#fff' : 'rgba(255,255,255,0.65)',
+                  background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderLeft: active ? '3px solid var(--warm-accent)' : '3px solid transparent',
+                  textDecoration: 'none',
+                }}
+              >
+                <span style={{ width: 16, textAlign: 'center' }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div style={{ marginTop: 'auto', padding: '20px 20px 0' }}>
+          <Link href="/profile" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', textDecoration: 'none' }}>
+            ← Back to the learner app
           </Link>
         </div>
-        <Link href="/profile" style={{ color: 'var(--ink-muted)', fontSize: '0.85rem' }}>← Back to profile</Link>
-      </div>
-      {children}
-    </main>
+      </aside>
+
+      <main style={{ flex: 1, padding: '32px 40px', maxWidth: 1100 }}>{children}</main>
+    </div>
   );
 }

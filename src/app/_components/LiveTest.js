@@ -11,7 +11,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
  * tokens (question palette, free navigation, mark-for-review, nothing
  * revealed until submit).
  */
-export default function LiveTest() {
+export default function LiveTest({ templateId = null }) {
   const router = useRouter();
   const [testId, setTestId] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -25,7 +25,11 @@ export default function LiveTest() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/tests', { method: 'POST' })
+    fetch('/api/tests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(templateId ? { templateId } : {}),
+    })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
         if (cancelled) return;

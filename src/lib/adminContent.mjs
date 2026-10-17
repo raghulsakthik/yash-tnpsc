@@ -197,14 +197,17 @@ export async function createTopicIfMissing({ topicId, topicName, chapterId, chap
  * topics already exist, instead of it guessing at ids.
  */
 export async function getSyllabusTree() {
+  // LEFT JOINs deliberately -- a subject or chapter an admin just created
+  // (via /admin/subjects) legitimately has zero chapters/topics yet and
+  // must still show up so it can be built out, not vanish from the tree.
   const { rows } = await query(`
     SELECT s.id AS subject_id, s.name AS subject_name, s.sort_order AS subject_sort,
            c.id AS chapter_id, c.name AS chapter_name, c.sort_order AS chapter_sort,
            t.id AS topic_id, t.name AS topic_name, t.sort_order AS topic_sort,
            (SELECT COUNT(*)::int FROM question q WHERE q.topic_id = t.id AND q.status = 'PUBLISHED') AS question_count
       FROM subject s
-      JOIN chapter c ON c.subject_id = s.id
-      JOIN topic t ON t.chapter_id = c.id
+      LEFT JOIN chapter c ON c.subject_id = s.id
+      LEFT JOIN topic t ON t.chapter_id = c.id
      ORDER BY s.sort_order, c.sort_order, t.sort_order
   `);
 
@@ -214,10 +217,12 @@ export async function getSyllabusTree() {
       subjects.set(r.subject_id, { id: r.subject_id, name: r.subject_name, chapters: new Map() });
     }
     const subject = subjects.get(r.subject_id);
-    if (!subject.chapters.has(r.chapter_id)) {
+    if (r.chapter_id && !subject.chapters.has(r.chapter_id)) {
       subject.chapters.set(r.chapter_id, { id: r.chapter_id, name: r.chapter_name, subjectId: r.subject_id, topics: [] });
     }
-    subject.chapters.get(r.chapter_id).topics.push({ id: r.topic_id, name: r.topic_name, questionCount: r.question_count });
+    if (r.chapter_id && r.topic_id) {
+      subject.chapters.get(r.chapter_id).topics.push({ id: r.topic_id, name: r.topic_name, questionCount: r.question_count });
+    }
   }
 
   return [...subjects.values()].map((s) => ({ ...s, chapters: [...s.chapters.values()] }));

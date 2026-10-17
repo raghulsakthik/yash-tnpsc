@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireLearnerId } from '../../../../lib/auth.mjs';
-import { getLesson } from '../../../../domain/lessons.mjs';
+import { getLesson as getHardcodedLesson } from '../../../../domain/lessons.mjs';
 import { query } from '../../../../lib/db.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +9,12 @@ export const dynamic = 'force-dynamic';
  * GET /api/lesson/:topic -- the real concept + worked example for a topic,
  * plus any admin-uploaded study-resource notes for it (see topic_resource,
  * grown via the admin PDF-upload pipeline). A topic with resources but no
- * hand-authored lesson still returns 200 -- that's exactly the "new topic
- * from a PDF, no curated lesson yet" case.
+ * lesson still returns 200 -- that's the "new topic from a PDF, no lesson
+ * written yet" case.
+ *
+ * The DB `lesson` table (admin-editable, see /admin/lessons) is the real
+ * source of truth; the hardcoded LESSONS object is a fallback only, for
+ * any topic that somehow isn't in the DB yet.
  */
 export async function GET(request, { params }) {
   const { topic } = await params;
@@ -20,7 +24,23 @@ export async function GET(request, { params }) {
     return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   }
 
-  const lesson = getLesson(topic);
+  const { rows: lessonRows } = await query(
+    `SELECT title, concept, example_problem, example_steps, example_answer, tip FROM lesson WHERE topic_id = $1`,
+    [topic]
+  );
+
+  let lesson = null;
+  if (lessonRows.length > 0) {
+    const r = lessonRows[0];
+    lesson = {
+      title: r.title,
+      concept: r.concept,
+      example: { problem: r.example_problem, steps: r.example_steps, answer: r.example_answer },
+      tip: r.tip,
+    };
+  } else {
+    lesson = getHardcodedLesson(topic);
+  }
 
   const { rows: resourceRows } = await query(
     `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 ORDER BY created_at DESC`,

@@ -25,7 +25,7 @@ export async function GET(request, { params }) {
 
     const { rows: questions } = await query(
       `SELECT tq.order_index, q.id AS question_id, q.topic_id, t.name AS topic_name,
-              q.prompt, q.options, q.difficulty::float8 AS difficulty, q.estimated_seconds,
+              q.prompt, q.options, q.image_data, q.difficulty::float8 AS difficulty, q.estimated_seconds,
               q.answer_index, q.explanation, q.trap
          FROM test_question tq
          JOIN question q ON q.id = tq.question_id
@@ -56,6 +56,7 @@ export async function GET(request, { params }) {
           topicName: q.topic_name,
           prompt: q.prompt,
           options: q.options,
+          imageData: q.image_data,
           difficulty: difficultyBand(q.difficulty),
           estimatedSeconds: q.estimated_seconds,
           selectedIndex: answer?.selected_index ?? null,

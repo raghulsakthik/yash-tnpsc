@@ -160,8 +160,14 @@ export default function PdfClassifyPanel() {
           answerIndex: m.answerIndex,
           explanation: m.explanation,
           trap: m.trap,
+          diagramImage: m.diagramImage ?? null,
         })),
-        resources: included.resources.map((r) => ({ topicId: resolveTopicId(r), title: r.title, body: r.body })),
+        resources: included.resources.map((r) => ({
+          topicId: resolveTopicId(r),
+          title: r.title,
+          body: r.body,
+          diagramImage: r.diagramImage ?? null,
+        })),
       };
 
       const res = await fetch('/api/admin/content/commit', {
@@ -230,6 +236,23 @@ export default function PdfClassifyPanel() {
                     <input type="checkbox" checked={m.included} onChange={(e) => updateMcq(i, { ...m, included: e.target.checked })} style={{ marginTop: 4 }} />
                     <div style={{ flex: 1 }}>
                       <strong>{m.question}</strong>
+                      {m.needsDiagram && (
+                        <div style={{ marginTop: 8 }}>
+                          {m.diagramImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={m.diagramImage}
+                              alt={`Page ${m.sourcePage} figure`}
+                              style={{ maxWidth: 280, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+                            />
+                          ) : (
+                            <p className="muted" style={{ fontSize: '0.8rem' }}>
+                              This question depends on a diagram (page {m.sourcePage}) that couldn&apos;t be captured as an image.
+                            </p>
+                          )}
+                          <span className="muted" style={{ fontSize: '0.78rem' }}>Needs a figure -- captured from page {m.sourcePage}.</span>
+                        </div>
+                      )}
                       <ul style={{ marginTop: 6, paddingLeft: 20, fontSize: '0.88rem' }}>
                         {m.options.map((o, oi) => (
                           <li key={oi} style={{ fontWeight: oi === m.answerIndex ? 700 : 400, color: oi === m.answerIndex ? 'var(--success)' : 'inherit' }}>
@@ -255,6 +278,17 @@ export default function PdfClassifyPanel() {
                     <div style={{ flex: 1 }}>
                       <strong>{r.title}</strong>
                       <p style={{ marginTop: 6, fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{r.body.slice(0, 300)}{r.body.length > 300 ? '…' : ''}</p>
+                      {r.needsDiagram && r.diagramImage && (
+                        <div style={{ marginTop: 8 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={r.diagramImage}
+                            alt={`Page ${r.sourcePage} figure`}
+                            style={{ maxWidth: 280, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+                          />
+                          <span className="muted" style={{ fontSize: '0.78rem' }}>Captured from page {r.sourcePage}.</span>
+                        </div>
+                      )}
                       <TopicPicker item={r} topics={topics} onChange={(next) => updateResource(i, next)} />
                     </div>
                   </label>

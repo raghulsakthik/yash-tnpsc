@@ -193,7 +193,16 @@ export default function LiveQuestion({
         <span className="badge badge-mastered">{question.difficulty}</span>
       </div>
 
-      <h2 style={{ fontSize: '1.6rem', marginBottom: 20 }}>{question.prompt}</h2>
+      <h2 style={{ fontSize: '1.6rem', marginBottom: question.imageData ? 12 : 20 }}>{question.prompt}</h2>
+
+      {question.imageData && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={question.imageData}
+          alt="Figure for this question"
+          style={{ display: 'block', maxWidth: '100%', marginBottom: 20, borderRadius: 10, border: '1px solid var(--border)' }}
+        />
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {question.options.map((option, index) => {

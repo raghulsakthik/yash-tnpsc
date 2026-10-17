@@ -123,8 +123,8 @@ export async function upsertQuestions({ topic, language, source, questions }) {
     const { rows } = await query(
       `INSERT INTO question (
          id, topic_id, language, prompt, options, answer_index, explanation, trap,
-         difficulty, estimated_seconds, source, source_year, status, normalized_hash
-       ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,'PUBLISHED',$13)
+         difficulty, estimated_seconds, source, source_year, status, normalized_hash, image_data
+       ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,'PUBLISHED',$13,$14)
        ON CONFLICT (id) DO UPDATE SET
          prompt = EXCLUDED.prompt,
          options = EXCLUDED.options,
@@ -134,6 +134,7 @@ export async function upsertQuestions({ topic, language, source, questions }) {
          difficulty = EXCLUDED.difficulty,
          estimated_seconds = EXCLUDED.estimated_seconds,
          normalized_hash = EXCLUDED.normalized_hash,
+         image_data = EXCLUDED.image_data,
          updated_at = now()
        RETURNING (xmax = 0) AS was_insert`,
       [
@@ -150,6 +151,7 @@ export async function upsertQuestions({ topic, language, source, questions }) {
         q.source ?? source,
         q.year ?? null,
         hash,
+        q.imageData ?? null,
       ]
     );
     if (rows[0]?.was_insert) inserted += 1;
@@ -166,14 +168,14 @@ export async function upsertQuestions({ topic, language, source, questions }) {
  * enough that a stray duplicate is a cheaper mistake than silently
  * dropping a second genuinely different note with the same title.
  */
-export async function upsertResource({ topicId, title, body, source }) {
+export async function upsertResource({ topicId, title, body, source, imageData }) {
   const { rows: topicRows } = await query(`SELECT id FROM topic WHERE id = $1`, [topicId]);
   if (topicRows.length === 0) {
     throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topicId} -- create it first or check the id.`);
   }
   await query(
-    `INSERT INTO topic_resource (topic_id, title, body, source) VALUES ($1, $2, $3, $4)`,
-    [topicId, title, body, source ?? 'admin-upload']
+    `INSERT INTO topic_resource (topic_id, title, body, source, image_data) VALUES ($1, $2, $3, $4, $5)`,
+    [topicId, title, body, source ?? 'admin-upload', imageData ?? null]
   );
 }
 

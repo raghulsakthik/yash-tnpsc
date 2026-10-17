@@ -60,6 +60,7 @@ export async function POST(request) {
         answer: q.answerIndex,
         explanation: q.explanation,
         trap: q.trap ?? null,
+        imageData: q.diagramImage ?? null,
       });
     }
 
@@ -74,7 +75,7 @@ export async function POST(request) {
     let resourcesAdded = 0;
     for (const r of resources) {
       if (!r.topicId) throw new ContentUploadError('MISSING_TOPIC_ID', 'Every resource must have a final topicId before committing.');
-      await upsertResource({ topicId: r.topicId, title: r.title, body: r.body, source: 'admin-upload-pdf' });
+      await upsertResource({ topicId: r.topicId, title: r.title, body: r.body, source: 'admin-upload-pdf', imageData: r.diagramImage ?? null });
       resourcesAdded += 1;
     }
 

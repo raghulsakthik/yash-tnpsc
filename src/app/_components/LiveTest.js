@@ -123,6 +123,15 @@ export default function LiveTest() {
           </span>
           <h2 style={{ marginTop: 10 }}>{question.prompt}</h2>
 
+          {question.imageData && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={question.imageData}
+              alt="Figure for this question"
+              style={{ display: 'block', maxWidth: '100%', marginTop: 16, borderRadius: 10, border: '1px solid var(--border)' }}
+            />
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24, maxWidth: 560 }}>
             {question.options.map((option, index) => (
               <button

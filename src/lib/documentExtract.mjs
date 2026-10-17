@@ -20,7 +20,11 @@ function extensionOf(fileName) {
 /**
  * @param {Buffer} buffer
  * @param {string} fileName
- * @returns {Promise<string>}
+ * @returns {Promise<{text: string, pages: Array<{pageNumber: number, text: string}>, isPdf: boolean}>}
+ *   `pages` lets a PDF-aware caller tell the AI which page each item came
+ *   from, so a diagram-dependent question can later be matched back to a
+ *   page screenshot. For non-PDF sources, `pages` is a single synthetic
+ *   entry (page rendering only applies to PDFs).
  */
 export async function extractText(buffer, fileName) {
   const ext = extensionOf(fileName);
@@ -29,17 +33,19 @@ export async function extractText(buffer, fileName) {
     const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buffer });
     const { pages } = await parser.getText();
-    return pages.map((p) => p.text).join('\n');
+    const pageList = pages.map((p, i) => ({ pageNumber: i + 1, text: p.text }));
+    return { text: pageList.map((p) => p.text).join('\n'), pages: pageList, isPdf: true };
   }
 
   if (ext === 'docx') {
     const mammoth = (await import('mammoth')).default;
     const { value } = await mammoth.extractRawText({ buffer });
-    return value;
+    return { text: value, pages: [{ pageNumber: 1, text: value }], isPdf: false };
   }
 
   if (ext === 'txt' || ext === 'md') {
-    return buffer.toString('utf8');
+    const text = buffer.toString('utf8');
+    return { text, pages: [{ pageNumber: 1, text }], isPdf: false };
   }
 
   if (ext === 'doc') {

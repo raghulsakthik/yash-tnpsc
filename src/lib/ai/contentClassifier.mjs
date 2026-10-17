@@ -9,7 +9,7 @@ export class ClassifyError extends Error {
 
 const MAX_SOURCE_CHARS = 60000; // ~15k tokens of source text, well under the model's input budget
 
-function buildPrompt(sourceText, syllabusTree) {
+function buildPrompt(markedText, syllabusTree) {
   const topicList = syllabusTree.flatMap((subject) =>
     subject.chapters.flatMap((chapter) =>
       chapter.topics.map(
@@ -20,8 +20,9 @@ function buildPrompt(sourceText, syllabusTree) {
 
   const system = `You are sorting raw study material for a TNPSC exam-prep app into its existing syllabus.
 You will get a list of real topics that already exist, and raw text extracted from an admin-uploaded document.
-The document may mix multiple choice questions (with answers) and plain study notes/explanations, across several
-different topics and sections, in any order, and may run to many pages.
+The text is broken into "=== PAGE N ===" sections matching the document's real page numbers. The document may
+mix multiple choice questions (with answers) and plain study notes/explanations, across several different
+topics and sections, in any order, and may run to many pages.
 
 Your job: split the text into individual MCQs and individual study-note chunks, and for each one, point it at
 the single best-matching existing topic id. Only propose a brand new topic when nothing in the existing list is
@@ -33,10 +34,17 @@ A document with 50 questions across 6 sections must produce roughly 50 mcqs, gro
 topics/sections as appropriate -- never stop early or summarize because there are many. Each distinct
 section heading (e.g. "PUZZLES", "DICE", "CUBES", "ALPHA NUMBER SERIES", "CODING-DECODING") is its own batch
 of questions and usually maps to its own topic -- don't let one section's topic choice bleed into another's.
-When a question's answer is only derivable from a diagram/figure image the extracted text can't show you,
-still extract the question, options and the stated answer letter/number exactly as given (look for "Ans:" or
-"Solution:" markers) -- write a brief honest explanation (e.g. "Answer given in the source material; derived
-from the accompanying diagram.") rather than inventing reasoning you can't actually verify from text alone.
+
+CRITICAL -- diagrams: many reasoning questions (seating charts, dice nets, cube views, visual series) show a
+figure that the extracted text cannot represent -- you'll see the question and options but no picture. When a
+question cannot be fully understood or solved from the text alone (the options refer to positions/shapes/faces
+that only make sense looking at a picture you don't have), set "needsDiagram": true and "sourcePage" to the
+page number (from the "=== PAGE N ===" marker) that question appears on, so the real page image can be
+captured and attached later. Still extract the question, options and the stated answer exactly as given (look
+for "Ans:" or "Solution:" markers) even when you can't verify the reasoning yourself -- write an honest
+explanation (e.g. "Answer given in the source material; the reasoning depends on a diagram not shown here.")
+rather than inventing reasoning you can't verify from text. For ordinary questions that are fully readable as
+text, set "needsDiagram": false and "sourcePage": null.
 
 Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
 {
@@ -47,6 +55,8 @@ Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
       "answerIndex": number,              // 0-based index into options
       "explanation": string,              // why that answer is correct
       "trap": string | null,              // why a wrong option is tempting, or null
+      "needsDiagram": boolean,            // true if a figure in the source is essential and not captured in text
+      "sourcePage": number | null,        // page number this question is on, required if needsDiagram is true
       "topicId": string | null,           // an id from the existing list, or null if none fits
       "isNewTopic": boolean,              // true if topicId is null and this needs a new topic
       "newTopicName": string | null,      // short name for the new topic, only if isNewTopic
@@ -58,6 +68,8 @@ Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
     {
       "title": string,                    // short heading for this note
       "body": string,                     // the explanation/notes text itself, cleaned up
+      "needsDiagram": boolean,
+      "sourcePage": number | null,
       "topicId": string | null,
       "isNewTopic": boolean,
       "newTopicName": string | null,
@@ -73,9 +85,9 @@ text has no usable MCQs or notes at all, return {"mcqs": [], "resources": []}.`;
   const user = `EXISTING TOPICS (id | name | chapter | subject):
 ${topicList.join('\n')}
 
-RAW TEXT FROM THE UPLOADED DOCUMENT:
+RAW TEXT FROM THE UPLOADED DOCUMENT, BY PAGE:
 """
-${sourceText}
+${markedText}
 """`;
 
   return { system, user };
@@ -85,7 +97,15 @@ function cleanString(value, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
-function sanitizeMcq(raw, validTopicIds) {
+function sanitizeDiagramFields(raw, maxPage) {
+  const sourcePage = Number.isInteger(raw.sourcePage) && raw.sourcePage >= 1 && raw.sourcePage <= maxPage ? raw.sourcePage : null;
+  return {
+    needsDiagram: Boolean(raw.needsDiagram) && sourcePage !== null,
+    sourcePage,
+  };
+}
+
+function sanitizeMcq(raw, validTopicIds, maxPage) {
   if (!raw || typeof raw !== 'object') return null;
   const question = cleanString(raw.question);
   const options = Array.isArray(raw.options) ? raw.options.map((o) => cleanString(o)).filter(Boolean) : [];
@@ -103,6 +123,7 @@ function sanitizeMcq(raw, validTopicIds) {
     answerIndex,
     explanation: cleanString(raw.explanation, 'No explanation provided.'),
     trap: cleanString(raw.trap) || null,
+    ...sanitizeDiagramFields(raw, maxPage),
     topicId: isNewTopic ? null : validTopicIds.has(topicId) ? topicId : null,
     isNewTopic: isNewTopic || !validTopicIds.has(topicId),
     newTopicName: isNewTopic ? cleanString(raw.newTopicName) || question.slice(0, 40) : null,
@@ -111,7 +132,7 @@ function sanitizeMcq(raw, validTopicIds) {
   };
 }
 
-function sanitizeResource(raw, validTopicIds) {
+function sanitizeResource(raw, validTopicIds, maxPage) {
   if (!raw || typeof raw !== 'object') return null;
   const title = cleanString(raw.title);
   const body = cleanString(raw.body);
@@ -123,6 +144,7 @@ function sanitizeResource(raw, validTopicIds) {
   return {
     title,
     body,
+    ...sanitizeDiagramFields(raw, maxPage),
     topicId: isNewTopic ? null : validTopicIds.has(topicId) ? topicId : null,
     isNewTopic: isNewTopic || !validTopicIds.has(topicId),
     newTopicName: isNewTopic ? cleanString(raw.newTopicName) || title : null,
@@ -132,24 +154,29 @@ function sanitizeResource(raw, validTopicIds) {
 }
 
 /**
- * Classifies raw text extracted from an admin-uploaded document into MCQs and
- * study-note resources, each pointed at an existing topic or flagged as
- * needing a new one. This is the one place in the content pipeline that
- * spends an AI call -- deliberately opt-in (an admin uploads a document) rather
- * than something that runs automatically, since the manual YAML path
- * already covers routine content growth at zero AI cost.
+ * Classifies pages of text extracted from an admin-uploaded document into
+ * MCQs and study-note resources, each pointed at an existing topic or
+ * flagged as needing a new one, and each flagged when it depends on a
+ * diagram the text can't carry (so the caller can go capture that page as
+ * an image). This is the one place in the content pipeline that spends an
+ * AI call -- deliberately opt-in (an admin uploads a document) rather than
+ * something that runs automatically, since the manual YAML path already
+ * covers routine content growth at zero AI cost.
  *
+ * @param {Array<{pageNumber: number, text: string}>} pages
  * @returns {Promise<{mcqs: Array<object>, resources: Array<object>, truncated: boolean}>}
  */
-export async function classifyContent(sourceText, syllabusTree) {
-  const truncated = sourceText.length > MAX_SOURCE_CHARS;
-  const text = truncated ? sourceText.slice(0, MAX_SOURCE_CHARS) : sourceText;
+export async function classifyContent(pages, syllabusTree) {
+  const maxPage = pages.length > 0 ? Math.max(...pages.map((p) => p.pageNumber)) : 0;
+  const fullMarkedText = pages.map((p) => `=== PAGE ${p.pageNumber} ===\n${p.text}`).join('\n\n');
+  const truncated = fullMarkedText.length > MAX_SOURCE_CHARS;
+  const markedText = truncated ? fullMarkedText.slice(0, MAX_SOURCE_CHARS) : fullMarkedText;
 
-  if (!text.trim()) {
+  if (!markedText.trim()) {
     throw new ClassifyError('EMPTY_TEXT', 'No text could be extracted from that file.');
   }
 
-  const prompt = buildPrompt(text, syllabusTree);
+  const prompt = buildPrompt(markedText, syllabusTree);
   const result = await generateJson(prompt);
 
   if (!result) {
@@ -158,9 +185,9 @@ export async function classifyContent(sourceText, syllabusTree) {
 
   const validTopicIds = new Set(syllabusTree.flatMap((s) => s.chapters.flatMap((c) => c.topics.map((t) => t.id))));
 
-  const mcqs = Array.isArray(result.mcqs) ? result.mcqs.map((m) => sanitizeMcq(m, validTopicIds)).filter(Boolean) : [];
+  const mcqs = Array.isArray(result.mcqs) ? result.mcqs.map((m) => sanitizeMcq(m, validTopicIds, maxPage)).filter(Boolean) : [];
   const resources = Array.isArray(result.resources)
-    ? result.resources.map((r) => sanitizeResource(r, validTopicIds)).filter(Boolean)
+    ? result.resources.map((r) => sanitizeResource(r, validTopicIds, maxPage)).filter(Boolean)
     : [];
 
   return { mcqs, resources, truncated };

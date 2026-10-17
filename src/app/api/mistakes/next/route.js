@@ -52,7 +52,7 @@ export async function GET(request) {
     const { question_id: questionId, topic_id: topicId } = rows[0];
 
     const { rows: questionRows } = await query(
-      `SELECT q.prompt, q.options, q.difficulty::float8 AS difficulty, q.estimated_seconds, t.name AS topic_name
+      `SELECT q.prompt, q.options, q.image_data, q.difficulty::float8 AS difficulty, q.estimated_seconds, t.name AS topic_name
          FROM question q JOIN topic t ON t.id = q.topic_id
         WHERE q.id = $1`,
       [questionId]
@@ -67,6 +67,7 @@ export async function GET(request) {
       topicName: q.topic_name,
       prompt: q.prompt,
       options: q.options,
+      imageData: q.image_data,
       estimatedSeconds: q.estimated_seconds,
       difficulty: difficultyBand(q.difficulty),
     });

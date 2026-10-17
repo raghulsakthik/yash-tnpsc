@@ -99,6 +99,10 @@ export default function Lesson({ params }) {
                 <div key={i} className="card" style={{ marginTop: 12 }}>
                   <strong>{r.title}</strong>
                   <p style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{r.body}</p>
+                  {r.imageData && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r.imageData} alt="" style={{ marginTop: 10, maxWidth: '100%', borderRadius: 10, border: '1px solid var(--border)' }} />
+                  )}
                 </div>
               ))}
             </div>

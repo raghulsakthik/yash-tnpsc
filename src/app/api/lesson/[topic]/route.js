@@ -23,10 +23,10 @@ export async function GET(request, { params }) {
   const lesson = getLesson(topic);
 
   const { rows: resourceRows } = await query(
-    `SELECT title, body, created_at FROM topic_resource WHERE topic_id = $1 ORDER BY created_at DESC`,
+    `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 ORDER BY created_at DESC`,
     [topic]
   );
-  const resources = resourceRows.map((r) => ({ title: r.title, body: r.body, addedAt: r.created_at }));
+  const resources = resourceRows.map((r) => ({ title: r.title, body: r.body, imageData: r.image_data, addedAt: r.created_at }));
 
   if (!lesson && resources.length === 0) {
     return NextResponse.json({ code: 'LESSON_NOT_FOUND', message: `No lesson for ${topic}` }, { status: 404 });

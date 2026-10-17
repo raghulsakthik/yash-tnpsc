@@ -45,7 +45,7 @@ export async function GET(request) {
         [learnerId]
       ),
       query(
-        `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day FROM question_attempt WHERE learner_id = $1`,
+        `SELECT DISTINCT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day FROM question_attempt WHERE learner_id = $1`,
         [learnerId]
       ),
     ]);
@@ -62,7 +62,7 @@ export async function GET(request) {
       return { name: s.name, ring: orbitRing(status), angleDeg: angleFor(s.topic_id) };
     });
 
-    const longest = longestStreak(streakRows.map((r) => r.day.toISOString().slice(0, 10)));
+    const longest = longestStreak(streakRows.map((r) => r.day));
 
     const bestRetained = states
       .filter((s) => s.interval_days !== null)

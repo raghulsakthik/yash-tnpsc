@@ -30,7 +30,7 @@ export async function GET(request) {
         query(`SELECT id, name, created_at FROM learner WHERE id = $1`, [learnerId]),
         query(`SELECT exam, language, daily_goal_minutes FROM learner_profile WHERE learner_id = $1`, [learnerId]),
         query(
-          `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day
+          `SELECT DISTINCT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day
              FROM question_attempt WHERE learner_id = $1`,
           [learnerId]
         ),
@@ -46,7 +46,7 @@ export async function GET(request) {
       return NextResponse.json({ code: 'LEARNER_NOT_FOUND', message: 'No learner configured' }, { status: 404 });
     }
 
-    const activeDates = activityRows.map((r) => r.day.toISOString().slice(0, 10));
+    const activeDates = activityRows.map((r) => r.day);
 
     return NextResponse.json({
       name: learnerRows[0].name,

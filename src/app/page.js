@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppShell from './_components/AppShell';
-import { learner } from './_data/mock';
+import ActivityGraph from './_components/ActivityGraph';
+import ActivityCalendar from './_components/charts/ActivityCalendar';
+import StatusPieChart from './_components/charts/StatusPieChart';
+import OrbitPreview from './_components/charts/OrbitPreview';
 
 function greeting(hour) {
   if (hour < 5) return 'Good night';
@@ -19,6 +22,7 @@ export default function Home() {
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
   const [greetingText, setGreetingText] = useState('Good morning');
+  const [name, setName] = useState(null);
 
   useEffect(() => {
     setGreetingText(greeting(new Date().getHours()));
@@ -34,6 +38,15 @@ export default function Home() {
       })
       .catch(() => {});
   }, [router]);
+
+  useEffect(() => {
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.name) setName(data.name);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/plan/today', { cache: 'no-store' })
@@ -59,7 +72,7 @@ export default function Home() {
       <span className="muted" style={{ fontSize: '0.85rem', letterSpacing: '0.04em' }}>
         {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
       </span>
-      <h1 style={{ marginTop: 14 }}>{greetingText}, {learner.name}.</h1>
+      <h1 style={{ marginTop: 14 }}>{greetingText}{name ? `, ${name}` : ''}.</h1>
 
       {error && (
         <div className="card" style={{ marginTop: 20, background: 'var(--warm-tint)' }}>
@@ -106,6 +119,33 @@ export default function Home() {
           <strong style={{ display: 'block' }}>Browse subjects</strong>
           <span className="muted" style={{ fontSize: '0.85rem' }}>See the full syllabus tree</span>
         </Link>
+      </div>
+
+      <h2 style={{ marginTop: 36, marginBottom: 4 }}>Your real numbers</h2>
+      <p className="muted" style={{ marginBottom: 16 }}>Every chart below is built from your actual attempt history — nothing here is a placeholder.</p>
+
+      <div className="grid-2" style={{ gap: 16, alignItems: 'start' }}>
+        <div className="card">
+          <span className="eyebrow">Login &amp; activity calendar</span>
+          <div style={{ marginTop: 14 }}>
+            <ActivityCalendar />
+          </div>
+        </div>
+        <div className="card">
+          <span className="eyebrow">Where every topic stands</span>
+          <div style={{ marginTop: 14 }}>
+            <StatusPieChart />
+          </div>
+        </div>
+        <div className="card">
+          <ActivityGraph />
+        </div>
+        <div className="card">
+          <span className="eyebrow">Learning orbit</span>
+          <div style={{ marginTop: 14 }}>
+            <OrbitPreview />
+          </div>
+        </div>
       </div>
     </AppShell>
   );

@@ -28,7 +28,7 @@ export async function checkAndUnlockAchievements(learnerId) {
   ] = await Promise.all([
     query(`SELECT COUNT(*)::int AS n FROM question_attempt WHERE learner_id = $1`, [learnerId]),
     query(
-      `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day FROM question_attempt WHERE learner_id = $1`,
+      `SELECT DISTINCT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day FROM question_attempt WHERE learner_id = $1`,
       [learnerId]
     ),
     query(`SELECT COUNT(*)::int AS n FROM learner_topic_state WHERE learner_id = $1 AND mastery_score >= 0.85`, [learnerId]),
@@ -51,7 +51,7 @@ export async function checkAndUnlockAchievements(learnerId) {
     query(`SELECT id, name, icon FROM achievement`),
   ]);
 
-  const activeDates = streakRows.map((r) => r.day.toISOString().slice(0, 10));
+  const activeDates = streakRows.map((r) => r.day);
   const streak = computeStreak(activeDates);
   const alreadyUnlocked = new Set(alreadyRows.map((r) => r.achievement_id));
   const achievementById = new Map(achievementRows.map((a) => [a.id, a]));

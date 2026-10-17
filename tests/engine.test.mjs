@@ -18,7 +18,8 @@ import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } f
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
 import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
-import { topicStatus, orbitRing } from '../src/domain/progress.mjs';
+import { topicStatus, orbitRing, computeStreak } from '../src/domain/progress.mjs';
+import { dateKeyInAppTimezone } from '../src/lib/timezone.mjs';
 
 const attempts = (...flags) => flags.map((correct) => ({ correct: Boolean(correct) }));
 
@@ -541,4 +542,42 @@ test('earnedAchievementIds: a perfect test score earns clean-sweep but not high-
   assert.ok(ids.includes('high-scorer'));
   assert.ok(ids.includes('clean-sweep'));
   assert.ok(ids.includes('mistake-fixer'));
+});
+
+// Regression coverage for a real bug: computeStreak used to build "today"
+// via `.toISOString().slice(0, 10)`, which converts through UTC first and
+// silently shifts local midnight back a calendar day in any
+// positive-UTC-offset timezone (this app's server runs in Asia/Kolkata,
+// +05:30) -- today's real activity was being treated as not-today, and a
+// streak that should have counted today came up one short.
+function daysAgoKey(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return dateKeyInAppTimezone(d);
+}
+
+test('computeStreak: no activity at all is a zero streak', () => {
+  assert.equal(computeStreak([]), 0);
+});
+
+test("computeStreak: today counts even though it's the only active date", () => {
+  assert.equal(computeStreak([daysAgoKey(0)]), 1);
+});
+
+test("computeStreak: yesterday-only (nothing studied yet today) still counts as an alive streak", () => {
+  assert.equal(computeStreak([daysAgoKey(1)]), 1);
+});
+
+test('computeStreak: three consecutive days including today', () => {
+  assert.equal(computeStreak([daysAgoKey(0), daysAgoKey(1), daysAgoKey(2)]), 3);
+});
+
+test('computeStreak: a gap stops the count at the break, not before it', () => {
+  // Active today and yesterday, then a gap, then an older run -- only the
+  // unbroken run touching today should count.
+  assert.equal(computeStreak([daysAgoKey(0), daysAgoKey(1), daysAgoKey(5), daysAgoKey(6)]), 2);
+});
+
+test('computeStreak: two days ago with nothing yesterday or today breaks the streak to zero', () => {
+  assert.equal(computeStreak([daysAgoKey(2)]), 0);
 });

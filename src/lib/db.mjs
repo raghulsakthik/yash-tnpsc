@@ -1,5 +1,15 @@
 import pg from 'pg';
 
+// pg's default DATE parser (OID 1082) returns a JS Date anchored at LOCAL
+// midnight for the given date string. Calling .toISOString() on that then
+// shifts it back a calendar day in any positive-UTC-offset timezone (this
+// server runs in Asia/Kolkata, +05:30) -- a real question answered "today"
+// silently gets attributed to "yesterday" everywhere a DATE column is
+// read. Keeping DATE columns as plain 'YYYY-MM-DD' strings sidesteps the
+// whole class of bug; every query that casts to ::date already produces
+// that format, so this is a no-op transform, not a reformat.
+pg.types.setTypeParser(1082, (value) => value);
+
 // One pool for the process. Next.js reloads modules in dev, so the pool is
 // stashed on globalThis to avoid leaking a connection pool per hot reload.
 const globalForPg = globalThis;

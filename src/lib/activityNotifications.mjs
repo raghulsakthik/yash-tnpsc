@@ -1,5 +1,6 @@
 import { query, recordEvent } from './db.mjs';
 import { computeStreak } from '../domain/progress.mjs';
+import { dateKeyInAppTimezone } from './timezone.mjs';
 import { sendPushToLearner, pushConfigured } from './push.mjs';
 import { sendFcmToLearner, fcmConfigured } from './fcm.mjs';
 import { sendWhatsAppToLearner, whatsappConfigured } from './whatsapp.mjs';
@@ -115,12 +116,12 @@ export async function checkStreakAtRisk() {
   const learnerIds = await learnerAccounts();
   for (const learnerId of learnerIds) {
     const { rows } = await query(
-      `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day FROM question_attempt WHERE learner_id = $1`,
+      `SELECT DISTINCT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day FROM question_attempt WHERE learner_id = $1`,
       [learnerId]
     );
-    const activeDates = rows.map((r) => r.day.toISOString().slice(0, 10));
+    const activeDates = rows.map((r) => r.day);
     const streak = computeStreak(activeDates);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = dateKeyInAppTimezone();
     const activeToday = activeDates.includes(today);
 
     if (streak > 0 && !activeToday && !(await alreadySentToday(learnerId, 'NOTIFY_STREAK_RISK'))) {

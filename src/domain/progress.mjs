@@ -5,6 +5,8 @@
  * Subject, Journey) goes through this instead of re-deriving its own rules.
  */
 
+import { dateKeyInAppTimezone } from '../lib/timezone.mjs';
+
 /** @typedef {'not-started'|'learning'|'practising'|'near-mastery'|'mastered'|'revision-due'|'retained'} TopicStatus */
 
 const MASTERED_THRESHOLD = 0.85;
@@ -42,12 +44,19 @@ export function topicStatus({ attemptCount, masteryScore, revisionDue, intervalD
 export function computeStreak(activeDates) {
   const days = new Set(activeDates);
   const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  if (!days.has(cursor.toISOString().slice(0, 10))) {
+  // "Today" means her IST calendar day -- not .toISOString().slice(0, 10),
+  // which converts through UTC first and silently shifts midnight back a
+  // calendar day in any positive-UTC-offset timezone, and not the server's
+  // ambient local time either (a cloud host typically defaults to UTC).
+  // `activeDates` are real 'YYYY-MM-DD' strings straight from a Postgres
+  // DATE column bucketed the same way (see the AT TIME ZONE clauses
+  // alongside src/lib/timezone.mjs) -- both sides of every `days.has(...)`
+  // check have to agree on the same calendar or the streak silently breaks.
+  if (!days.has(dateKeyInAppTimezone(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
   }
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(dateKeyInAppTimezone(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }

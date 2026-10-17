@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '../../../../lib/db.mjs';
 import { requireLearnerId } from '../../../../lib/auth.mjs';
+import { dateKeyInAppTimezone } from '../../../../lib/timezone.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,21 +24,20 @@ export async function GET(request) {
 
   try {
     const { rows } = await query(
-      `SELECT (created_at AT TIME ZONE 'UTC')::date AS day, COUNT(*)::int AS n
+      `SELECT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day, COUNT(*)::int AS n
          FROM question_attempt
         WHERE learner_id = $1 AND created_at >= now() - interval '${DAYS} days'
         GROUP BY day`,
       [learnerId]
     );
 
-    const countByDay = new Map(rows.map((r) => [r.day.toISOString().slice(0, 10), r.n]));
+    const countByDay = new Map(rows.map((r) => [r.day, r.n]));
 
     const days = [];
     const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
     cursor.setDate(cursor.getDate() - (DAYS - 1));
     for (let i = 0; i < DAYS; i += 1) {
-      const key = cursor.toISOString().slice(0, 10);
+      const key = dateKeyInAppTimezone(cursor);
       days.push({ date: key, count: countByDay.get(key) ?? 0 });
       cursor.setDate(cursor.getDate() + 1);
     }

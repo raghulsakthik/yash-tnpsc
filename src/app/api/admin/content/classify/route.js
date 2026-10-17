@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../lib/auth.mjs';
 import { getSyllabusTree } from '../../../../../lib/adminContent.mjs';
 import { extractText, ExtractError } from '../../../../../lib/documentExtract.mjs';
-import { renderPdfPageToPng } from '../../../../../lib/pdfRender.mjs';
+import { renderPdfDiagramToPng } from '../../../../../lib/pdfRender.mjs';
 import { classifyContent, ClassifyError } from '../../../../../lib/ai/contentClassifier.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +14,10 @@ export const dynamic = 'force-dynamic';
  * Extracts text out of whatever document was uploaded (PDF, .docx, .txt)
  * and asks the AI classifier to split it into MCQs and study-note
  * resources, each matched against the real syllabus. For a PDF, any item
- * the AI flags as diagram-dependent gets that source page rendered to a
- * PNG and attached as `diagramImage` (a data URL) -- the figure the text
- * extractor couldn't carry is kept as a picture instead of being lost.
+ * the AI flags as diagram-dependent gets its source page's actual figure
+ * cropped out (not the whole page -- see renderPdfDiagramToPng) and
+ * attached as `diagramImage` (a data URL) -- the picture the text
+ * extractor couldn't carry is kept instead of being lost.
  * Read-only otherwise -- nothing is written to the database here. The
  * admin reviews/edits this proposal in the UI, then calls /commit.
  */
@@ -45,14 +46,13 @@ export async function POST(request) {
     const result = await classifyContent(pages, syllabusTree);
 
     if (isPdf) {
-      const renderedByPage = new Map();
+      // Cropped per item, not cached per page: two questions sharing a
+      // page can still need two different diagrams (or the same one --
+      // the crop finds whichever is actually nearest to each question).
       for (const item of [...result.mcqs, ...result.resources]) {
         if (!item.needsDiagram || !item.sourcePage) continue;
-        if (!renderedByPage.has(item.sourcePage)) {
-          const png = await renderPdfPageToPng(buffer, item.sourcePage);
-          renderedByPage.set(item.sourcePage, png ? `data:image/png;base64,${png.toString('base64')}` : null);
-        }
-        item.diagramImage = renderedByPage.get(item.sourcePage);
+        const png = await renderPdfDiagramToPng(buffer, item.sourcePage, item.question ?? item.title);
+        item.diagramImage = png ? `data:image/png;base64,${png.toString('base64')}` : null;
       }
     }
 

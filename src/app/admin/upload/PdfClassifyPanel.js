@@ -80,7 +80,7 @@ export default function PdfClassifyPanel() {
   async function analyze() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
-      setError('Choose a PDF file first.');
+      setError('Choose a file first.');
       return;
     }
     setAnalyzing(true);
@@ -88,7 +88,7 @@ export default function PdfClassifyPanel() {
     setResult(null);
     setProposal(null);
     try {
-      const pdfBase64 = await new Promise((resolve, reject) => {
+      const fileBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(',')[1]);
         reader.onerror = reject;
@@ -97,10 +97,10 @@ export default function PdfClassifyPanel() {
       const res = await fetch('/api/admin/content/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64 }),
+        body: JSON.stringify({ fileBase64, fileName: file.name }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not analyze the PDF');
+      if (!res.ok) throw new Error(data.message ?? 'Could not analyze that document');
       setProposal({
         mcqs: data.mcqs.map((m) => ({ ...m, included: true })),
         resources: data.resources.map((r) => ({ ...r, included: true })),
@@ -183,14 +183,17 @@ export default function PdfClassifyPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="card">
-        <span className="eyebrow">Upload a PDF</span>
+        <span className="eyebrow">Upload a document</span>
         <p className="muted" style={{ fontSize: '0.82rem', marginTop: 6 }}>
-          Mixed content is fine -- MCQs with answers, study notes, several topics in one file, even brand new
-          topics. The AI reads it once and proposes where each piece goes; nothing is saved until you review and
-          commit below. This is the one admin action that spends an AI call -- the manual YAML upload stays free.
+          PDF, Word (.docx), or plain text (.txt) -- no YAML, no formatting required. Mixed content is fine:
+          MCQs with answers, study notes, several topics in one file, even brand new topics. The AI reads it
+          once, extracts and cleans up the text, and proposes where each piece goes, pre-filling a topic (new
+          or existing) for everything. Nothing is saved until you commit below -- edit anything first if needed,
+          or just hit commit as-is. This is the one admin action that spends an AI call -- the manual YAML
+          upload stays free.
         </p>
         <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-          <input ref={fileInputRef} type="file" accept="application/pdf" />
+          <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" />
           <button type="button" className="btn btn-primary" onClick={analyze} disabled={analyzing}>
             {analyzing ? 'Reading and classifying…' : 'Analyze'}
           </button>

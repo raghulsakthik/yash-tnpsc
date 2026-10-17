@@ -201,22 +201,22 @@ function slugify(text) {
 }
 
 export default function AdminUpload() {
-  const [mode, setMode] = useState('yaml'); // yaml | pdf
+  const [mode, setMode] = useState('pdf'); // pdf | yaml
 
   return (
     <AdminGuard>
       <h1>Upload content</h1>
       <p className="muted" style={{ marginTop: 8, marginBottom: 20 }}>
-        Grow the question bank and study notes without an AI call every time -- or let a PDF be read and sorted
-        automatically when that is what you have.
+        Grow the question bank and study notes without an AI call every time -- or just drop in a document and
+        have it read, sorted and organized automatically when that's easier than formatting YAML by hand.
       </p>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button type="button" className={`pill-tab ${mode === 'pdf' ? 'active' : ''}`} onClick={() => setMode('pdf')}>
+          Upload a document (AI-sorted)
+        </button>
         <button type="button" className={`pill-tab ${mode === 'yaml' ? 'active' : ''}`} onClick={() => setMode('yaml')}>
           Manual YAML (free)
-        </button>
-        <button type="button" className={`pill-tab ${mode === 'pdf' ? 'active' : ''}`} onClick={() => setMode('pdf')}>
-          Upload a PDF (AI-sorted)
         </button>
       </div>
 

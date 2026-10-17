@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // pdf-parse ships a CJS/ESM interop that breaks when webpack bundles it;
-  // let Next require it straight from node_modules at runtime instead.
-  serverExternalPackages: ['pdf-parse'],
+  // pdf-parse and mammoth ship CJS/ESM interop that breaks when webpack
+  // bundles them; let Next require them straight from node_modules at
+  // runtime instead.
+  serverExternalPackages: ['pdf-parse', 'mammoth'],
 };
 
 export default nextConfig;

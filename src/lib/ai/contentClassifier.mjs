@@ -19,8 +19,8 @@ function buildPrompt(sourceText, syllabusTree) {
   );
 
   const system = `You are sorting raw study material for a TNPSC exam-prep app into its existing syllabus.
-You will get a list of real topics that already exist, and raw text extracted from an admin-uploaded PDF.
-The PDF may mix multiple choice questions (with answers) and plain study notes/explanations, across several
+You will get a list of real topics that already exist, and raw text extracted from an admin-uploaded document.
+The document may mix multiple choice questions (with answers) and plain study notes/explanations, across several
 different topics, in any order.
 
 Your job: split the text into individual MCQs and individual study-note chunks, and for each one, point it at
@@ -62,7 +62,7 @@ text has no usable MCQs or notes at all, return {"mcqs": [], "resources": []}.`;
   const user = `EXISTING TOPICS (id | name | chapter | subject):
 ${topicList.join('\n')}
 
-RAW TEXT FROM THE UPLOADED PDF:
+RAW TEXT FROM THE UPLOADED DOCUMENT:
 """
 ${sourceText}
 """`;
@@ -121,10 +121,10 @@ function sanitizeResource(raw, validTopicIds) {
 }
 
 /**
- * Classifies raw text extracted from an admin-uploaded PDF into MCQs and
+ * Classifies raw text extracted from an admin-uploaded document into MCQs and
  * study-note resources, each pointed at an existing topic or flagged as
  * needing a new one. This is the one place in the content pipeline that
- * spends an AI call -- deliberately opt-in (an admin uploads a PDF) rather
+ * spends an AI call -- deliberately opt-in (an admin uploads a document) rather
  * than something that runs automatically, since the manual YAML path
  * already covers routine content growth at zero AI cost.
  *

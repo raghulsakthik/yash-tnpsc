@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AdminGuard from '../_components/AdminGuard';
 import PdfClassifyPanel from './PdfClassifyPanel';
+import VocabularyPanel from './VocabularyPanel';
 
 const SAMPLE_YAML = `topic: aptitude.averages
 language: en
@@ -218,9 +219,12 @@ export default function AdminUpload() {
         <button type="button" className={`pill-tab ${mode === 'yaml' ? 'active' : ''}`} onClick={() => setMode('yaml')}>
           Manual YAML (free)
         </button>
+        <button type="button" className={`pill-tab ${mode === 'vocabulary' ? 'active' : ''}`} onClick={() => setMode('vocabulary')}>
+          English vocabulary (Dictionary API)
+        </button>
       </div>
 
-      {mode === 'yaml' ? <UploadBody /> : <PdfClassifyPanel />}
+      {mode === 'yaml' ? <UploadBody /> : mode === 'vocabulary' ? <VocabularyPanel /> : <PdfClassifyPanel />}
     </AdminGuard>
   );
 }

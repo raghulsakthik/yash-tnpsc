@@ -76,6 +76,12 @@ export default function Subject({ params }) {
 
       <div style={{ marginTop: 20 }}>
         <span className="eyebrow">Topics</span>
+        {subject.topics.length === 0 && (
+          <div className="card" style={{ marginTop: 14, background: 'var(--warm-tint)' }}>
+            <p>No topics with content here yet. An admin can add some from the admin content tools -- bulk
+              document upload, manual YAML, or (for English) the Dictionary API vocabulary generator.</p>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
           {subject.topics.map((t) => {
             const style = STATE_STYLE[t.state] || STATE_STYLE['not-started'];

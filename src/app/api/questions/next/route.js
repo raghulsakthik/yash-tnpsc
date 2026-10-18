@@ -7,13 +7,52 @@ import { difficultyBand } from '../../../../domain/difficulty.mjs';
 export const dynamic = 'force-dynamic';
 
 /**
+ * Picks one real topic at random, weighted by its chapter's real exam
+ * question_count (the same "exam weight" concept src/domain/testGen.mjs
+ * uses to size a weekly test) -- so Mixed Practice draws more often from
+ * heavier chapters, never arbitrarily/uniformly across however many
+ * topics happen to exist.
+ */
+async function pickMixedTopic() {
+  const { rows } = await query(`
+    SELECT t.id, c.question_count,
+           (SELECT COUNT(*)::int FROM topic t2 WHERE t2.chapter_id = c.id) AS topics_in_chapter
+      FROM topic t
+      JOIN chapter c ON c.id = t.chapter_id
+     WHERE EXISTS (SELECT 1 FROM question q WHERE q.topic_id = t.id AND q.status = 'PUBLISHED')
+  `);
+  if (rows.length === 0) return null;
+
+  // Capped: a chapter's real exam weight divided across very few actual
+  // topics (a newly-created chapter that only has one topic so far, for
+  // instance) would otherwise dominate Mixed Practice far out of
+  // proportion to how "big" that chapter really is meant to be -- the cap
+  // keeps real, well-populated chapters weighted correctly relative to
+  // each other while stopping a sparse one from taking over.
+  const MAX_TOPIC_WEIGHT = 3;
+  const weighted = rows.map((r) => ({
+    id: r.id,
+    weight: Math.min(r.question_count / Math.max(1, r.topics_in_chapter), MAX_TOPIC_WEIGHT),
+  }));
+  const total = weighted.reduce((sum, w) => sum + w.weight, 0);
+  let roll = Math.random() * (total || 1);
+  for (const w of weighted) {
+    roll -= w.weight || 1 / weighted.length;
+    if (roll <= 0) return w.id;
+  }
+  return weighted[weighted.length - 1].id;
+}
+
+/**
  * GET /api/questions/next?topic=aptitude.fractions
+ * topic=mixed picks a real topic at random (weighted by exam weight) on
+ * every call, for "practice across everything" rather than one topic.
  *
  * The backend decides which question comes next. The frontend displays it.
  * No difficulty logic ever moves to the client.
  */
 export async function GET(request) {
-  const topicId = new URL(request.url).searchParams.get('topic') ?? 'aptitude.fractions';
+  let topicId = new URL(request.url).searchParams.get('topic') ?? 'aptitude.fractions';
 
   const learnerId = await requireLearnerId(request);
   if (!learnerId) {
@@ -21,6 +60,14 @@ export async function GET(request) {
   }
 
   try {
+    if (topicId === 'mixed') {
+      const picked = await pickMixedTopic();
+      if (!picked) {
+        return NextResponse.json({ code: 'NO_QUESTIONS', message: 'No published questions anywhere yet' }, { status: 404 });
+      }
+      topicId = picked;
+    }
+
     const { rows: stateRows } = await query(
       `SELECT current_difficulty, attempt_count, next_action
          FROM learner_topic_state WHERE learner_id = $1 AND topic_id = $2`,
@@ -38,6 +85,7 @@ export async function GET(request) {
               q.difficulty::float8          AS difficulty,
               q.estimated_seconds,
               q.source,
+              t.name                        AS topic_name,
               COUNT(a.id)::int              AS seen_count,
               COALESCE(
                 (SELECT COUNT(*) FROM question_attempt a2
@@ -45,10 +93,11 @@ export async function GET(request) {
                     AND a2.created_at > MAX(a.created_at)), 999
               )::int                        AS attempts_since_last_seen
          FROM question q
+         JOIN topic t ON t.id = q.topic_id
          LEFT JOIN question_attempt a
            ON a.question_id = q.id AND a.learner_id = $1
         WHERE q.topic_id = $2 AND q.status = 'PUBLISHED'
-        GROUP BY q.id`,
+        GROUP BY q.id, t.name`,
       [learnerId, topicId]
     );
 
@@ -74,6 +123,7 @@ export async function GET(request) {
     return NextResponse.json({
       questionId: chosen.id,
       topicId,
+      topicName: chosen.topic_name,
       prompt: chosen.prompt,
       options: chosen.options,
       imageData: chosen.image_data,

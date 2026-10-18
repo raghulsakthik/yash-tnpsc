@@ -4,12 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const DEFAULT_PRACTICE_TOPIC = 'aptitude.fractions';
-
 const topLinks = [
   { href: '/', label: 'Home' },
   { href: '/learn', label: 'Learn' },
-  { href: `/practice/${DEFAULT_PRACTICE_TOPIC}`, label: 'Practice', match: '/practice' },
+  { href: '/practice', label: 'Practice', match: '/practice' },
   { href: '/quick-lab', label: 'Quick Lab' },
   { href: '/pyqs', label: 'PYQs' },
   { href: '/tests', label: 'Tests' },
@@ -19,7 +17,7 @@ const topLinks = [
 const bottomLinks = [
   { href: '/', label: 'Home' },
   { href: '/learn', label: 'Learn' },
-  { href: `/practice/${DEFAULT_PRACTICE_TOPIC}`, label: 'Practice', match: '/practice' },
+  { href: '/practice', label: 'Practice', match: '/practice' },
   { href: '/journey', label: 'Journey' },
   { href: '/profile', label: 'Profile' },
 ];

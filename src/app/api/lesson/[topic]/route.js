@@ -25,7 +25,9 @@ export async function GET(request, { params }) {
   }
 
   const { rows: lessonRows } = await query(
-    `SELECT title, concept, example_problem, example_steps, example_answer, tip FROM lesson WHERE topic_id = $1`,
+    `SELECT title, concept, example_problem, example_steps, example_answer, tip,
+            definition, formulas, shortcuts, common_mistakes
+       FROM lesson WHERE topic_id = $1`,
     [topic]
   );
 
@@ -37,6 +39,10 @@ export async function GET(request, { params }) {
       concept: r.concept,
       example: { problem: r.example_problem, steps: r.example_steps, answer: r.example_answer },
       tip: r.tip,
+      definition: r.definition,
+      formulas: r.formulas,
+      shortcuts: r.shortcuts,
+      commonMistakes: r.common_mistakes,
     };
   } else {
     lesson = getHardcodedLesson(topic);

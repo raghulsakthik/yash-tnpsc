@@ -1,6 +1,6 @@
 import { query, recordEvent } from './db.mjs';
 import { computeStreak } from '../domain/progress.mjs';
-import { dateKeyInAppTimezone } from './timezone.mjs';
+import { dateKeyInAppTimezone, hourInAppTimezone } from './timezone.mjs';
 import { sendPushToLearner, pushConfigured } from './push.mjs';
 import { sendFcmToLearner, fcmConfigured } from './fcm.mjs';
 import { sendWhatsAppToLearner, whatsappConfigured } from './whatsapp.mjs';
@@ -117,7 +117,7 @@ async function learnerAccounts() {
  * and hasn't studied anything today yet.
  */
 export async function checkStreakAtRisk() {
-  const hour = new Date().getHours();
+  const hour = hourInAppTimezone();
   if (hour < 19) return { checked: 0, sent: 0 };
 
   let sent = 0;
@@ -222,7 +222,7 @@ export async function checkTestReminder() {
  * means a 90-minute dedupe window catches exactly one send per slot.
  */
 export async function checkMotivation() {
-  const hour = new Date().getHours();
+  const hour = hourInAppTimezone();
   if (!MOTIVATION_SLOTS.includes(hour)) return { checked: 0, sent: 0 };
 
   let sent = 0;

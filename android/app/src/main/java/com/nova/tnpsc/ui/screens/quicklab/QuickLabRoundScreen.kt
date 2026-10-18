@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,7 +53,7 @@ fun QuickLabRoundScreen(mode: String, navController: NavHostController) {
     var feedback by remember { mutableStateOf<Pair<Boolean, Int>?>(null) }
     var index by remember { mutableIntStateOf(0) }
     var correctCount by remember { mutableIntStateOf(0) }
-    var startedAt by remember { mutableStateOf(0L) }
+    var startedAt by remember { mutableLongStateOf(0L) }
 
     suspend fun loadNext() {
         picked = null

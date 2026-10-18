@@ -79,7 +79,10 @@ export async function deleteTopic(id) {
 
 // ----------------------------------------------------------------- lessons
 
-export async function upsertLesson(topicId, { title, concept, exampleProblem, exampleSteps, exampleAnswer, tip }) {
+export async function upsertLesson(topicId, {
+  title, concept, exampleProblem, exampleSteps, exampleAnswer, tip,
+  definition, formulas, shortcuts, commonMistakes,
+}) {
   if (!title || !concept || !exampleProblem || !exampleAnswer || !tip) {
     throw new ContentUploadError('MISSING_FIELDS', 'title, concept, exampleProblem, exampleAnswer and tip are required');
   }
@@ -89,14 +92,30 @@ export async function upsertLesson(topicId, { title, concept, exampleProblem, ex
   const steps = Array.isArray(exampleSteps) ? exampleSteps.filter((s) => typeof s === 'string' && s.trim()) : [];
   if (steps.length === 0) throw new ContentUploadError('MISSING_STEPS', 'At least one example step is required');
 
+  // These four are optional depth on top of the worked example -- a topic
+  // can have a perfectly good lesson without them, so empty/omitted is
+  // valid, not an error.
+  const cleanList = (arr) => (Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim()) : []);
+
   await query(
-    `INSERT INTO lesson (topic_id, title, concept, example_problem, example_steps, example_answer, tip)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
+    `INSERT INTO lesson (
+       topic_id, title, concept, example_problem, example_steps, example_answer, tip,
+       definition, formulas, shortcuts, common_mistakes
+     )
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb)
      ON CONFLICT (topic_id) DO UPDATE SET
        title = EXCLUDED.title, concept = EXCLUDED.concept, example_problem = EXCLUDED.example_problem,
        example_steps = EXCLUDED.example_steps, example_answer = EXCLUDED.example_answer, tip = EXCLUDED.tip,
+       definition = EXCLUDED.definition, formulas = EXCLUDED.formulas,
+       shortcuts = EXCLUDED.shortcuts, common_mistakes = EXCLUDED.common_mistakes,
        updated_at = now()`,
-    [topicId, title, concept, exampleProblem, JSON.stringify(steps), exampleAnswer, tip]
+    [
+      topicId, title, concept, exampleProblem, JSON.stringify(steps), exampleAnswer, tip,
+      definition?.trim() || null,
+      JSON.stringify(cleanList(formulas)),
+      JSON.stringify(cleanList(shortcuts)),
+      JSON.stringify(cleanList(commonMistakes)),
+    ]
   );
 }
 
@@ -127,7 +146,9 @@ export async function listLessonsByTopic() {
 
 export async function getLessonForEdit(topicId) {
   const { rows } = await query(
-    'SELECT title, concept, example_problem, example_steps, example_answer, tip FROM lesson WHERE topic_id = $1',
+    `SELECT title, concept, example_problem, example_steps, example_answer, tip,
+            definition, formulas, shortcuts, common_mistakes
+       FROM lesson WHERE topic_id = $1`,
     [topicId]
   );
   if (rows.length === 0) return null;
@@ -139,6 +160,10 @@ export async function getLessonForEdit(topicId) {
     exampleSteps: r.example_steps,
     exampleAnswer: r.example_answer,
     tip: r.tip,
+    definition: r.definition,
+    formulas: r.formulas,
+    shortcuts: r.shortcuts,
+    commonMistakes: r.common_mistakes,
   };
 }
 

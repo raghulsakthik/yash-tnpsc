@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '../_components/AppShell';
+import { BoltIcon } from '../_components/Icon';
 
 function stateColor(state) {
   if (state === 'mastered' || state === 'retained') return 'var(--success)';
@@ -53,7 +54,9 @@ export default function PracticeLanding() {
         className="card"
         style={{ display: 'block', marginTop: 20, textDecoration: 'none', color: 'inherit', background: 'var(--secondary-tint)', border: '1px solid #d9d2fb' }}
       >
-        <h3 style={{ fontSize: '1.2rem' }}>⚡ Mixed practice -- all topics combined</h3>
+        <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <BoltIcon style={{ color: 'var(--primary)' }} /> Mixed practice -- all topics combined
+        </h3>
         <p className="muted" style={{ marginTop: 8 }}>Every question drawn from a different real topic, weighted by real exam weight.</p>
         <div style={{ marginTop: 14, fontWeight: 600, color: 'var(--primary)' }}>Start →</div>
       </Link>

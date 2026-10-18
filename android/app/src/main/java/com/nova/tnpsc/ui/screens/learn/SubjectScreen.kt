@@ -88,7 +88,7 @@ fun SubjectScreen(subject: String, navController: NavHostController) {
             Spacer(Modifier.height(10.dp))
         }
 
-        items(detail?.topics ?: emptyList()) { t: TopicSummary ->
+        items(detail?.topics ?: emptyList(), key = { it.slug }) { t: TopicSummary ->
             val (bg, accent) = colorsFor(t.state)
             NovaCard(
                 background = bg,

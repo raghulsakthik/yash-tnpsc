@@ -70,6 +70,35 @@ export default function Lesson({ params }) {
             </>
           )}
 
+          {lesson.definition && (
+            <div className="card-sunk" style={{ marginTop: 20 }}>
+              <span className="eyebrow">Definition</span>
+              <p style={{ marginTop: 10 }}>{lesson.definition}</p>
+            </div>
+          )}
+
+          {lesson.formulas?.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <span className="eyebrow" style={{ color: 'var(--primary)' }}>Formulas</span>
+              <ul style={{ marginTop: 10, paddingLeft: 20 }}>
+                {lesson.formulas.map((f, i) => (
+                  <li key={i} className="num" style={{ marginTop: 6, fontSize: '0.95rem' }}>{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {lesson.shortcuts?.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <span className="eyebrow" style={{ color: 'var(--success)' }}>Shortcuts</span>
+              <ul style={{ marginTop: 10, paddingLeft: 20 }}>
+                {lesson.shortcuts.map((s, i) => (
+                  <li key={i} style={{ marginTop: 6 }}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {lesson.example && (
             <div className="card-tint" style={{ marginTop: 24 }}>
               <span className="eyebrow" style={{ color: 'var(--secondary)' }}>Worked example</span>
@@ -89,6 +118,17 @@ export default function Lesson({ params }) {
             <div className="card" style={{ marginTop: 20, borderLeft: '3px solid var(--warm-accent)' }}>
               <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Common mistake</span>
               <p style={{ marginTop: 10 }}>{lesson.tip}</p>
+            </div>
+          )}
+
+          {lesson.commonMistakes?.length > 0 && (
+            <div className="card" style={{ marginTop: 14, borderLeft: '3px solid var(--warm-accent)' }}>
+              <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>More mistakes to watch for</span>
+              <ul style={{ marginTop: 10, paddingLeft: 20 }}>
+                {lesson.commonMistakes.map((m, i) => (
+                  <li key={i} style={{ marginTop: 6 }}>{m}</li>
+                ))}
+              </ul>
             </div>
           )}
 

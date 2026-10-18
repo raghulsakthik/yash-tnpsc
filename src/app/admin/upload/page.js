@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import AdminGuard from '../_components/AdminGuard';
 import PdfClassifyPanel from './PdfClassifyPanel';
 import VocabularyPanel from './VocabularyPanel';
+import TemplatePanel from './TemplatePanel';
 
 const SAMPLE_YAML = `topic: aptitude.averages
 language: en
@@ -222,9 +223,12 @@ export default function AdminUpload() {
         <button type="button" className={`pill-tab ${mode === 'vocabulary' ? 'active' : ''}`} onClick={() => setMode('vocabulary')}>
           English vocabulary (Dictionary API)
         </button>
+        <button type="button" className={`pill-tab ${mode === 'templates' ? 'active' : ''}`} onClick={() => setMode('templates')}>
+          Math templates (verified)
+        </button>
       </div>
 
-      {mode === 'yaml' ? <UploadBody /> : mode === 'vocabulary' ? <VocabularyPanel /> : <PdfClassifyPanel />}
+      {mode === 'yaml' ? <UploadBody /> : mode === 'vocabulary' ? <VocabularyPanel /> : mode === 'templates' ? <TemplatePanel /> : <PdfClassifyPanel />}
     </AdminGuard>
   );
 }

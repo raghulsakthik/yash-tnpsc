@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import AdminGuard from '../_components/AdminGuard';
 
-const EMPTY_FORM = { title: '', concept: '', exampleProblem: '', exampleStepsText: '', exampleAnswer: '', tip: '' };
+const EMPTY_FORM = {
+  title: '', concept: '', exampleProblem: '', exampleStepsText: '', exampleAnswer: '', tip: '',
+  definition: '', formulasText: '', shortcutsText: '', commonMistakesText: '',
+};
 
 export default function AdminLessons() {
   const [topics, setTopics] = useState(null);
@@ -31,7 +34,14 @@ export default function AdminLessons() {
     }
     fetch(`/api/admin/lessons/${topicId}`)
       .then((res) => res.json())
-      .then((d) => setForm({ ...d, exampleStepsText: d.exampleSteps.join('\n') }))
+      .then((d) => setForm({
+        ...d,
+        exampleStepsText: d.exampleSteps.join('\n'),
+        definition: d.definition ?? '',
+        formulasText: (d.formulas ?? []).join('\n'),
+        shortcutsText: (d.shortcuts ?? []).join('\n'),
+        commonMistakesText: (d.commonMistakes ?? []).join('\n'),
+      }))
       .catch(() => setError('Could not load lesson'));
   }
 
@@ -49,6 +59,10 @@ export default function AdminLessons() {
           exampleSteps: form.exampleStepsText.split('\n').map((s) => s.trim()).filter(Boolean),
           exampleAnswer: form.exampleAnswer,
           tip: form.tip,
+          definition: form.definition,
+          formulas: form.formulasText.split('\n').map((s) => s.trim()).filter(Boolean),
+          shortcuts: form.shortcutsText.split('\n').map((s) => s.trim()).filter(Boolean),
+          commonMistakes: form.commonMistakesText.split('\n').map((s) => s.trim()).filter(Boolean),
         }),
       });
       const data = await res.json();
@@ -159,6 +173,36 @@ export default function AdminLessons() {
               <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                 Common mistake / tip
                 <textarea rows={2} value={form.tip} onChange={(e) => setForm((f) => ({ ...f, tip: e.target.value }))}
+                  style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+              </label>
+
+              <p className="eyebrow" style={{ marginTop: 10 }}>Optional depth</p>
+
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Definition
+                <textarea rows={2} value={form.definition} onChange={(e) => setForm((f) => ({ ...f, definition: e.target.value }))}
+                  placeholder="A plain-language definition of the concept, separate from the worked example."
+                  style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+              </label>
+
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Formulas (one per line)
+                <textarea rows={3} value={form.formulasText} onChange={(e) => setForm((f) => ({ ...f, formulasText: e.target.value }))}
+                  placeholder={'SI = (P × R × T) / 100\nAmount = P(1 + R/100)^T'}
+                  style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+              </label>
+
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Shortcuts (one per line)
+                <textarea rows={3} value={form.shortcutsText} onChange={(e) => setForm((f) => ({ ...f, shortcutsText: e.target.value }))}
+                  placeholder="A faster route to the answer than the full formula, when one exists."
+                  style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+              </label>
+
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Common mistakes (one per line)
+                <textarea rows={3} value={form.commonMistakesText} onChange={(e) => setForm((f) => ({ ...f, commonMistakesText: e.target.value }))}
+                  placeholder="Specific wrong-method errors students make on this concept, beyond the single tip above."
                   style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
               </label>
 

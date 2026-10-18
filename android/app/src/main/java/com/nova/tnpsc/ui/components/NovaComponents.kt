@@ -17,7 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -175,17 +176,25 @@ private data class OptionColors(val background: Color, val border: Color, val do
  * Renders a `data:image/...;base64,...` string -- the shape the backend
  * sends for a diagram a question depends on (see question.imageData),
  * admin-uploaded via the PDF/document upload pipeline. Decoded once per
- * distinct string via `remember`, not on every recomposition.
+ * distinct string off the main thread, not on every recomposition.
  */
 @Composable
 fun Base64Image(dataUrl: String, modifier: Modifier = Modifier) {
-    val bitmap = remember(dataUrl) {
-        runCatching {
-            val base64 = dataUrl.substringAfter(",", dataUrl)
-            val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
-            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                ?.asImageBitmap()
-        }.getOrNull()
+    // Decoding runs off the main thread -- a full-resolution diagram can be
+    // a few hundred KB of PNG, and BitmapFactory.decodeByteArray synchronously
+    // on the composition/main thread was a visible frame hitch every time a
+    // question with a figure appeared (exactly the kind of stutter a learner
+    // mid-test would notice). produceState moves the decode to Dispatchers.Default
+    // and the composable just renders null (nothing) until it's ready.
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = dataUrl) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching {
+                val base64 = dataUrl.substringAfter(",", dataUrl)
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?.asImageBitmap()
+            }.getOrNull()
+        }
     }
     bitmap?.let {
         androidx.compose.foundation.Image(

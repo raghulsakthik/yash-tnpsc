@@ -113,6 +113,9 @@
   align-items: center;
   gap: 12px;
 }
+.proto .topnav .right > a {
+  text-decoration: none;
+}
 .proto .streak-chip {
   display: inline-flex;
   align-items: center;

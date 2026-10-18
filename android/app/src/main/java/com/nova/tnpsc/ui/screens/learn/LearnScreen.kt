@@ -70,7 +70,7 @@ fun LearnScreen(navController: NavHostController) {
             Spacer(Modifier.height(6.dp))
         }
 
-        items(subjects ?: emptyList()) { subject ->
+        items(subjects ?: emptyList(), key = { it.slug }) { subject ->
             NovaCard(
                 modifier = Modifier.clickable { navController.navigate("learn/${subject.slug}") },
             ) {

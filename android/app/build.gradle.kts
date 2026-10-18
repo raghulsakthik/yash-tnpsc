@@ -1,7 +1,18 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+// local.properties is already gitignored by the Android Studio template
+// (it holds the SDK path on every dev machine) -- piggybacking API_BASE_URL
+// onto it means a real release config lives per-machine, never committed.
+fun localProperty(key: String): String? {
+    val file = rootProject.file("local.properties")
+    if (!file.exists()) return null
+    return Properties().apply { file.inputStream().use { load(it) } }.getProperty(key)
 }
 
 android {
@@ -14,12 +25,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
-
-        // 10.0.2.2 is the Android emulator's alias for the host machine's
-        // localhost -- this is what lets the emulator reach `npm run dev`
-        // running on the host. A real build points this at the deployed
-        // server instead (https://, no cleartext exception needed there).
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/\"")
     }
 
     buildFeatures {
@@ -28,8 +33,34 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 10.0.2.2 is the Android emulator's alias for the host
+            // machine's localhost -- this is what lets the emulator reach
+            // `npm run dev` running on the host.
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/\"")
+        }
         release {
             isMinifyEnabled = false
+            // Must be passed at build time: `./gradlew assembleRelease -PapiBaseUrl=https://your-app.vercel.app/`
+            // (or set API_BASE_URL in local.properties for a repeatable local
+            // release build). No baked-in default here on purpose -- a release
+            // build silently pointed at the emulator's localhost would look
+            // fine in CI and then fail for every real user, which is worse
+            // than a build that refuses to guess.
+            //
+            // The missing-value check only fires when a release task is
+            // actually in the requested task graph -- AGP configures every
+            // buildType block eagerly even for `assembleDebug`, so throwing
+            // unconditionally here would break debug builds too.
+            val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?) ?: localProperty("API_BASE_URL")
+            val isBuildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = false) }
+            if (apiBaseUrl == null && isBuildingRelease) {
+                throw GradleException(
+                    "No API_BASE_URL for the release build. Pass -PapiBaseUrl=https://your-deployed-app.vercel.app/ " +
+                        "or add API_BASE_URL=https://... to android/local.properties."
+                )
+            }
+            buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: ""}\"")
         }
     }
 
@@ -57,6 +88,11 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.1")
+    // Forces a modern androidx.fragment past a transitive 1.1.0 pulled in
+    // elsewhere -- that old version's FragmentActivity doesn't call
+    // super.onRequestPermissionsResult(), which breaks registerForActivityResult
+    // (the permission launcher in MainActivity.kt) on some devices/OS versions.
+    implementation("androidx.fragment:fragment-ktx:1.8.3")
 
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")

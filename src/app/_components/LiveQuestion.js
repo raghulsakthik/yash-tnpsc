@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AchievementUnlockBanner from './AchievementUnlockBanner';
+import { StarIcon } from './Icon';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -37,6 +38,7 @@ export default function LiveQuestion({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiUnavailable, setAiUnavailable] = useState(false);
   const [newAchievements, setNewAchievements] = useState([]);
+  const [bookmarked, setBookmarked] = useState(false);
   const lastTimeTakenMs = useRef(null);
 
   const shownAt = useRef(Date.now());
@@ -52,6 +54,7 @@ export default function LiveQuestion({
     setAiHintName(null);
     setNewAchievements([]);
     setAiUnavailable(false);
+    setBookmarked(false);
     try {
       const res = await fetch(nextQuestionUrl, { cache: 'no-store' });
       const data = await res.json();
@@ -103,6 +106,25 @@ export default function LiveQuestion({
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleBookmark() {
+    if (!question) return;
+    const next = !bookmarked;
+    setBookmarked(next); // optimistic -- a failed toggle isn't worth blocking on
+    try {
+      if (next) {
+        await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId: question.questionId }),
+        });
+      } else {
+        await fetch(`/api/bookmarks/${question.questionId}`, { method: 'DELETE' });
+      }
+    } catch {
+      setBookmarked(!next); // revert on a real failure
     }
   }
 
@@ -190,7 +212,21 @@ export default function LiveQuestion({
           {(topicLabel || question.topicName) ? `${topicLabel || question.topicName} · ` : ''}
           Question {Math.min(answered + 1, sessionLength)} of {sessionLength}
         </span>
-        <span className="badge badge-mastered">{question.difficulty}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            type="button"
+            onClick={toggleBookmark}
+            aria-label={bookmarked ? 'Remove bookmark' : 'Save for later'}
+            title={bookmarked ? 'Saved -- click to remove' : 'Save for later'}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: 0, display: 'flex',
+              color: bookmarked ? 'var(--warm-accent)' : 'var(--ink-muted)',
+            }}
+          >
+            <StarIcon filled={bookmarked} />
+          </button>
+          <span className="badge badge-mastered">{question.difficulty}</span>
+        </div>
       </div>
 
       <h2 style={{ fontSize: '1.6rem', marginBottom: question.imageData ? 12 : 20 }}>{question.prompt}</h2>

@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,7 +56,7 @@ fun TestRunScreen(testId: String, navController: NavHostController) {
     var current by remember { mutableIntStateOf(0) }
     var submitting by remember { mutableStateOf(false) }
     val answers = remember { mutableStateMapOf<String, LocalAnswer>() }
-    var shownAt by remember { mutableStateOf(System.currentTimeMillis()) }
+    var shownAt by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     LaunchedEffect(testId) {
         try {

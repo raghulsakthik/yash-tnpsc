@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,7 +65,7 @@ fun PracticeScreen(topic: String, mode: String) {
     var empty by remember { mutableStateOf(false) }
     var answered by remember { mutableIntStateOf(0) }
     var correctCount by remember { mutableIntStateOf(0) }
-    var shownAt by remember { mutableStateOf(System.currentTimeMillis()) }
+    var shownAt by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var reloadKey by remember { mutableIntStateOf(0) }
 
     suspend fun loadNext() {

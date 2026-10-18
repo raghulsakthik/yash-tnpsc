@@ -8,6 +8,7 @@ import ActivityGraph from './_components/ActivityGraph';
 import ActivityCalendar from './_components/charts/ActivityCalendar';
 import StatusPieChart from './_components/charts/StatusPieChart';
 import OrbitPreview from './_components/charts/OrbitPreview';
+import OnThisDay from './_components/OnThisDay';
 
 // Hardcoded IST, not the browser's local time -- a learner (or a reviewer)
 // on a device set to a different timezone would otherwise see "Good
@@ -179,6 +180,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <OnThisDay />
     </AppShell>
   );
 }

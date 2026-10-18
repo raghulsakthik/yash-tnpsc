@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon } from '../../_components/Icon';
 
 const NAV = [
-  { href: '/admin', label: 'Dashboard', icon: '◆' },
-  { href: '/admin/subjects', label: 'Subjects & Topics', icon: '▤' },
-  { href: '/admin/lessons', label: 'Lessons', icon: '✎' },
-  { href: '/admin/questions', label: 'Questions', icon: '?' },
-  { href: '/admin/tests', label: 'Tests', icon: '▦' },
-  { href: '/admin/quicklab', label: 'Quick Lab', icon: '⚡' },
-  { href: '/admin/upload', label: 'Bulk Upload', icon: '⇪' },
-  { href: '/admin/proctoring', label: 'Proctoring', icon: '◉' },
+  { href: '/admin', label: 'Dashboard', Icon: DiamondIcon },
+  { href: '/admin/subjects', label: 'Subjects & Topics', Icon: BookOpenIcon },
+  { href: '/admin/lessons', label: 'Lessons', Icon: PencilIcon },
+  { href: '/admin/questions', label: 'Questions', Icon: QuestionIcon },
+  { href: '/admin/tests', label: 'Tests', Icon: GridIcon },
+  { href: '/admin/quicklab', label: 'Quick Lab', Icon: BoltIcon },
+  { href: '/admin/upload', label: 'Bulk Upload', Icon: UploadIcon },
+  { href: '/admin/review', label: 'Review Queue', Icon: CheckSquareIcon },
+  { href: '/admin/proctoring', label: 'Proctoring', Icon: CameraIcon },
 ];
 
 function isActive(pathname, href) {
@@ -83,7 +85,7 @@ export default function AdminGuard({ children }) {
                   textDecoration: 'none',
                 }}
               >
-                <span style={{ width: 16, textAlign: 'center' }}>{item.icon}</span>
+                <span style={{ width: 16, display: 'flex', justifyContent: 'center' }}><item.Icon width={16} height={16} /></span>
                 {item.label}
               </Link>
             );

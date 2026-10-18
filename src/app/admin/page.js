@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminGuard from './_components/AdminGuard';
+import PyqFrequencyPanel from './PyqFrequencyPanel';
 
 function Stat({ value, label, color }) {
   return (
@@ -82,14 +83,7 @@ function AnalyticsBody() {
         </svg>
       </div>
 
-      <div className="card" style={{ borderLeft: '3px solid var(--warm-accent)' }}>
-        <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Not built yet</span>
-        <p className="muted" style={{ marginTop: 8 }}>
-          Exam proctoring (tab/app-switch detection, camera and screen recording) hasn&apos;t been built --
-          there&apos;s no capture pipeline yet to review here. That&apos;s a separate, sizable piece of work
-          (client-side recording, storage, and a playback UI) whenever you&apos;re ready to scope it.
-        </p>
-      </div>
+      <PyqFrequencyPanel />
     </div>
   );
 }

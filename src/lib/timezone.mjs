@@ -17,3 +17,17 @@ const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
 export function dateKeyInAppTimezone(date = new Date()) {
   return dateKeyFormatter.format(date);
 }
+
+const hourFormatter = new Intl.DateTimeFormat('en-US', { timeZone: APP_TIMEZONE, hour: 'numeric', hour12: false });
+
+/**
+ * The hour (0-23) for the given instant, in IST -- the same correctness
+ * reason as dateKeyInAppTimezone: `Date#getHours()` reads the server's
+ * local clock, which is IST on a dev machine but UTC on most cloud hosts
+ * (Vercel included). Any "is it evening yet" / "which 2-hourly slot" check
+ * must go through this, not getHours() directly.
+ */
+export function hourInAppTimezone(date = new Date()) {
+  const h = Number(hourFormatter.format(date));
+  return h === 24 ? 0 : h; // en-US's 24h format reports midnight as "24"
+}

@@ -17,10 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -168,3 +170,32 @@ fun OptionRow(
 enum class OptionState { Default, Selected, Correct, Incorrect }
 
 private data class OptionColors(val background: Color, val border: Color, val dotBackground: Color, val dotForeground: Color)
+
+/**
+ * Renders a `data:image/...;base64,...` string -- the shape the backend
+ * sends for a diagram a question depends on (see question.imageData),
+ * admin-uploaded via the PDF/document upload pipeline. Decoded once per
+ * distinct string via `remember`, not on every recomposition.
+ */
+@Composable
+fun Base64Image(dataUrl: String, modifier: Modifier = Modifier) {
+    val bitmap = remember(dataUrl) {
+        runCatching {
+            val base64 = dataUrl.substringAfter(",", dataUrl)
+            val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                ?.asImageBitmap()
+        }.getOrNull()
+    }
+    bitmap?.let {
+        androidx.compose.foundation.Image(
+            bitmap = it,
+            contentDescription = "Figure for this question",
+            modifier = modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(RadiusLarge))
+                .border(1.dp, NovaBorder, RoundedCornerShape(RadiusLarge)),
+            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth,
+        )
+    }
+}

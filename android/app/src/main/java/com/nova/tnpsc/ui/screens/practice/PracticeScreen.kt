@@ -29,6 +29,7 @@ import com.nova.tnpsc.data.practice.AchievementUnlock
 import com.nova.tnpsc.data.practice.AttemptRequest
 import com.nova.tnpsc.data.practice.AttemptResponse
 import com.nova.tnpsc.data.practice.QuestionResponse
+import com.nova.tnpsc.ui.components.Base64Image
 import com.nova.tnpsc.ui.components.Eyebrow
 import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.components.OptionRow
@@ -136,6 +137,10 @@ fun PracticeScreen(topic: String, mode: String) {
         } else {
             val q = question!!
             item { Text(q.prompt, style = MaterialTheme.typography.headlineLarge) }
+
+            q.imageData?.let { imageData ->
+                item { Base64Image(imageData) }
+            }
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

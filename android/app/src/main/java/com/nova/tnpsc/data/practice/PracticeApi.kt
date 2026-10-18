@@ -14,6 +14,7 @@ data class QuestionResponse(
     val topicName: String? = null,
     val prompt: String = "",
     val options: List<String> = emptyList(),
+    val imageData: String? = null,
     val estimatedSeconds: Int = 0,
     val difficulty: String = "",
     val targetDifficulty: Double = 0.0,

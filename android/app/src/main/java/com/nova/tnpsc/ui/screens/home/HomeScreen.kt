@@ -149,5 +149,12 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
         }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { navController.navigate("quicklab") }, modifier = Modifier.weight(1f)) { Text("⚡ Quick Lab") }
+                Button(onClick = { navController.navigate("tests") }, modifier = Modifier.weight(1f)) { Text("▦ Tests") }
+            }
+        }
     }
 }

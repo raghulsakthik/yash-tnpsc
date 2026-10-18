@@ -33,7 +33,6 @@ import androidx.navigation.NavHostController
 import com.nova.tnpsc.TnpscApplication
 import com.nova.tnpsc.data.learn.SubjectDetailResponse
 import com.nova.tnpsc.data.learn.TopicSummary
-import com.nova.tnpsc.navigation.practiceRoute
 import com.nova.tnpsc.ui.components.Eyebrow
 import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.theme.NovaBorder
@@ -94,7 +93,7 @@ fun SubjectScreen(subject: String, navController: NavHostController) {
             NovaCard(
                 background = bg,
                 border = accent,
-                modifier = Modifier.clickable { navController.navigate(practiceRoute(topic = t.slug)) },
+                modifier = Modifier.clickable { navController.navigate("lesson/${t.slug}") },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val dotLabel = when (t.state) {

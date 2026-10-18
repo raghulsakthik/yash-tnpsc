@@ -42,9 +42,15 @@ import com.nova.tnpsc.ui.screens.home.HomeScreen
 import com.nova.tnpsc.ui.screens.journey.JourneyScreen
 import com.nova.tnpsc.ui.screens.learn.LearnScreen
 import com.nova.tnpsc.ui.screens.learn.SubjectScreen
+import com.nova.tnpsc.ui.screens.lesson.LessonScreen
 import com.nova.tnpsc.ui.screens.login.LoginScreen
 import com.nova.tnpsc.ui.screens.practice.PracticeScreen
 import com.nova.tnpsc.ui.screens.profile.ProfileScreen
+import com.nova.tnpsc.ui.screens.quicklab.QuickLabRoundScreen
+import com.nova.tnpsc.ui.screens.quicklab.QuickLabScreen
+import com.nova.tnpsc.ui.screens.tests.TestResultScreen
+import com.nova.tnpsc.ui.screens.tests.TestRunScreen
+import com.nova.tnpsc.ui.screens.tests.TestsScreen
 
 // The same default used server-side when no topic is specified -- see
 // DEFAULT_PRACTICE_TOPIC in the web app's AppShell.
@@ -123,6 +129,24 @@ private fun MainNavHost(authRepository: AuthRepository) {
             }
             composable(Destination.Journey.route) { JourneyScreen() }
             composable(Destination.Profile.route) { ProfileScreen(authRepository) }
+            composable("lesson/{topic}") { backStackEntry ->
+                val topic = backStackEntry.arguments?.getString("topic") ?: DEFAULT_PRACTICE_TOPIC
+                LessonScreen(topic = topic, navController = navController)
+            }
+            composable("quicklab") { QuickLabScreen(navController) }
+            composable("quicklab/{mode}") { backStackEntry ->
+                val mode = backStackEntry.arguments?.getString("mode") ?: "quick-math"
+                QuickLabRoundScreen(mode = mode, navController = navController)
+            }
+            composable("tests") { TestsScreen(navController) }
+            composable("tests/{testId}") { backStackEntry ->
+                val testId = backStackEntry.arguments?.getString("testId") ?: ""
+                TestRunScreen(testId = testId, navController = navController)
+            }
+            composable("tests/{testId}/result") { backStackEntry ->
+                val testId = backStackEntry.arguments?.getString("testId") ?: ""
+                TestResultScreen(testId = testId, navController = navController)
+            }
         }
     }
 }

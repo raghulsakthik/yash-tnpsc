@@ -4,10 +4,13 @@ import android.app.Application
 import com.nova.tnpsc.data.auth.AuthRepository
 import com.nova.tnpsc.data.journey.JourneyApi
 import com.nova.tnpsc.data.learn.LearnApi
+import com.nova.tnpsc.data.lesson.LessonApi
 import com.nova.tnpsc.data.network.ApiClient
 import com.nova.tnpsc.data.plan.PlanApi
 import com.nova.tnpsc.data.practice.PracticeApi
 import com.nova.tnpsc.data.profile.ProfileApi
+import com.nova.tnpsc.data.quicklab.QuickLabApi
+import com.nova.tnpsc.data.tests.TestsApi
 import com.nova.tnpsc.push.FcmTokenRegistrar
 
 /**
@@ -36,6 +39,12 @@ class TnpscApplication : Application() {
         private set
     lateinit var journeyApi: JourneyApi
         private set
+    lateinit var lessonApi: LessonApi
+        private set
+    lateinit var quickLabApi: QuickLabApi
+        private set
+    lateinit var testsApi: TestsApi
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -48,5 +57,8 @@ class TnpscApplication : Application() {
         learnApi = apiClient.create(LearnApi::class.java)
         practiceApi = apiClient.create(PracticeApi::class.java)
         journeyApi = apiClient.create(JourneyApi::class.java)
+        lessonApi = apiClient.create(LessonApi::class.java)
+        quickLabApi = apiClient.create(QuickLabApi::class.java)
+        testsApi = apiClient.create(TestsApi::class.java)
     }
 }

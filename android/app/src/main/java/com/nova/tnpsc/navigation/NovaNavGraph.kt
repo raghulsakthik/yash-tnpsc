@@ -108,7 +108,14 @@ private fun MainNavHost(authRepository: AuthRepository) {
         NavHost(
             navController = navController,
             startDestination = Destination.Home.route,
-            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+            // Both edges, not just bottom -- enableEdgeToEdge() (MainActivity)
+            // draws the whole app behind the system bars, and Scaffold's
+            // innerPadding is what keeps content out from under them. Only
+            // applying the bottom inset left every screen's title drawing
+            // directly under the status bar/clock -- visible as an overlap
+            // on real devices (the emulator's status bar happened to be
+            // short enough that it wasn't obvious there).
+            modifier = Modifier.padding(innerPadding),
         ) {
             composable(Destination.Home.route) { HomeScreen(navController) }
             composable(Destination.Learn.route) { LearnScreen(navController) }

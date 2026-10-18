@@ -45,12 +45,20 @@ async function isFirstMotivationSlotToday(learnerId) {
 
 async function notify(learnerId, event, payload) {
   await recordEvent(learnerId, event, null, { title: payload.title });
-  if (pushConfigured) await sendPushToLearner(learnerId, payload).catch(() => {});
-  if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch(() => {});
+  // Logged, not swallowed -- a failure here (an expired WhatsApp token, the
+  // recipient outside Meta's 24-hour window, a bad push subscription) used
+  // to vanish entirely behind the scheduler's "sent:1" count, which only
+  // reflects that this function ran, not that any channel actually delivered.
+  if (pushConfigured) await sendPushToLearner(learnerId, payload).catch((err) => console.error(`[push] ${event} failed for ${learnerId}:`, err.message));
+  if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch((err) => console.error(`[fcm] ${event} failed for ${learnerId}:`, err.message));
   // WhatsApp has no separate title/body chrome like a push notification
   // does -- it's just chat text, so the "reminder" framing has to be
   // spelled out in the message itself rather than implied by the UI.
-  if (whatsappConfigured) await sendWhatsAppToLearner(learnerId, `⏰ Reminder: ${payload.title}\n${payload.body}`).catch(() => {});
+  if (whatsappConfigured) {
+    await sendWhatsAppToLearner(learnerId, `⏰ Reminder: ${payload.title}\n${payload.body}`).catch((err) =>
+      console.error(`[whatsapp] ${event} failed for ${learnerId}:`, err.message)
+    );
+  }
 }
 
 /**
@@ -69,15 +77,15 @@ async function notify(learnerId, event, payload) {
 async function notifyMotivation(learnerId, event, whatsappText, emailMessage) {
   await recordEvent(learnerId, event, null, { whatsappText, emailSubject: emailMessage.subject });
   const payload = { title: 'Yash', body: whatsappText, tag: 'motivation' };
-  if (pushConfigured) await sendPushToLearner(learnerId, payload).catch(() => {});
-  if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch(() => {});
-  if (whatsappConfigured) await sendWhatsAppToLearner(learnerId, whatsappText).catch(() => {});
+  if (pushConfigured) await sendPushToLearner(learnerId, payload).catch((err) => console.error(`[push] ${event} failed for ${learnerId}:`, err.message));
+  if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch((err) => console.error(`[fcm] ${event} failed for ${learnerId}:`, err.message));
+  if (whatsappConfigured) await sendWhatsAppToLearner(learnerId, whatsappText).catch((err) => console.error(`[whatsapp] ${event} failed for ${learnerId}:`, err.message));
   if (emailConfigured) {
     await sendEmailToLearner(learnerId, {
       subject: emailMessage.subject,
       text: emailMessage.body,
       html: motivationEmailHtml(emailMessage),
-    }).catch(() => {});
+    }).catch((err) => console.error(`[email] ${event} failed for ${learnerId}:`, err.message));
   }
 }
 

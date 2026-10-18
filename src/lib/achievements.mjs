@@ -84,9 +84,9 @@ export async function checkAndUnlockAchievements(learnerId) {
       body: achievement.description ?? 'Keep going.',
       tag: `achievement-${achievement.id}`,
     };
-    if (pushConfigured) await sendPushToLearner(learnerId, payload).catch(() => {});
-    if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch(() => {});
-    if (whatsappConfigured) await sendWhatsAppToLearner(learnerId, `${payload.title}\n${payload.body}`).catch(() => {});
+    if (pushConfigured) await sendPushToLearner(learnerId, payload).catch((err) => console.error(`[push] achievement send failed for ${learnerId}:`, err.message));
+    if (fcmConfigured) await sendFcmToLearner(learnerId, payload).catch((err) => console.error(`[fcm] achievement send failed for ${learnerId}:`, err.message));
+    if (whatsappConfigured) await sendWhatsAppToLearner(learnerId, `${payload.title}\n${payload.body}`).catch((err) => console.error(`[whatsapp] achievement send failed for ${learnerId}:`, err.message));
   }
 
   return unlocked;

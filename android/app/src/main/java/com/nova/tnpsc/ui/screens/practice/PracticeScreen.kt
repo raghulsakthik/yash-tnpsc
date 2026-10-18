@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import com.nova.tnpsc.TnpscApplication
 import com.nova.tnpsc.data.practice.AchievementUnlock
 import com.nova.tnpsc.data.practice.AttemptRequest
 import com.nova.tnpsc.data.practice.AttemptResponse
+import com.nova.tnpsc.data.practice.HintRequest
 import com.nova.tnpsc.data.practice.QuestionResponse
 import com.nova.tnpsc.ui.components.Base64Image
 import com.nova.tnpsc.ui.components.Eyebrow
@@ -36,6 +38,8 @@ import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.components.OptionRow
 import com.nova.tnpsc.ui.components.OptionState
 import com.nova.tnpsc.ui.theme.NovaInkMuted
+import com.nova.tnpsc.ui.theme.NovaSecondary
+import com.nova.tnpsc.ui.theme.NovaSecondaryTint
 import com.nova.tnpsc.ui.theme.NovaSuccess
 import com.nova.tnpsc.ui.theme.NovaSuccessTint
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
@@ -66,7 +70,12 @@ fun PracticeScreen(topic: String, mode: String) {
     var answered by remember { mutableIntStateOf(0) }
     var correctCount by remember { mutableIntStateOf(0) }
     var shownAt by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var lastTimeTakenMs by remember { mutableLongStateOf(0L) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var aiHint by remember { mutableStateOf<String?>(null) }
+    var aiHintName by remember { mutableStateOf<String?>(null) }
+    var aiLoading by remember { mutableStateOf(false) }
+    var aiUnavailable by remember { mutableStateOf(false) }
 
     suspend fun loadNext() {
         loading = true
@@ -74,6 +83,9 @@ fun PracticeScreen(topic: String, mode: String) {
         empty = false
         selected = null
         result = null
+        aiHint = null
+        aiHintName = null
+        aiUnavailable = false
         try {
             val res: Response<QuestionResponse> = when (mode) {
                 "REVISION" -> app.practiceApi.nextRevision()
@@ -168,6 +180,7 @@ fun PracticeScreen(topic: String, mode: String) {
                         onClick = {
                             val idx = selected ?: return@Button
                             val timeTakenMs = System.currentTimeMillis() - shownAt
+                            lastTimeTakenMs = timeTakenMs
                             scope.launch {
                                 try {
                                     val res = app.practiceApi.submit(
@@ -213,6 +226,60 @@ fun PracticeScreen(topic: String, mode: String) {
 
                 if (r.newAchievements.isNotEmpty()) {
                     item { AchievementBanner(r.newAchievements) }
+                }
+
+                if (aiHint == null && !aiUnavailable) {
+                    item {
+                        val scope = androidx.compose.runtime.rememberCoroutineScope()
+                        OutlinedButton(
+                            enabled = !aiLoading,
+                            onClick = {
+                                aiLoading = true
+                                scope.launch {
+                                    try {
+                                        val res = app.practiceApi.hint(
+                                            HintRequest(
+                                                questionId = q.questionId,
+                                                selectedIndex = selected,
+                                                mistakeType = r.mistakeType,
+                                                timeTakenMs = lastTimeTakenMs,
+                                            )
+                                        )
+                                        val body = res.body()
+                                        if (res.isSuccessful && body?.available == true) {
+                                            aiHint = body.text
+                                            aiHintName = body.learnerName
+                                        } else {
+                                            aiUnavailable = true
+                                        }
+                                    } catch (e: Exception) {
+                                        aiUnavailable = true
+                                    } finally {
+                                        aiLoading = false
+                                    }
+                                }
+                            },
+                        ) {
+                            if (aiLoading) {
+                                CircularProgressIndicator(modifier = Modifier.height(16.dp))
+                            } else {
+                                Text("✦ Get an AI hint")
+                            }
+                        }
+                    }
+                }
+
+                aiHint?.let { text ->
+                    item {
+                        NovaCard(background = NovaSecondaryTint, border = NovaSecondary) {
+                            Eyebrow(
+                                if (aiHintName != null) "✦ $aiHintName, here's a hint" else "Hint",
+                                color = NovaSecondary,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Text(text)
+                        }
+                    }
                 }
 
                 item {

@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +38,7 @@ import com.nova.tnpsc.ui.theme.NovaSecondary
 import com.nova.tnpsc.ui.theme.NovaSecondaryTint
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
 import com.nova.tnpsc.ui.theme.NovaWarmTint
+import kotlinx.coroutines.launch
 
 /**
  * The concept + worked example for a topic, same content as the web
@@ -46,6 +50,11 @@ fun LessonScreen(topic: String, navController: NavHostController) {
     val app = LocalContext.current.applicationContext as TnpscApplication
     var lesson by remember { mutableStateOf<LessonResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var aiText by remember { mutableStateOf<String?>(null) }
+    var aiLearnerName by remember { mutableStateOf<String?>(null) }
+    var aiLoading by remember { mutableStateOf(false) }
+    var aiUnavailable by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(topic) {
         try {
@@ -127,6 +136,52 @@ fun LessonScreen(topic: String, navController: NavHostController) {
                         Spacer(Modifier.height(10.dp))
                         Base64Image(img)
                     }
+                }
+            }
+        }
+
+        if (aiText == null && !aiUnavailable) {
+            item {
+                OutlinedButton(
+                    onClick = {
+                        aiLoading = true
+                        scope.launch {
+                            try {
+                                val res = app.lessonApi.explain(topic)
+                                val body = res.body()
+                                if (res.isSuccessful && body?.available == true) {
+                                    aiText = body.text
+                                    aiLearnerName = body.learnerName
+                                } else {
+                                    aiUnavailable = true
+                                }
+                            } catch (e: Exception) {
+                                aiUnavailable = true
+                            } finally {
+                                aiLoading = false
+                            }
+                        }
+                    },
+                    enabled = !aiLoading,
+                ) {
+                    if (aiLoading) {
+                        CircularProgressIndicator(modifier = Modifier.height(16.dp))
+                    } else {
+                        Text("✦ Explain this differently")
+                    }
+                }
+            }
+        }
+
+        aiText?.let { text ->
+            item {
+                NovaCard(background = NovaSecondaryTint, border = NovaSecondary) {
+                    Eyebrow(
+                        if (aiLearnerName != null) "✦ $aiLearnerName, here's another angle" else "Another angle",
+                        color = NovaSecondary,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(text)
                 }
             }
         }

@@ -61,7 +61,30 @@ data class AttemptResponse(
     val message: String? = null,
 )
 
-/** Mirrors src/app/api/questions/next and src/app/api/attempts. */
+@Serializable
+data class HintRequest(
+    val questionId: String,
+    val selectedIndex: Int? = null,
+    val mistakeType: String? = null,
+    val confidence: Int? = null,
+    val timeTakenMs: Long? = null,
+)
+
+/**
+ * Mirrors POST /api/ai/hint -- a rescue explanation (wrong answer) or a
+ * "make this automatic" tip (correct but slow/unsure), picked server-side
+ * from the signals already in the attempt. `available = false` is normal,
+ * not an error: the deterministic explanation already shown is enough on
+ * its own when no AI key is configured or the call fails.
+ */
+@Serializable
+data class HintResponse(
+    val available: Boolean = false,
+    val text: String? = null,
+    val learnerName: String? = null,
+)
+
+/** Mirrors src/app/api/questions/next, src/app/api/attempts and src/app/api/ai/hint. */
 interface PracticeApi {
     @GET("api/questions/next")
     suspend fun nextQuestion(@Query("topic") topic: String): Response<QuestionResponse>
@@ -74,4 +97,7 @@ interface PracticeApi {
 
     @POST("api/attempts")
     suspend fun submit(@Body body: AttemptRequest): Response<AttemptResponse>
+
+    @POST("api/ai/hint")
+    suspend fun hint(@Body body: HintRequest): Response<HintResponse>
 }

@@ -21,3 +21,5 @@ coverage/
 # Proctoring recordings -- local-disk only, never committed. See
 # src/lib/proctoringStorage.mjs for the real-deployment storage caveat.
 /storage/proctoring/
+.vercel
+.env*

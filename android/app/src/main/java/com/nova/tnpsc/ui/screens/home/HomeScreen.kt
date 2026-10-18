@@ -162,5 +162,8 @@ fun HomeScreen(navController: NavHostController) {
                 Button(onClick = { navController.navigate("tests") }, modifier = Modifier.weight(1f)) { Text("▦ Tests") }
             }
         }
+        item {
+            Button(onClick = { navController.navigate("pyq") }, modifier = Modifier.fillMaxWidth()) { Text("PYQs") }
+        }
     }
 }

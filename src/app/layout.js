@@ -1,17 +1,25 @@
-import { Fraunces, Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import './proto.css';
 
-const fraunces = Fraunces({
-  subsets: ['latin'],
+// Self-hosted instead of next/font/google: the Google Fonts fetch at build
+// time was failing outright on GitHub Actions' runners (next/font's loader
+// throws on a null network response instead of degrading gracefully), and
+// a build that depends on an external network call succeeding is a risk
+// worth removing entirely, not just on the CI box it happened to fail on.
+// Both are variable fonts -- Google serves one woff2 file covering the
+// whole weight range per style, not one file per weight, which is why
+// there are only 3 files for 3 weights x 2 styles x 2 families.
+const fraunces = localFont({
+  src: [
+    { path: './_fonts/Fraunces-Normal-Variable.woff2', style: 'normal', weight: '400 600' },
+    { path: './_fonts/Fraunces-Italic-Variable.woff2', style: 'italic', weight: '400 600' },
+  ],
   variable: '--font-fraunces',
-  weight: ['400', '500', '600'],
-  style: ['normal', 'italic'],
 });
 
-const inter = Inter({
-  subsets: ['latin'],
+const inter = localFont({
+  src: [{ path: './_fonts/Inter-Variable.woff2', style: 'normal', weight: '400 700' }],
   variable: '--font-inter',
-  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata = {

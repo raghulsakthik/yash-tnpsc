@@ -46,6 +46,8 @@ import com.nova.tnpsc.ui.screens.lesson.LessonScreen
 import com.nova.tnpsc.ui.screens.login.LoginScreen
 import com.nova.tnpsc.ui.screens.practice.PracticeScreen
 import com.nova.tnpsc.ui.screens.profile.ProfileScreen
+import com.nova.tnpsc.ui.screens.pyq.PyqPracticeScreen
+import com.nova.tnpsc.ui.screens.pyq.PyqScreen
 import com.nova.tnpsc.ui.screens.quicklab.QuickLabRoundScreen
 import com.nova.tnpsc.ui.screens.quicklab.QuickLabScreen
 import com.nova.tnpsc.ui.screens.tests.TestResultScreen
@@ -153,6 +155,18 @@ private fun MainNavHost(authRepository: AuthRepository) {
             composable("tests/{testId}/result") { backStackEntry ->
                 val testId = backStackEntry.arguments?.getString("testId") ?: ""
                 TestResultScreen(testId = testId, navController = navController)
+            }
+            composable("pyq") { PyqScreen(navController) }
+            composable(
+                "pyq/practice?year={year}&topic={topic}",
+                arguments = listOf(
+                    navArgument("year") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("topic") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) { backStackEntry ->
+                val year = backStackEntry.arguments?.getString("year")?.toIntOrNull()
+                val topic = backStackEntry.arguments?.getString("topic")
+                PyqPracticeScreen(year = year, topic = topic)
             }
         }
     }

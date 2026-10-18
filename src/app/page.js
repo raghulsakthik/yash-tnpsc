@@ -9,6 +9,25 @@ import ActivityCalendar from './_components/charts/ActivityCalendar';
 import StatusPieChart from './_components/charts/StatusPieChart';
 import OrbitPreview from './_components/charts/OrbitPreview';
 
+// Hardcoded IST, not the browser's local time -- a learner (or a reviewer)
+// on a device set to a different timezone would otherwise see "Good
+// morning" at 8pm. Matches the same APP_TIMEZONE convention used
+// server-side (src/lib/timezone.mjs) for every other date-sensitive thing
+// in the app (streaks, the activity calendar, achievement timing).
+const IST_HOUR_FORMATTER = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false });
+const IST_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Kolkata',
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+function istHour() {
+  // en-US's 24h format reports midnight as "24", not "0" -- normalize it.
+  const h = Number(IST_HOUR_FORMATTER.format(new Date()));
+  return h === 24 ? 0 : h;
+}
+
 function greeting(hour) {
   if (hour < 5) return 'Good night';
   if (hour < 12) return 'Good morning';
@@ -25,7 +44,7 @@ export default function Home() {
   const [name, setName] = useState(null);
 
   useEffect(() => {
-    setGreetingText(greeting(new Date().getHours()));
+    setGreetingText(greeting(istHour()));
   }, []);
 
   // Admin accounts have no learner data -- there's no daily plan to show
@@ -35,6 +54,19 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : null))
       .then((me) => {
         if (me?.role === 'admin') router.replace('/profile');
+      })
+      .catch(() => {});
+  }, [router]);
+
+  // A learner whose first-login onboarding + placement quiz isn't done yet
+  // never sees Home until it is -- existing accounts (Yashika, the dev
+  // test account) were back-filled to onboarded=true by the migration, so
+  // this only ever fires for a genuinely new learner.
+  useEffect(() => {
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.onboarded === false) router.replace('/onboarding');
       })
       .catch(() => {});
   }, [router]);
@@ -70,7 +102,7 @@ export default function Home() {
   return (
     <AppShell>
       <span className="muted" style={{ fontSize: '0.85rem', letterSpacing: '0.04em' }}>
-        {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+        {IST_DATE_FORMATTER.format(new Date()).toUpperCase()}
       </span>
       <h1 style={{ marginTop: 14 }}>{greetingText}{name ? `, ${name}` : ''}.</h1>
 

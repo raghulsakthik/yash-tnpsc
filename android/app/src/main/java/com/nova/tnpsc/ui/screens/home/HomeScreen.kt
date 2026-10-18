@@ -39,6 +39,12 @@ import com.nova.tnpsc.ui.theme.NovaInkMuted
 import com.nova.tnpsc.ui.theme.NovaSuccess
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
 import java.time.LocalTime
+import java.time.ZoneId
+
+// Hardcoded IST, not the device's local timezone -- matches APP_TIMEZONE
+// on the backend (src/lib/timezone.mjs on web) so the greeting is always
+// right for an India-based learner regardless of device settings.
+private val IST: ZoneId = ZoneId.of("Asia/Kolkata")
 
 private fun greeting(hour: Int): String = when {
     hour < 5 -> "Good night"
@@ -75,7 +81,7 @@ fun HomeScreen(navController: NavHostController) {
         item {
             val name = profile?.name ?: "there"
             Text(
-                "${greeting(LocalTime.now().hour)}, $name.",
+                "${greeting(LocalTime.now(IST).hour)}, $name.",
                 style = MaterialTheme.typography.displayLarge,
             )
             Spacer(Modifier.height(8.dp))

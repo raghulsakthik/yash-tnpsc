@@ -1,49 +1,54 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StepHeader from '../../_components/StepHeader';
-import { ProgressBar } from '../../_components/ui';
-import { placementResult } from '../../_data/mock';
 
 export default function PlacementPlan() {
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('onboarding-result');
+      if (saved) setResult(JSON.parse(saved));
+    } catch {
+      // no saved result -- the fallback copy below covers it
+    }
+  }, []);
+
+  const firstTopicId = result?.firstTopicId ?? 'aptitude.whole-numbers';
+
   return (
     <main>
-      <StepHeader step={5} />
+      <StepHeader step={4} total={4} />
       <div className="shell-main narrow" style={{ paddingTop: 40 }}>
         <p className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Your plan</p>
-        <h1 style={{ fontSize: '2.25rem' }}>{placementResult.title}</h1>
-        <p className="muted" style={{ marginTop: 14 }}>{placementResult.subtitle}</p>
+        <h1 style={{ fontSize: '2.25rem' }}>Starting with the basics</h1>
+        <p className="muted" style={{ marginTop: 14 }}>
+          {result
+            ? `You answered ${result.correctCount} of ${result.answeredCount} questions correctly. That's real signal now -- it already feeds your mastery and what gets recommended next.`
+            : "That's real signal now -- it already feeds your mastery and what gets recommended next."}
+        </p>
 
         <div className="card" style={{ marginTop: 24 }}>
-          <span className="eyebrow">What the check found</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
-            {placementResult.found.map((f) => (
-              <div key={f.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.9rem' }}>
-                  <span>{f.label}</span>
-                  <strong style={{ color: f.value < 50 ? 'var(--warm-accent)' : 'var(--success)' }}>{f.value}%</strong>
-                </div>
-                <ProgressBar value={f.value} color={f.value < 50 ? 'var(--warm-accent)' : 'var(--success)'} />
-              </div>
-            ))}
-          </div>
+          <span className="eyebrow">Why start here</span>
+          <p style={{ marginTop: 12 }}>
+            Every topic in Aptitude builds on whole numbers, place value and basic operations. Starting there
+            first means nothing later assumes something you have not actually seen -- the same rule the rest
+            of the app follows (a topic&apos;s prerequisites have to be solid before it gets recommended).
+          </p>
         </div>
 
         <div className="card-dark" style={{ marginTop: 20 }}>
-          <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Your first four weeks</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
-            {placementResult.weeks.map((w) => (
-              <div key={w.week} style={{ display: 'flex', gap: 16 }}>
-                <strong style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--warm-accent)', width: 70, flexShrink: 0 }}>
-                  Week {w.week}
-                </strong>
-                <span>{w.note}</span>
-              </div>
-            ))}
-          </div>
+          <span className="eyebrow" style={{ color: 'var(--warm-accent)' }}>From here</span>
+          <p style={{ marginTop: 12, color: '#fff' }}>
+            Home adapts after every question you answer -- what you see tomorrow depends on what you actually
+            do today, not a fixed schedule.
+          </p>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
-          <Link href="/placement" className="muted" style={{ textDecoration: 'none' }}>← Back</Link>
-          <Link href="/" className="btn btn-primary">Start my first session</Link>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+          <Link href={`/practice/${firstTopicId}`} className="btn btn-primary">Start my first session</Link>
         </div>
       </div>
     </main>

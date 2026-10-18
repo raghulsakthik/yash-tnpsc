@@ -1,16 +1,29 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StepHeader from '../_components/StepHeader';
-import { learner } from '../_data/mock';
 
 export default function OnboardingWelcome() {
+  const [name, setName] = useState('there');
+
+  useEffect(() => {
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.name) setName(data.name);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <main>
-      <StepHeader step={1} />
+      <StepHeader step={1} total={4} />
       <div className="shell-main narrow" style={{ paddingTop: 40 }}>
         <p className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Welcome</p>
-        <h1 style={{ fontSize: '2.25rem' }}>This was built for you, {learner.name}.</h1>
+        <h1 style={{ fontSize: '2.25rem' }}>This was built for you, {name}.</h1>
         <p className="muted" style={{ marginTop: 14, fontSize: '1.05rem' }}>
-          A calm place to prepare for TNPSC, one small win at a time. Four quick
+          A calm place to prepare for TNPSC, one small win at a time. A few quick
           questions and your first plan is ready.
         </p>
 
@@ -34,7 +47,7 @@ export default function OnboardingWelcome() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
-          <Link href="/onboarding/exam" className="btn btn-primary">Let&apos;s begin</Link>
+          <Link href="/onboarding/rhythm" className="btn btn-primary">Let&apos;s begin</Link>
         </div>
       </div>
     </main>

@@ -28,7 +28,7 @@ export async function GET(request) {
     const [{ rows: learnerRows }, { rows: profileRows }, { rows: activityRows }, { rows: totals }, { rows: masteredRows }, { rows: testRows }] =
       await Promise.all([
         query(`SELECT id, name, created_at FROM learner WHERE id = $1`, [learnerId]),
-        query(`SELECT exam, language, daily_goal_minutes FROM learner_profile WHERE learner_id = $1`, [learnerId]),
+        query(`SELECT exam, language, daily_goal_minutes, onboarded FROM learner_profile WHERE learner_id = $1`, [learnerId]),
         query(
           `SELECT DISTINCT (created_at AT TIME ZONE 'Asia/Kolkata')::date AS day
              FROM question_attempt WHERE learner_id = $1`,
@@ -56,6 +56,7 @@ export async function GET(request) {
       exam: profileRows[0]?.exam ?? null,
       language: profileRows[0]?.language ?? 'en',
       dailyGoalMinutes: profileRows[0]?.daily_goal_minutes ?? 30,
+      onboarded: profileRows[0]?.onboarded ?? true,
       streak: computeStreak(activeDates),
       longestStreak: longestStreak(activeDates),
       questionsSolved: totals[0]?.n ?? 0,

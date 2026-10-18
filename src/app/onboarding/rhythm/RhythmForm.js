@@ -1,31 +1,56 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function PillGroup({ options, value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
       {options.map((o) => (
         <button
-          key={o}
+          key={o.label}
           type="button"
           className="pill-tab"
-          style={value === o ? { background: 'var(--ink)', color: '#fff', borderColor: 'var(--ink)' } : undefined}
-          onClick={() => onChange(o)}
+          style={value === o.value ? { background: 'var(--ink)', color: '#fff', borderColor: 'var(--ink)' } : undefined}
+          onClick={() => onChange(o.value)}
         >
-          {o}
+          {o.label}
         </button>
       ))}
     </div>
   );
 }
 
+const DURATIONS = [
+  { label: '15 min', value: 15 },
+  { label: '30 min', value: 30 },
+  { label: '45 min', value: 45 },
+  { label: '60 min', value: 60 },
+];
+
+const LANGUAGES = [
+  { label: 'English', value: 'en' },
+  { label: 'Tamil', value: 'ta' },
+];
+
+/**
+ * Both fields here map to a real learner_profile column (daily_goal_minutes,
+ * language) -- carried forward via sessionStorage to the placement quiz,
+ * then sent together to POST /api/onboarding/complete at the very end.
+ */
 export default function RhythmForm() {
-  const [duration, setDuration] = useState('30 min');
-  const [time, setTime] = useState('Evening · 7 pm');
-  const [restDay, setRestDay] = useState('Sunday');
-  const [language, setLanguage] = useState('Both, switchable');
+  const router = useRouter();
+  const [duration, setDuration] = useState(30);
+  const [language, setLanguage] = useState('en');
+
+  function next() {
+    try {
+      sessionStorage.setItem('onboarding-draft', JSON.stringify({ dailyGoalMinutes: duration, language }));
+    } catch {
+      // sessionStorage unavailable (private mode) -- /api/onboarding/complete just falls back to defaults.
+    }
+    router.push('/placement');
+  }
 
   return (
     <>
@@ -33,32 +58,20 @@ export default function RhythmForm() {
         <div>
           <strong>How long on a normal day?</strong>
           <div style={{ marginTop: 10 }}>
-            <PillGroup options={['15 min', '30 min', '45 min', '60 min']} value={duration} onChange={setDuration} />
-          </div>
-        </div>
-        <div>
-          <strong>When do you usually study?</strong>
-          <div style={{ marginTop: 10 }}>
-            <PillGroup options={['Early morning', 'Afternoon', 'Evening · 7 pm', 'Late night']} value={time} onChange={setTime} />
-          </div>
-        </div>
-        <div>
-          <strong>Rest day</strong>
-          <div style={{ marginTop: 10 }}>
-            <PillGroup options={['Saturday', 'Sunday', 'No fixed day']} value={restDay} onChange={setRestDay} />
+            <PillGroup options={DURATIONS} value={duration} onChange={setDuration} />
           </div>
         </div>
         <div>
           <strong>Language</strong>
           <div style={{ marginTop: 10 }}>
-            <PillGroup options={['English', 'Tamil', 'Both, switchable']} value={language} onChange={setLanguage} />
+            <PillGroup options={LANGUAGES} value={language} onChange={setLanguage} />
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
-        <Link href="/onboarding/exam" className="muted" style={{ textDecoration: 'none' }}>← Back</Link>
-        <Link href="/placement" className="btn btn-primary">Continue</Link>
+        <a href="/onboarding" className="muted" style={{ textDecoration: 'none' }}>← Back</a>
+        <button type="button" className="btn btn-primary" onClick={next}>Continue</button>
       </div>
     </>
   );

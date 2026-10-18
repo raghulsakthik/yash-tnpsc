@@ -7,3 +7,7 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+*.jks
+*.jks.password
+*.apk
+*.apk.idsig

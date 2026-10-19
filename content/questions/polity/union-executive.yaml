@@ -1,0 +1,21 @@
+topic: polity.union-executive
+language: en
+source: authored
+questions:
+  - id: polity-executive-001
+    difficulty: 0.25
+    estimatedSeconds: 25
+    question: "What is the term of office of the President of India?"
+    options: ["5 years", "6 years", "4 years", "7 years"]
+    answer: 0
+    explanation: "Article 56 provides that the President holds office for a term of five years from the date on which they enter upon their office."
+    trap: "6 years is the term of a Rajya Sabha member, not the President — a different office entirely, easily confused under time pressure."
+
+  - id: polity-executive-002
+    difficulty: 0.3
+    estimatedSeconds: 30
+    question: "The Union Council of Ministers is collectively responsible to which body?"
+    options: ["The Lok Sabha", "The Rajya Sabha", "The President", "The Supreme Court"]
+    answer: 0
+    explanation: "Article 75(3) makes the Council of Ministers collectively responsible to the House of the People (Lok Sabha)."
+    trap: "The President appoints the Council of Ministers, but collective responsibility runs to the Lok Sabha, not to the President — appointment and accountability are two different relationships."

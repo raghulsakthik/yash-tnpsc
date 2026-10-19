@@ -110,3 +110,28 @@ export function toLearningAttemptDto(row) {
     createdAt: row.created_at,
   };
 }
+
+// Phase 14
+export function toInterventionDto(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    learnerId: row.learner_id,
+    topicId: row.topic_id,
+    interventionType: row.intervention_type,
+    baselineScore: row.baseline_score,
+    baselineRetention: row.baseline_retention,
+    startedAt: row.started_at,
+    timeSpentMs: row.time_spent_ms === null ? null : Number(row.time_spent_ms),
+    postScore: row.post_score,
+    postRetention: row.post_retention,
+    learningGain: row.learning_gain,
+    retentionGain: row.retention_gain,
+    status: row.status,
+    evaluatedAt: row.evaluated_at,
+    // Phase 30.2 — the real learner-AI-context snapshot at the moment
+    // this intervention started (null for interventions from before this
+    // phase, or started outside startIntervention()).
+    learnerStateSnapshot: row.learner_state_snapshot ?? null,
+  };
+}

@@ -1,0 +1,21 @@
+topic: polity.directive-principles
+language: en
+source: authored
+questions:
+  - id: polity-dpsp-001
+    difficulty: 0.3
+    estimatedSeconds: 30
+    question: "The Directive Principles of State Policy are:"
+    options: ["Non-justiciable (not enforceable by courts)", "Justiciable and enforceable like Fundamental Rights", "Applicable only to the Union Government", "Part of the Fundamental Duties"]
+    answer: 0
+    explanation: "Article 37 states the Directive Principles are not enforceable by any court, though they are fundamental in the governance of the country."
+    trap: "Fundamental Rights (Part III) are the justiciable ones — the two parts are deliberately designed with opposite enforceability, which is exactly why the distinction is tested."
+
+  - id: polity-dpsp-002
+    difficulty: 0.25
+    estimatedSeconds: 25
+    question: "The Directive Principles of State Policy are borrowed from the Constitution of which country?"
+    options: ["Ireland", "United Kingdom", "United States", "Canada"]
+    answer: 0
+    explanation: "India's Directive Principles were inspired by the Irish Constitution's 'Directive Principles of Social Policy'."
+    trap: "The Fundamental Rights, by contrast, draw heavily on the US Bill of Rights — a different borrowing commonly mixed up with this one."

@@ -127,7 +127,7 @@ fun LessonScreen(topic: String, navController: NavHostController) {
 
         if (l.resources.isNotEmpty()) {
             item { Eyebrow("Study notes", color = NovaPrimary) }
-            items(l.resources) { resource ->
+            items(l.resources, key = { it.title }) { resource ->
                 NovaCard {
                     Text(resource.title, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))

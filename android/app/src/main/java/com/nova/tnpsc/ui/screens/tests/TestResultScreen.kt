@@ -70,7 +70,7 @@ fun TestResultScreen(testId: String, navController: NavHostController) {
                 }
             }
 
-            items(d.questions) { q ->
+            items(d.questions, key = { it.questionId }) { q ->
                 NovaCard {
                     Text(q.prompt)
                     Spacer(Modifier.height(8.dp))

@@ -120,6 +120,10 @@ subjects:
           - { id: aptitude.area,                name: Area }
           - { id: aptitude.volume,              name: Volume }
           - { id: aptitude.time-and-work,       name: Time and Work }
+          - { id: aptitude.profit-and-loss,     name: Profit and Loss }
+          - { id: aptitude.average,             name: Average }
+          - { id: aptitude.speed-time-distance,  name: "Speed, Time and Distance" }
+          - { id: aptitude.ages,                name: Problems on Ages }
 
       - id: apt.reasoning
         name: Reasoning

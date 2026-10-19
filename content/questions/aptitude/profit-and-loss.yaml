@@ -1,0 +1,131 @@
+topic: aptitude.profit-and-loss
+language: en
+source: authored
+# Cost price vs selling price. Directly examined under Aptitude.
+questions:
+
+  - id: profit-and-loss-001
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹800 and sells it for ₹920. What is the profit percentage?"
+    options: ["17", "15", "13.04", "13"]
+    answer: 1
+    explanation: "Profit = ₹120. Profit% = (Profit / CP) × 100 = (120/800) × 100 = 15%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-002
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹1500 and sells it for ₹1350. What is the loss percentage?"
+    options: ["8", "10", "12", "11.11"]
+    answer: 1
+    explanation: "Loss = ₹150. Loss% = (Loss / CP) × 100 = (150/1500) × 100 = 10%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-003
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹2400 and sells it for ₹2640. What is the profit percentage?"
+    options: ["10", "8", "12", "9.09"]
+    answer: 0
+    explanation: "Profit = ₹240. Profit% = (Profit / CP) × 100 = (240/2400) × 100 = 10%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-004
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹650 and sells it for ₹715. What is the profit percentage?"
+    options: ["10", "8", "12", "9.09"]
+    answer: 0
+    explanation: "Profit = ₹65. Profit% = (Profit / CP) × 100 = (65/650) × 100 = 10%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-005
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹3200 and sells it for ₹2880. What is the loss percentage?"
+    options: ["8", "10", "12", "11.11"]
+    answer: 1
+    explanation: "Loss = ₹320. Loss% = (Loss / CP) × 100 = (320/3200) × 100 = 10%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-006
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹950 and sells it for ₹1140. What is the profit percentage?"
+    options: ["16.67", "22", "18", "20"]
+    answer: 3
+    explanation: "Profit = ₹190. Profit% = (Profit / CP) × 100 = (190/950) × 100 = 20%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-007
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹1800 and sells it for ₹1620. What is the loss percentage?"
+    options: ["8", "10", "12", "11.11"]
+    answer: 1
+    explanation: "Loss = ₹180. Loss% = (Loss / CP) × 100 = (180/1800) × 100 = 10%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-008
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "A shopkeeper buys an article for ₹4000 and sells it for ₹4600. What is the profit percentage?"
+    options: ["17", "15", "13.04", "13"]
+    answer: 1
+    explanation: "Profit = ₹600. Profit% = (Profit / CP) × 100 = (600/4000) × 100 = 15%."
+    trap: "Dividing by the selling price instead of the cost price gives a different (and wrong) percentage — profit/loss % is always on the cost price."
+
+  - id: profit-and-loss-009
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹500 be sold to gain a 20% profit?"
+    options: ["600", "400", "500", "610"]
+    answer: 0
+    explanation: "20% of ₹500 is ₹100. Adding that to the cost price gives ₹600."
+    trap: "₹400 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."
+
+  - id: profit-and-loss-010
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹800 be sold to gain a 15% profit?"
+    options: ["920", "930", "680", "800"]
+    answer: 0
+    explanation: "15% of ₹800 is ₹120. Adding that to the cost price gives ₹920."
+    trap: "₹680 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."
+
+  - id: profit-and-loss-011
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹1200 be sold to gain a 10% loss?"
+    options: ["1080", "1090", "1200", "1320"]
+    answer: 0
+    explanation: "10% of ₹1200 is ₹120. Subtracting that from the cost price gives ₹1080."
+    trap: "₹1320 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."
+
+  - id: profit-and-loss-012
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹600 be sold to gain a 25% profit?"
+    options: ["760", "750", "450", "600"]
+    answer: 1
+    explanation: "25% of ₹600 is ₹150. Adding that to the cost price gives ₹750."
+    trap: "₹450 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."
+
+  - id: profit-and-loss-013
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹900 be sold to gain a 12% loss?"
+    options: ["802", "1008", "792", "900"]
+    answer: 2
+    explanation: "12% of ₹900 is ₹108. Subtracting that from the cost price gives ₹792."
+    trap: "₹1008 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."
+
+  - id: profit-and-loss-014
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "At what price should an article costing ₹1500 be sold to gain a 30% profit?"
+    options: ["1500", "1950", "1050", "1960"]
+    answer: 1
+    explanation: "30% of ₹1500 is ₹450. Adding that to the cost price gives ₹1950."
+    trap: "₹1050 applies the percentage in the opposite direction — re-check whether the question asks for a profit or a loss before adding or subtracting."

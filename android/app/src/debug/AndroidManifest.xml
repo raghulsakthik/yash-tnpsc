@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug-only: lets the emulator reach plain http://10.0.2.2:3000/
+         (the host machine's dev server). Merged into the debug build
+         only; a release build never declares this, since it talks to
+         the real deployed server over https. -->
+    <application android:usesCleartextTraffic="true" />
+
+</manifest>

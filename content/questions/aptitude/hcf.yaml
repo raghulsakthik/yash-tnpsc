@@ -170,3 +170,93 @@ questions:
       (a−3x)(a−3x) is a single power of (a−3x), since the first
       expression only contains it once.
     trap: "(a − 3x)² takes the SECOND expression's own highest power as if it were automatically the shared one — the HCF can only include as many copies of a factor as the expression with FEWER copies has, and a³−9ax² only has one (a−3x)."
+
+  - id: hcf-014
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 36 and 60?"
+    options: ["14", "-24", "12", "180"]
+    answer: 2
+    explanation: "The highest common factor of 36 and 60 is 12 (found by repeated division, Euclid's method)."
+    trap: "180 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-015
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 48 and 72?"
+    options: ["-24", "24", "26", "144"]
+    answer: 1
+    explanation: "The highest common factor of 48 and 72 is 24 (found by repeated division, Euclid's method)."
+    trap: "144 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-016
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 84 and 126?"
+    options: ["44", "252", "-42", "42"]
+    answer: 3
+    explanation: "The highest common factor of 84 and 126 is 42 (found by repeated division, Euclid's method)."
+    trap: "252 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-017
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 105 and 175?"
+    options: ["-70", "37", "35", "525"]
+    answer: 2
+    explanation: "The highest common factor of 105 and 175 is 35 (found by repeated division, Euclid's method)."
+    trap: "525 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-018
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 96 and 144?"
+    options: ["48", "50", "288", "-48"]
+    answer: 0
+    explanation: "The highest common factor of 96 and 144 is 48 (found by repeated division, Euclid's method)."
+    trap: "288 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-019
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 54 and 90?"
+    options: ["18", "270", "20", "-36"]
+    answer: 0
+    explanation: "The highest common factor of 54 and 90 is 18 (found by repeated division, Euclid's method)."
+    trap: "270 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-020
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 120 and 180?"
+    options: ["60", "360", "62", "-60"]
+    answer: 0
+    explanation: "The highest common factor of 120 and 180 is 60 (found by repeated division, Euclid's method)."
+    trap: "360 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-021
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 63 and 108?"
+    options: ["756", "9", "11", "-45"]
+    answer: 1
+    explanation: "The highest common factor of 63 and 108 is 9 (found by repeated division, Euclid's method)."
+    trap: "756 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-022
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 75 and 125?"
+    options: ["-50", "375", "27", "25"]
+    answer: 3
+    explanation: "The highest common factor of 75 and 125 is 25 (found by repeated division, Euclid's method)."
+    trap: "375 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."
+
+  - id: hcf-023
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "What is the HCF of 132 and 198?"
+    options: ["-66", "66", "68", "396"]
+    answer: 1
+    explanation: "The highest common factor of 132 and 198 is 66 (found by repeated division, Euclid's method)."
+    trap: "396 is the LCM, not the HCF — the two are opposite ends of the same factor pair and easy to swap under time pressure."

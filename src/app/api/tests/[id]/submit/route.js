@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { pool, LEARNER_ID, recordEvent } from '../../../../../lib/db.mjs';
+import { pool, recordEvent } from '../../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../../lib/auth.mjs';
 import { recordAttempt } from '../../../../../lib/attempts.mjs';
+import { checkAndUnlockAchievements } from '../../../../../lib/achievements.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request, { params }) {
   const { id } = await params;
+
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   const client = await pool.connect();
 
   try {
@@ -63,7 +71,7 @@ export async function POST(request, { params }) {
       if (answered) {
         const result = await recordAttempt({
           client,
-          learnerId: LEARNER_ID,
+          learnerId: learnerId,
           questionId: q.question_id,
           attemptId: crypto.randomUUID(),
           selectedIndex: answer.selected_index,
@@ -104,12 +112,14 @@ export async function POST(request, { params }) {
 
     await client.query('COMMIT');
 
-    await recordEvent(LEARNER_ID, 'TEST_COMPLETED', null, {
+    await recordEvent(learnerId, 'TEST_COMPLETED', null, {
       testId: id,
       score,
       questionCount: questions.length,
       correctCount,
     });
+
+    const newAchievements = await checkAndUnlockAchievements(learnerId).catch(() => []);
 
     return NextResponse.json({
       testId: id,
@@ -118,6 +128,7 @@ export async function POST(request, { params }) {
       questionCount: questions.length,
       perTopic: [...perTopic.values()].sort((a, b) => a.correct / a.total - b.correct / b.total),
       review,
+      newAchievements,
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

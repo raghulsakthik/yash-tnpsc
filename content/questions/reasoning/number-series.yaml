@@ -204,3 +204,156 @@ questions:
       number. The primes after 19 continue 23, 29, ..., so the missing
       number is 23.
     trap: "21 is the next ODD number after 19 but isn't prime (21 = 3×7) — every other entry in the grid is specifically a prime, not just an odd number."
+
+  - id: number-series-017
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 3, 7, 11, 15, ?"
+    options: ["23", "15", "19", "20"]
+    answer: 2
+    explanation: "Each term increases by 4: 15 + 4 = 19."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-018
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 5, 8, 11, 14, ?"
+    options: ["14", "20", "18", "17"]
+    answer: 3
+    explanation: "Each term increases by 3: 14 + 3 = 17."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-019
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 7, 12, 17, 22, ?"
+    options: ["32", "27", "22", "28"]
+    answer: 1
+    explanation: "Each term increases by 5: 22 + 5 = 27."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-020
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 2, 8, 14, 20, ?"
+    options: ["26", "32", "27", "20"]
+    answer: 0
+    explanation: "Each term increases by 6: 20 + 6 = 26."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-021
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 10, 17, 24, 31, ?"
+    options: ["31", "39", "45", "38"]
+    answer: 3
+    explanation: "Each term increases by 7: 31 + 7 = 38."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-022
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 8, 17, 26, 35, ?"
+    options: ["44", "53", "45", "35"]
+    answer: 0
+    explanation: "Each term increases by 9: 35 + 9 = 44."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-023
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 15, 19, 23, 27, ?"
+    options: ["32", "31", "27", "35"]
+    answer: 1
+    explanation: "Each term increases by 4: 27 + 4 = 31."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-024
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "Find the next number: 6, 14, 22, 30, ?"
+    options: ["30", "39", "46", "38"]
+    answer: 3
+    explanation: "Each term increases by 8: 30 + 8 = 38."
+    trap: "Breaking the constant-difference pattern by one step is the most common slip in arithmetic series."
+
+  - id: number-series-025
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 2, 4, 8, 16, ?"
+    options: ["32", "34", "33", "16"]
+    answer: 0
+    explanation: "Each term is multiplied by 2: 16 × 2 = 32."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-026
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 3, 9, 27, 81, ?"
+    options: ["244", "243", "162", "246"]
+    answer: 1
+    explanation: "Each term is multiplied by 3: 81 × 3 = 243."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-027
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 1, 5, 25, 125, ?"
+    options: ["500", "250", "626", "625"]
+    answer: 3
+    explanation: "Each term is multiplied by 5: 125 × 5 = 625."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-028
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 4, 8, 16, 32, ?"
+    options: ["64", "32", "68", "65"]
+    answer: 0
+    explanation: "Each term is multiplied by 2: 32 × 2 = 64."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-029
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 2, 6, 18, 54, ?"
+    options: ["108", "162", "163", "164"]
+    answer: 1
+    explanation: "Each term is multiplied by 3: 54 × 3 = 162."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-030
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Find the next number: 5, 10, 20, 40, ?"
+    options: ["80", "40", "81", "85"]
+    answer: 0
+    explanation: "Each term is multiplied by 2: 40 × 2 = 80."
+    trap: "Treating a multiplying (geometric) series as if it were an adding (arithmetic) one gives the wrong next term."
+
+  - id: number-series-031
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the next number: 1, 4, 9, 16, ?"
+    options: ["24", "26", "16", "25"]
+    answer: 3
+    explanation: "These are consecutive perfect squares: 1² = 1, 2² = 4, 3² = 9, 4² = 16. The next is 5² = 25."
+    trap: "Looking for a constant difference won't work here — the gaps between square numbers grow, they don't stay fixed."
+
+  - id: number-series-032
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the next number: 4, 9, 16, 25, ?"
+    options: ["35", "37", "36", "25"]
+    answer: 2
+    explanation: "These are consecutive perfect squares: 2² = 4, 3² = 9, 4² = 16, 5² = 25. The next is 6² = 36."
+    trap: "Looking for a constant difference won't work here — the gaps between square numbers grow, they don't stay fixed."
+
+  - id: number-series-033
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the next number: 9, 16, 25, 36, ?"
+    options: ["48", "49", "50", "36"]
+    answer: 1
+    explanation: "These are consecutive perfect squares: 3² = 9, 4² = 16, 5² = 25, 6² = 36. The next is 7² = 49."
+    trap: "Looking for a constant difference won't work here — the gaps between square numbers grow, they don't stay fixed."

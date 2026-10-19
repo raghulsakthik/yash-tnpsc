@@ -316,3 +316,255 @@ questions:
       Total votes = 153 + 245 + 102 = 500. The winner is B with 245
       votes. Percentage = 245/500 × 100 = 49%.
     trap: "50% is a tempting round number since the winner clearly has close to half the votes, but the exact total (500) and B's exact share (245) give 49%, not an even half."
+
+  # A real TNPSC past-year question below, transcribed from a scanned paper
+  # and independently re-solved (never trusted from the paper's own annotations).
+  - id: percentage-026
+    difficulty: 0.55
+    estimatedSeconds: 80
+    source: tnpsc-2011
+    year: 2011
+    question: "Performance of students in an examination (marks out of 50): Tamil — 9 scored 40+, 40 scored 30+, 74 scored 20+. English — 5 scored 40+, 30 scored 30+, 65 scored 20+. Aggregate — 6 scored 40+, 35 scored 30+, 70 scored 20+. The percentage of number of students getting at least 60% marks in English over those getting at least 40% in aggregate is approximately"
+    options: ["43%", "41%", "50%", "45%"]
+    answer: 0
+    explanation: >
+      60% of 50 marks is 30 marks, so 'at least 60% in English' reads
+      off the English/30-and-above cell: 30 students. 40% of 50 marks is
+      20 marks, so 'at least 40% in aggregate' reads off the
+      Aggregate/20-and-above cell: 70 students. The percentage is
+      30/70 × 100 ≈ 43%.
+    trap: "50% comes from eyeballing 30 against a rounder nearby total instead of reading the exact aggregate/20-and-above figure (70) from the table — 30/70 is close to but not exactly a half."
+
+  - id: percentage-027
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 12% of 350?"
+    options: ["42", "37.8", "46.2", "308"]
+    answer: 0
+    explanation: "12% of 350 = (12/100) × 350 = 42."
+    trap: "308 is 350 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-028
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 18% of 250?"
+    options: ["45", "205", "49.5", "40.5"]
+    answer: 0
+    explanation: "18% of 250 = (18/100) × 250 = 45."
+    trap: "205 is 250 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-029
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 35% of 480?"
+    options: ["168", "151.2", "184.8", "312"]
+    answer: 0
+    explanation: "35% of 480 = (35/100) × 480 = 168."
+    trap: "312 is 480 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-030
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 42% of 600?"
+    options: ["348", "252", "277.2", "226.8"]
+    answer: 1
+    explanation: "42% of 600 = (42/100) × 600 = 252."
+    trap: "348 is 600 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-031
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 28% of 325?"
+    options: ["234", "91", "100.1", "81.9"]
+    answer: 1
+    explanation: "28% of 325 = (28/100) × 325 = 91."
+    trap: "234 is 325 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-032
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 65% of 200?"
+    options: ["70", "117", "130", "143"]
+    answer: 2
+    explanation: "65% of 200 = (65/100) × 200 = 130."
+    trap: "70 is 200 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-033
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 15% of 740?"
+    options: ["122.1", "629", "99.9", "111"]
+    answer: 3
+    explanation: "15% of 740 = (15/100) × 740 = 111."
+    trap: "629 is 740 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-034
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 72% of 450?"
+    options: ["324", "291.6", "126", "356.4"]
+    answer: 0
+    explanation: "72% of 450 = (72/100) × 450 = 324."
+    trap: "126 is 450 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-035
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 8% of 950?"
+    options: ["76", "68.4", "874", "83.6"]
+    answer: 0
+    explanation: "8% of 950 = (8/100) × 950 = 76."
+    trap: "874 is 950 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-036
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is 55% of 320?"
+    options: ["193.6", "144", "176", "158.4"]
+    answer: 2
+    explanation: "55% of 320 = (55/100) × 320 = 176."
+    trap: "144 is 320 minus the answer, mistaking \"what's left\" for \"what's asked\"."
+
+  - id: percentage-037
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "500 is increased by 20%. What is the new value?"
+    options: ["600", "610", "100", "400"]
+    answer: 0
+    explanation: "20% of 500 is 100. Adding that to 500 gives 600."
+    trap: "400 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-038
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "800 is decreased by 15%. What is the new value?"
+    options: ["690", "120", "680", "920"]
+    answer: 2
+    explanation: "15% of 800 is 120. Subtracting that from 800 gives 680."
+    trap: "920 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-039
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "1200 is increased by 25%. What is the new value?"
+    options: ["1500", "900", "300", "1510"]
+    answer: 0
+    explanation: "25% of 1200 is 300. Adding that to 1200 gives 1500."
+    trap: "900 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-040
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "640 is decreased by 10%. What is the new value?"
+    options: ["576", "586", "64", "704"]
+    answer: 0
+    explanation: "10% of 640 is 64. Subtracting that from 640 gives 576."
+    trap: "704 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-041
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "950 is increased by 40%. What is the new value?"
+    options: ["1340", "1330", "380", "570"]
+    answer: 1
+    explanation: "40% of 950 is 380. Adding that to 950 gives 1330."
+    trap: "570 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-042
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "360 is decreased by 30%. What is the new value?"
+    options: ["468", "262", "252", "108"]
+    answer: 2
+    explanation: "30% of 360 is 108. Subtracting that from 360 gives 252."
+    trap: "468 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-043
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "1500 is increased by 12%. What is the new value?"
+    options: ["1320", "1690", "1680", "180"]
+    answer: 2
+    explanation: "12% of 1500 is 180. Adding that to 1500 gives 1680."
+    trap: "1320 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-044
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "720 is decreased by 35%. What is the new value?"
+    options: ["252", "972", "468", "478"]
+    answer: 2
+    explanation: "35% of 720 is 252. Subtracting that from 720 gives 468."
+    trap: "972 applies the change in the wrong direction — re-read whether it's an increase or a decrease before picking."
+
+  - id: percentage-045
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "60 is 40% of what number?"
+    options: ["140", "24", "160", "150"]
+    answer: 3
+    explanation: "If 40% of a number is 60, the number is 60 ÷ (40/100) = 150."
+    trap: "24 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-046
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "84 is 70% of what number?"
+    options: ["110", "59", "130", "120"]
+    answer: 3
+    explanation: "If 70% of a number is 84, the number is 84 ÷ (70/100) = 120."
+    trap: "59 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-047
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "150 is 25% of what number?"
+    options: ["38", "610", "590", "600"]
+    answer: 3
+    explanation: "If 25% of a number is 150, the number is 150 ÷ (25/100) = 600."
+    trap: "38 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-048
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "96 is 60% of what number?"
+    options: ["160", "150", "170", "58"]
+    answer: 0
+    explanation: "If 60% of a number is 96, the number is 96 ÷ (60/100) = 160."
+    trap: "58 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-049
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "225 is 45% of what number?"
+    options: ["101", "510", "490", "500"]
+    answer: 3
+    explanation: "If 45% of a number is 225, the number is 225 ÷ (45/100) = 500."
+    trap: "101 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-050
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "189 is 63% of what number?"
+    options: ["119", "310", "300", "290"]
+    answer: 2
+    explanation: "If 63% of a number is 189, the number is 189 ÷ (63/100) = 300."
+    trap: "119 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-051
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "112 is 28% of what number?"
+    options: ["31", "410", "400", "390"]
+    answer: 2
+    explanation: "If 28% of a number is 112, the number is 112 ÷ (28/100) = 400."
+    trap: "31 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."
+
+  - id: percentage-052
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "405 is 90% of what number?"
+    options: ["365", "440", "460", "450"]
+    answer: 3
+    explanation: "If 90% of a number is 405, the number is 405 ÷ (90/100) = 450."
+    trap: "365 multiplies instead of dividing by the percentage — reverse-percentage questions divide, they don't multiply."

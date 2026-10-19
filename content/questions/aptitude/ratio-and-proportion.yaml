@@ -244,3 +244,75 @@ questions:
     answer: 3
     explanation: "3 km = 3,000 m. The ratio 3,000:300 simplifies to 10:1."
     trap: "1:10 inverts the ratio — 3 km is much LARGER than 300 m, so the ratio must put the bigger number first, not the smaller one."
+
+  - id: ratio-and-proportion-020
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "1200 is divided between two people in the ratio 3:5. What is the smaller share?"
+    options: ["750", "450", "453", "600"]
+    answer: 1
+    explanation: "Total parts = 3 + 5 = 8. One part = 1200 ÷ 8 = 150. The 3-part share is 450."
+    trap: "750 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-021
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "2400 is divided between two people in the ratio 5:7. What is the smaller share?"
+    options: ["1000", "1200", "1005", "1400"]
+    answer: 0
+    explanation: "Total parts = 5 + 7 = 12. One part = 2400 ÷ 12 = 200. The 5-part share is 1000."
+    trap: "1400 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-022
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "900 is divided between two people in the ratio 2:7. What is the smaller share?"
+    options: ["200", "700", "202", "450"]
+    answer: 0
+    explanation: "Total parts = 2 + 7 = 9. One part = 900 ÷ 9 = 100. The 2-part share is 200."
+    trap: "700 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-023
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "1800 is divided between two people in the ratio 4:5. What is the smaller share?"
+    options: ["800", "804", "900", "1000"]
+    answer: 0
+    explanation: "Total parts = 4 + 5 = 9. One part = 1800 ÷ 9 = 200. The 4-part share is 800."
+    trap: "1000 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-024
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "3500 is divided between two people in the ratio 3:4. What is the smaller share?"
+    options: ["2000", "1500", "1503", "1750"]
+    answer: 1
+    explanation: "Total parts = 3 + 4 = 7. One part = 3500 ÷ 7 = 500. The 3-part share is 1500."
+    trap: "2000 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-025
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "1500 is divided between two people in the ratio 7:8. What is the smaller share?"
+    options: ["707", "750", "800", "700"]
+    answer: 3
+    explanation: "Total parts = 7 + 8 = 15. One part = 1500 ÷ 15 = 100. The 7-part share is 700."
+    trap: "800 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-026
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "2100 is divided between two people in the ratio 2:5. What is the smaller share?"
+    options: ["1500", "600", "602", "1050"]
+    answer: 1
+    explanation: "Total parts = 2 + 5 = 7. One part = 2100 ÷ 7 = 300. The 2-part share is 600."
+    trap: "1500 is the larger share — ratio questions ask for a specific side, re-check which one before answering."
+
+  - id: ratio-and-proportion-027
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "4000 is divided between two people in the ratio 3:5. What is the smaller share?"
+    options: ["2000", "2500", "1500", "1503"]
+    answer: 2
+    explanation: "Total parts = 3 + 5 = 8. One part = 4000 ÷ 8 = 500. The 3-part share is 1500."
+    trap: "2500 is the larger share — ratio questions ask for a specific side, re-check which one before answering."

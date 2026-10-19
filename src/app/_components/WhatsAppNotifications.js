@@ -1,0 +1,103 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export default function WhatsAppNotifications() {
+  const [number, setNumber] = useState(null);
+  const [configured, setConfigured] = useState(true);
+  const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/notify/whatsapp', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        setNumber(data.number);
+        setConfigured(data.configured);
+        if (!data.number) setEditing(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function save() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/notify/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: draft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not save that number');
+      setNumber(data.number);
+      setEditing(false);
+      setMessage('Saved.');
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendTest() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/notify/whatsapp/test', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not send a test message');
+      setMessage(`Test sent to ${data.to}.`);
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!configured) {
+    return <p className="muted" style={{ fontSize: '0.85rem' }}>WhatsApp is not configured on the server yet.</p>;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <strong style={{ display: 'block' }}>WhatsApp notifications</strong>
+          <span className="muted" style={{ fontSize: '0.8rem' }}>{number ?? 'No number set yet'}</span>
+        </div>
+        {!editing && (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setDraft(number ?? ''); setEditing(true); }}>
+            {number ? 'Change' : 'Set up'}
+          </button>
+        )}
+      </div>
+
+      {editing && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <input
+            type="tel"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="+919876543210"
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)',
+              fontFamily: 'inherit', fontSize: '0.9rem',
+            }}
+          />
+          <button type="button" className="btn btn-primary btn-sm" onClick={save} disabled={busy || !draft}>Save</button>
+        </div>
+      )}
+
+      {number && !editing && (
+        <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 12 }} onClick={sendTest} disabled={busy}>
+          Send a test
+        </button>
+      )}
+
+      {message && <p className="muted" style={{ marginTop: 10, fontSize: '0.82rem' }}>{message}</p>}
+    </div>
+  );
+}

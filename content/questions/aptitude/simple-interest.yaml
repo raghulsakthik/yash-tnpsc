@@ -235,3 +235,75 @@ questions:
       = (SI × 100)/(P × T) = (7,560 × 100)/(48,000 × 2.25) =
       756,000/108,000 = 7%.
     trap: "6% comes from treating 2 years 3 months as 2.5 years instead of 2.25 years — 3 months is a quarter of a year (0.25), not half (0.5)."
+
+  - id: simple-interest-019
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹5,000 at 8% per annum for 3 years."
+    options: ["1250", "1200", "2400", "1100"]
+    answer: 1
+    explanation: "SI = (P × R × T) / 100 = (5000 × 8 × 3) / 100 = ₹1,200."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-020
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹8,000 at 6% per annum for 2 years."
+    options: ["860", "1920", "1040", "960"]
+    answer: 3
+    explanation: "SI = (P × R × T) / 100 = (8000 × 6 × 2) / 100 = ₹960."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-021
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹12,000 at 10% per annum for 4 years."
+    options: ["4920", "4800", "9600", "4700"]
+    answer: 1
+    explanation: "SI = (P × R × T) / 100 = (12000 × 10 × 4) / 100 = ₹4,800."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-022
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹6,500 at 12% per annum for 2 years."
+    options: ["1460", "3120", "1560", "1625"]
+    answer: 2
+    explanation: "SI = (P × R × T) / 100 = (6500 × 12 × 2) / 100 = ₹1,560."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-023
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹9,500 at 7% per annum for 3 years."
+    options: ["1995", "2090", "3990", "1895"]
+    answer: 0
+    explanation: "SI = (P × R × T) / 100 = (9500 × 7 × 3) / 100 = ₹1,995."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-024
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹15,000 at 5% per annum for 4 years."
+    options: ["3000", "6000", "3150", "2900"]
+    answer: 0
+    explanation: "SI = (P × R × T) / 100 = (15000 × 5 × 4) / 100 = ₹3,000."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-025
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹7,200 at 9% per annum for 5 years."
+    options: ["6480", "3312", "3240", "3140"]
+    answer: 2
+    explanation: "SI = (P × R × T) / 100 = (7200 × 9 × 5) / 100 = ₹3,240."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."
+
+  - id: simple-interest-026
+    difficulty: 0.30
+    estimatedSeconds: 45
+    question: "Find the simple interest on ₹10,800 at 11% per annum for 2 years."
+    options: ["2484", "2276", "4752", "2376"]
+    answer: 3
+    explanation: "SI = (P × R × T) / 100 = (10800 × 11 × 2) / 100 = ₹2,376."
+    trap: "Forgetting to divide by 100 (or dividing twice) is the most common slip in the SI formula."

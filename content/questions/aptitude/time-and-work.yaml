@@ -266,3 +266,75 @@ questions:
       Reading rate = 20 pages / 2 hours = 10 pages per hour. Time for
       50 pages = 50 / 10 = 5 hours.
     trap: "4 hours comes from rounding the rate to a tidier 'about 12 pages an hour' instead of computing the exact rate (10 pages/hour) first."
+
+  - id: time-and-work-021
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 12 days and B can finish it in 18 days. Working together, in how many days will they finish it?"
+    options: ["7.2", "30", "15", "8"]
+    answer: 0
+    explanation: "A's rate is 1/12 of the work per day, B's is 1/18. Together: 1/12 + 1/18 = 30/216 of the work per day, so the job takes 216/30 ≈ 7.2 days."
+    trap: "15 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-022
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 10 days and B can finish it in 15 days. Working together, in how many days will they finish it?"
+    options: ["25", "12.5", "7", "6"]
+    answer: 3
+    explanation: "A's rate is 1/10 of the work per day, B's is 1/15. Together: 1/10 + 1/15 = 25/150 of the work per day, so the job takes 150/25 ≈ 6 days."
+    trap: "12.5 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-023
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 8 days and B can finish it in 24 days. Working together, in how many days will they finish it?"
+    options: ["7", "32", "6", "16"]
+    answer: 2
+    explanation: "A's rate is 1/8 of the work per day, B's is 1/24. Together: 1/8 + 1/24 = 32/192 of the work per day, so the job takes 192/32 ≈ 6 days."
+    trap: "16 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-024
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 15 days and B can finish it in 20 days. Working together, in how many days will they finish it?"
+    options: ["10", "35", "8.57", "17.5"]
+    answer: 2
+    explanation: "A's rate is 1/15 of the work per day, B's is 1/20. Together: 1/15 + 1/20 = 35/300 of the work per day, so the job takes 300/35 ≈ 8.57 days."
+    trap: "17.5 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-025
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 6 days and B can finish it in 9 days. Working together, in how many days will they finish it?"
+    options: ["3.6", "7.5", "5", "15"]
+    answer: 0
+    explanation: "A's rate is 1/6 of the work per day, B's is 1/9. Together: 1/6 + 1/9 = 15/54 of the work per day, so the job takes 54/15 ≈ 3.6 days."
+    trap: "7.5 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-026
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 20 days and B can finish it in 30 days. Working together, in how many days will they finish it?"
+    options: ["50", "12", "13", "25"]
+    answer: 1
+    explanation: "A's rate is 1/20 of the work per day, B's is 1/30. Together: 1/20 + 1/30 = 50/600 of the work per day, so the job takes 600/50 ≈ 12 days."
+    trap: "25 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-027
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 14 days and B can finish it in 21 days. Working together, in how many days will they finish it?"
+    options: ["9", "17.5", "35", "8.4"]
+    answer: 3
+    explanation: "A's rate is 1/14 of the work per day, B's is 1/21. Together: 1/14 + 1/21 = 35/294 of the work per day, so the job takes 294/35 ≈ 8.4 days."
+    trap: "17.5 just averages the two times — combined work rates add as fractions, they don't average as days."
+
+  - id: time-and-work-028
+    difficulty: 0.35
+    estimatedSeconds: 50
+    question: "A can finish a piece of work in 9 days and B can finish it in 12 days. Working together, in how many days will they finish it?"
+    options: ["6", "5.14", "21", "10.5"]
+    answer: 1
+    explanation: "A's rate is 1/9 of the work per day, B's is 1/12. Together: 1/9 + 1/12 = 21/108 of the work per day, so the job takes 108/21 ≈ 5.14 days."
+    trap: "10.5 just averages the two times — combined work rates add as fractions, they don't average as days."

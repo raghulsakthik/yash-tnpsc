@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,9 +23,11 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nova.tnpsc.TnpscApplication
 import com.nova.tnpsc.data.practice.AchievementUnlock
@@ -115,12 +118,26 @@ fun PracticeScreen(topic: String, mode: String) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${question?.topicName ?: topic} · ${mode.lowercase()}",
                     style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    // Long topic names ("Directive Principles of State Policy")
+                    // would otherwise push the difficulty badge off-screen
+                    // in this SpaceBetween row -- weight lets the title
+                    // truncate instead, badge always stays visible and fixed-width.
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                question?.let { Text(it.difficulty, color = NovaSuccess, fontWeight = FontWeight.SemiBold) }
+                question?.let {
+                    Text(
+                        it.difficulty,
+                        color = NovaSuccess,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
         }
 

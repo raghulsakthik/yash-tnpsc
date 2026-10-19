@@ -4,8 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,6 +52,12 @@ fun LoginScreen(authRepository: AuthRepository) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            // This screen renders outside MainNavHost's Scaffold (no auth
+            // session yet to gate on), so it doesn't inherit that fix for
+            // enableEdgeToEdge() -- without its own safeDrawing padding, a
+            // tall keyboard-open layout or a small-screen device can still
+            // push content under the status/nav bars here specifically.
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.Center,
     ) {

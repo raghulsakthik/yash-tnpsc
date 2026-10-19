@@ -16,7 +16,7 @@ export default function Tests() {
           <p className="muted" style={{ marginTop: 8, maxWidth: 560 }}>
             {tests.weekly.questions} questions, {tests.weekly.minutes} minutes, drawn from everything you have touched in the last three weeks — weighted towards the topics you have just learned.
           </p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
             {tests.weekly.sections.map((s) => (
               <span key={s} className="badge" style={{ background: '#fff' }}>{s}</span>
             ))}
@@ -26,7 +26,7 @@ export default function Tests() {
       </div>
 
       <span className="eyebrow" style={{ display: 'block', marginTop: 24, marginBottom: 12 }}>Or choose your own</span>
-      <div className="grid-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="grid-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         {tests.options.map((o) => (
           <div key={o.name} className="card">
             <h3 style={{ fontSize: '1.1rem' }}>{o.name}</h3>

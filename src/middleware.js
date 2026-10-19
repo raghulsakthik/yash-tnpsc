@@ -6,7 +6,12 @@ import { NextResponse } from 'next/server';
 // Node-only code into anything Next bundles for Edge breaks the whole app).
 // Real validation happens per-route via getSession() in src/lib/auth.mjs.
 const PUBLIC_PATHS = ['/login', '/register'];
-const PUBLIC_PREFIXES = ['/api/auth', '/_next', '/sw.js', '/manifest', '/icons', '/favicon'];
+// /api/cron/* authenticates itself via an Authorization: Bearer CRON_SECRET
+// header (see src/app/api/cron/*/route.js) -- a cron job has no session
+// cookie to present, so without this it was being blocked here with 401
+// before its own auth check ever ran. That meant the notification
+// schedulers could never actually fire once deployed, cookie-gate or not.
+const PUBLIC_PREFIXES = ['/api/auth', '/api/cron', '/_next', '/sw.js', '/manifest', '/icons', '/favicon'];
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;

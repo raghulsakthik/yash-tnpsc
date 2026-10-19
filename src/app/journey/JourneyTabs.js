@@ -19,7 +19,14 @@ function Orbit({ orbit }) {
   return (
     <div className="card">
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center' }}>
-        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        <svg
+          viewBox={`0 0 ${size} ${size}`}
+          // Fixed pixel width/height overflowed any viewport narrower than
+          // 360px (every phone in portrait) -- viewBox + a CSS max-width
+          // lets it scale down instead, same geometry either way since
+          // every coordinate below is still computed from `size`.
+          style={{ width: '100%', maxWidth: size, height: 'auto', flexShrink: 0 }}
+        >
           {[60, 95, 130, 160].map((r) => (
             <circle key={r} cx={center} cy={center} r={r} fill="none" stroke="var(--border)" strokeDasharray="3 4" />
           ))}

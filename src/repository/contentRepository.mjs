@@ -46,13 +46,13 @@ export async function findPublishedContentByTopic(topicId, type = null, client =
 
 export async function createLesson({ contentId, title, body }, client = { query }) {
   const result = await client.query(
-    'INSERT INTO lesson (content_id, title, body) VALUES ($1, $2, $3) RETURNING content_id, title, body',
+    'INSERT INTO content_lesson (content_id, title, body) VALUES ($1, $2, $3) RETURNING content_id, title, body',
     [contentId, title, body]
   );
   return result.rows[0];
 }
 
 export async function findLessonByContentId(contentId, client = { query }) {
-  const result = await client.query('SELECT content_id, title, body FROM lesson WHERE content_id = $1', [contentId]);
+  const result = await client.query('SELECT content_id, title, body FROM content_lesson WHERE content_id = $1', [contentId]);
   return result.rows[0] ?? null;
 }

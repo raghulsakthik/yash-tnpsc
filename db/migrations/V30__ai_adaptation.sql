@@ -1,10 +1,11 @@
 -- Phase 30: AI Adaptation, Model Optimization & Learning Intelligence.
 
 -- 30.1-30.6 add five new narration tasks to the AI Tutor dispatch
--- (ai_interaction, V4/V16) — the same widen-don't-replace pattern.
+-- (ai_interaction, V4/V9/V29) — the same widen-don't-replace pattern.
 ALTER TABLE ai_interaction DROP CONSTRAINT ai_interaction_type_ck;
 ALTER TABLE ai_interaction ADD CONSTRAINT ai_interaction_type_ck CHECK (type IN (
   'HINT', 'EXPLANATION',
+  'DEEPEN', 'ALTERNATE_EXPLANATION',
   'EXPLAIN_SIMPLY', 'GIVE_HINT', 'SHOW_EXAMPLE', 'TEACH_PREREQUISITE',
   'SOLVE_STEP_BY_STEP', 'EXPLAIN_MISTAKE', 'SIMILAR_QUESTION',
   'COMPARE_CONCEPTS', 'SUMMARIZE_TOPIC', 'REVISION_NOTES',

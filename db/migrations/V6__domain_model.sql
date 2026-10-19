@@ -27,7 +27,15 @@ CREATE INDEX content_topic_status_idx ON content (topic_id, status);
 -- A lesson is a content item with instructional body text. 1:1 extension of
 -- `content` (content.type = 'LESSON' for every row here) rather than a
 -- parallel, disconnected table.
-CREATE TABLE lesson (
+--
+-- Named content_lesson, not lesson: main's own V15__lesson migration (a
+-- later, unrelated commit on this shared history) already owns a real,
+-- populated `lesson` table (admin-editable, topic_id-keyed, replacing a
+-- hardcoded content module) for an already-shipped feature. This table
+-- was never seeded by anything (see docs/phase-3-completion.md and
+-- phase-29's own audit) — kept distinct rather than colliding with or
+-- rewriting main's real, working table.
+CREATE TABLE content_lesson (
   content_id  UUID PRIMARY KEY REFERENCES content(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,
   body        TEXT NOT NULL

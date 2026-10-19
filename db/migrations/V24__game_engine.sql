@@ -2,11 +2,17 @@
 -- a "speed round" over a mathematics topic and one over a reasoning topic
 -- are the same mechanics with different config (GameDefinition), not two
 -- systems. Additive only: no existing table changes.
+--
+-- Schema only — the two real, illustrative game_definition rows (resolved
+-- from the real topic/chapter tables, never hardcoded) are seeded by
+-- scripts/seed.mjs instead of here: migrate runs before seed
+-- (npm run setup), so a migration-time INSERT depending on real topic
+-- rows would be inserting against an empty table on a fresh database.
 
 CREATE TABLE game_definition (
   id                  TEXT PRIMARY KEY,
   name                TEXT NOT NULL,
-  target_topic_ids    TEXT[] NOT NULL, -- resolved once at definition time, not re-derived per session
+  target_topic_ids    TEXT[] NOT NULL, -- resolved once at seed time, not re-derived per session
   difficulty_floor    NUMERIC(3,2) NOT NULL DEFAULT 0,
   difficulty_ceiling  NUMERIC(3,2) NOT NULL DEFAULT 1,
   question_count      INT NOT NULL DEFAULT 10,
@@ -46,20 +52,3 @@ CREATE TABLE game_attempt (
   answered_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (game_session_id, question_id)
 );
-
--- Two illustrative, real configurations over the real seeded syllabus —
--- topic lists resolved from the actual topic/chapter tables, not hardcoded,
--- so they stay correct if the syllabus changes.
-INSERT INTO game_definition (id, name, target_topic_ids, difficulty_floor, difficulty_ceiling, question_count, time_limit_seconds, scoring_config, mechanics)
-SELECT 'speed-round-aptitude', 'Aptitude Speed Round',
-       (SELECT array_agg(id) FROM topic WHERE chapter_id = 'apt.aptitude'),
-       0.1, 0.6, 10, 90,
-       '{"pointsPerCorrect": 10, "speedBonusMax": 5, "streakBonusPerStreak": 2, "streakBonusCap": 10}'::jsonb,
-       'SPEED_ROUND';
-
-INSERT INTO game_definition (id, name, target_topic_ids, difficulty_floor, difficulty_ceiling, question_count, time_limit_seconds, scoring_config, mechanics)
-SELECT 'speed-round-reasoning', 'Reasoning Speed Round',
-       (SELECT array_agg(id) FROM topic WHERE chapter_id = 'apt.reasoning'),
-       0, 0.5, 8, 75,
-       '{"pointsPerCorrect": 10, "speedBonusMax": 5, "streakBonusPerStreak": 2, "streakBonusCap": 10}'::jsonb,
-       'SPEED_ROUND';

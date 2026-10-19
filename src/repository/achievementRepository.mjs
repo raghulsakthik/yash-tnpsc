@@ -1,9 +1,11 @@
-// Phase 17 — repository for the new `achievement` table (V10).
+// Phase 17 — repository for the `milestone_achievement` table (V23).
+// Named distinctly from main's own, pre-existing `achievement` table (a
+// different feature — a display catalog, not a per-learner event log).
 import { query } from '../lib/db.mjs';
 
 export async function findUnlockedAchievements(learnerId, client = { query }) {
   const result = await client.query(
-    'SELECT milestone_type, achieved_at, metadata FROM achievement WHERE learner_id = $1 ORDER BY achieved_at ASC',
+    'SELECT milestone_type, achieved_at, metadata FROM milestone_achievement WHERE learner_id = $1 ORDER BY achieved_at ASC',
     [learnerId]
   );
   return result.rows;
@@ -16,7 +18,7 @@ export async function findUnlockedAchievements(learnerId, client = { query }) {
  */
 export async function recordAchievement({ learnerId, milestoneType, achievedAt, metadata = {} }, client = { query }) {
   const result = await client.query(
-    `INSERT INTO achievement (learner_id, milestone_type, achieved_at, metadata)
+    `INSERT INTO milestone_achievement (learner_id, milestone_type, achieved_at, metadata)
      VALUES ($1, $2, COALESCE($3, now()), $4)
      ON CONFLICT (learner_id, milestone_type) DO NOTHING
      RETURNING milestone_type, achieved_at, metadata`,

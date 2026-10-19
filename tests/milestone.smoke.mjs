@@ -123,7 +123,7 @@ const readOnly = await getAchievements(learner);
 check('getAchievements matches the persisted achievements exactly', readOnly.achievements.length === evaluated.achievements.length);
 
 // ------------------------------------------------------------------ cleanup
-await client.query(`DELETE FROM achievement WHERE learner_id = $1`, [learner]);
+await client.query(`DELETE FROM milestone_achievement WHERE learner_id = $1`, [learner]);
 await client.query(`DELETE FROM question_attempt WHERE learner_id = $1`, [learner]);
 await client.query(`DELETE FROM learner_topic_state WHERE learner_id = $1`, [learner]);
 await client.query(`DELETE FROM revision_schedule WHERE learner_id = $1`, [learner]);

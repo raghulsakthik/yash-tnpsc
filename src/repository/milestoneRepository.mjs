@@ -32,7 +32,13 @@ export async function findDistinctActivityDates(learnerId, client = { query }) {
     `SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date AS day FROM question_attempt WHERE learner_id = $1`,
     [learnerId]
   );
-  return result.rows.map((r) => r.day.toISOString().slice(0, 10));
+  // src/lib/db.mjs installs a real type-parser override for DATE columns
+  // (OID 1082) that keeps every ::date-cast query result as a plain
+  // 'YYYY-MM-DD' string instead of a JS Date anchored at local midnight —
+  // a real, deliberate fix for a timezone bug (that conversion silently
+  // shifts a date back a day in any positive-UTC-offset timezone). `r.day`
+  // is already in that format; no further conversion needed.
+  return result.rows.map((r) => r.day);
 }
 
 export async function findFirstPyqAttemptTimestamp(learnerId, client = { query }) {

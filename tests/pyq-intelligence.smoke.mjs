@@ -48,7 +48,11 @@ check('the subject-level total matches the real count exactly', subjectFreq.subj
 console.log('\nYearly trends reflect the real seeded years, not an invented 2011-2025 range\n');
 
 const years = await getYearlyTrends();
-check('every year reported is one of the real seeded years', years.years.every((y) => [2013, 2015, 2016, 2017, 2018, 2022, 2024].includes(y.year)));
+const { rows: realYearRows } = await client.query(
+  `SELECT DISTINCT source_year AS year FROM question WHERE source LIKE 'tnpsc-%' AND status = 'PUBLISHED' AND source_year IS NOT NULL`
+);
+const realYears = new Set(realYearRows.map((r) => r.year));
+check('every year reported is a real, actually-seeded year — never invented', years.years.every((y) => realYears.has(y.year)), years.years.map((y) => y.year));
 check('the gap-year disclaimer is honest about untranscribed years', /not the complete 2011-2025/.test(years.disclaimer));
 
 console.log('\nDifficulty distribution sums to the real total\n');

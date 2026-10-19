@@ -169,10 +169,65 @@ try {
     }
   }
 
+  // Phase 22/25's real game_definition rows (db/migrations is schema-only;
+  // these depend on the real topic/chapter rows seeded above, which
+  // `npm run setup`'s migrate -> seed order means don't exist yet at
+  // migration time -- moved here rather than left to insert a NULL
+  // target_topic_ids into a NOT NULL column against a fresh database).
+  const gameDefinitions = [
+    {
+      id: 'speed-round-aptitude',
+      name: 'Aptitude Speed Round',
+      chapterId: 'apt.aptitude',
+      difficultyFloor: 0.1,
+      difficultyCeiling: 0.6,
+      questionCount: 10,
+      timeLimitSeconds: 90,
+    },
+    {
+      id: 'speed-round-reasoning',
+      name: 'Reasoning Speed Round',
+      chapterId: 'apt.reasoning',
+      difficultyFloor: 0,
+      difficultyCeiling: 0.5,
+      questionCount: 8,
+      timeLimitSeconds: 75,
+    },
+    {
+      id: 'constitution-match-polity',
+      name: 'Constitution Match',
+      chapterId: 'gs.indian-polity',
+      difficultyFloor: 0,
+      difficultyCeiling: 0.5,
+      questionCount: 10,
+      timeLimitSeconds: 120,
+    },
+  ];
+  const scoringConfig = JSON.stringify({ pointsPerCorrect: 10, speedBonusMax: 5, streakBonusPerStreak: 2, streakBonusCap: 10 });
+  let games = 0;
+  for (const g of gameDefinitions) {
+    const { rows: topicRows } = await client.query('SELECT array_agg(id) AS ids FROM topic WHERE chapter_id = $1', [g.chapterId]);
+    const targetTopicIds = topicRows[0]?.ids;
+    if (!targetTopicIds || targetTopicIds.length === 0) continue; // chapter not seeded (yet) -- never insert a fabricated target list
+    await client.query(
+      `INSERT INTO game_definition (id, name, target_topic_ids, difficulty_floor, difficulty_ceiling, question_count, time_limit_seconds, scoring_config, mechanics)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, 'SPEED_ROUND')
+       ON CONFLICT (id) DO UPDATE SET
+         target_topic_ids = EXCLUDED.target_topic_ids,
+         difficulty_floor = EXCLUDED.difficulty_floor,
+         difficulty_ceiling = EXCLUDED.difficulty_ceiling,
+         question_count = EXCLUDED.question_count,
+         time_limit_seconds = EXCLUDED.time_limit_seconds,
+         scoring_config = EXCLUDED.scoring_config`,
+      [g.id, g.name, targetTopicIds, g.difficultyFloor, g.difficultyCeiling, g.questionCount, g.timeLimitSeconds, scoringConfig]
+    );
+    games += 1;
+  }
+
   await client.query('COMMIT');
   console.log(
     `seeded: ${subjects} subjects, ${chapters} chapters, ${topics} topics, ` +
-      `${edges} prerequisite edges, ${questions} questions (language: ${LANGUAGE})`
+      `${edges} prerequisite edges, ${questions} questions, ${games} game definitions (language: ${LANGUAGE})`
   );
 } catch (err) {
   await client.query('ROLLBACK');

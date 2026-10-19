@@ -86,7 +86,7 @@ export default function Profile() {
   if (profile.role === 'admin') {
     return (
       <AppShell>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
               {profile.name?.[0]?.toUpperCase() ?? 'A'}
@@ -104,7 +104,7 @@ export default function Profile() {
 
   return (
     <AppShell>
-      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <div className="avatar" style={{ width: 56, height: 56, fontSize: '1.4rem' }}>
             {profile.name?.[0]?.toUpperCase() ?? 'Y'}

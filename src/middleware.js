@@ -5,7 +5,10 @@ import { NextResponse } from 'next/server';
 // see scripts/engagement-scheduler.mjs's header comment for why mixing
 // Node-only code into anything Next bundles for Edge breaks the whole app).
 // Real validation happens per-route via getSession() in src/lib/auth.mjs.
-const PUBLIC_PATHS = ['/login', '/register'];
+// /privacy must be reachable with no session -- it's the URL handed to
+// Meta's App Settings (WhatsApp Cloud API requires one to go Live), and
+// Meta's own reviewer/crawler never logs in to fetch it.
+const PUBLIC_PATHS = ['/login', '/register', '/privacy'];
 // /api/cron/* authenticates itself via an Authorization: Bearer CRON_SECRET
 // header (see src/app/api/cron/*/route.js) -- a cron job has no session
 // cookie to present, so without this it was being blocked here with 401

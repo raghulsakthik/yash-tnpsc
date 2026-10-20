@@ -33,7 +33,8 @@ function BatchCard({ batch, onDecide }) {
         <div>
           <span className="eyebrow">{batch.topicName}</span>
           <p style={{ marginTop: 6, fontWeight: 600 }}>
-            {batch.questions.length} questions · {batch.generationSource} · quality {Math.round(batch.avgQualityScore * 100)}%
+            {batch.questions.length} questions · {batch.generationSource}
+            {batch.avgQualityScore != null ? ` · quality ${Math.round(batch.avgQualityScore * 100)}%` : ''}
           </p>
           <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
             Generated {new Date(batch.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}

@@ -7,6 +7,22 @@ export class ContentReviewError extends Error {
   }
 }
 
+/**
+ * Creates one PENDING review batch for a set of already-inserted (DRAFT)
+ * questions, all belonging to one topic -- content_review_batch is
+ * one-topic-per-row by design (mirrors how a template run always targets a
+ * single topic), so a multi-topic source like one PDF commit creates one
+ * batch per topic group instead of changing that shape.
+ */
+export async function createReviewBatch({ topicId, generationSource, questionIds, avgQualityScore = null }) {
+  const { rows } = await query(
+    `INSERT INTO content_review_batch (topic_id, generation_source, question_ids, avg_quality_score)
+     VALUES ($1, $2, $3::jsonb, $4) RETURNING id`,
+    [topicId, generationSource, JSON.stringify(questionIds), avgQualityScore]
+  );
+  return rows[0].id;
+}
+
 /** Every batch awaiting a decision, newest first, with its questions inlined for review. */
 export async function listPendingBatches() {
   const { rows: batches } = await query(

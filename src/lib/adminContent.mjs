@@ -107,9 +107,17 @@ export async function createTopic({ topicId, topicName, chapterId, chapterName, 
  * Mirrors scripts/seed.mjs's question insert exactly, so content uploaded
  * here behaves identically to content shipped in content/questions/.
  *
- * @returns {Promise<{inserted: number, updated: number}>}
+ * @param {string} [status] 'PUBLISHED' (default, the manual-YAML path's
+ *   long-standing behavior -- an admin typing YAML by hand is already the
+ *   review step) or 'DRAFT' (the PDF-upload path: nothing an AI extracted
+ *   goes live without a pass through the real review queue first, even
+ *   though the admin already eyeballed it in the classify UI).
+ * @param {string} [generationSource] tags question.generation_source --
+ *   lets the review queue and analytics tell a hand-authored question
+ *   apart from an AI-extracted one.
+ * @returns {Promise<{inserted: number, updated: number, questionIds: string[]}>}
  */
-export async function upsertQuestions({ topic, language, source, questions }) {
+export async function upsertQuestions({ topic, language, source, questions, status = 'PUBLISHED', generationSource = 'manual' }) {
   const { rows: topicRows } = await query(`SELECT id FROM topic WHERE id = $1`, [topic]);
   if (topicRows.length === 0) {
     throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topic} -- create it first or check the id.`);
@@ -117,14 +125,16 @@ export async function upsertQuestions({ topic, language, source, questions }) {
 
   let inserted = 0;
   let updated = 0;
+  const questionIds = [];
 
   for (const q of questions) {
     const hash = crypto.createHash('sha256').update(normalize(q.question)).digest('hex');
     const { rows } = await query(
       `INSERT INTO question (
          id, topic_id, language, prompt, options, answer_index, explanation, trap,
-         difficulty, estimated_seconds, source, source_year, status, normalized_hash, image_data
-       ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,'PUBLISHED',$13,$14)
+         difficulty, estimated_seconds, source, source_year, status, normalized_hash, image_data,
+         generation_source
+       ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$15,$13,$14,$16)
        ON CONFLICT (id) DO UPDATE SET
          prompt = EXCLUDED.prompt,
          options = EXCLUDED.options,
@@ -152,13 +162,16 @@ export async function upsertQuestions({ topic, language, source, questions }) {
         q.year ?? null,
         hash,
         q.imageData ?? null,
+        status,
+        generationSource,
       ]
     );
     if (rows[0]?.was_insert) inserted += 1;
     else updated += 1;
+    questionIds.push(q.id);
   }
 
-  return { inserted, updated };
+  return { inserted, updated, questionIds };
 }
 
 /**

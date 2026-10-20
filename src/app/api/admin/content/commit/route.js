@@ -11,6 +11,11 @@ export const dynamic = 'force-dynamic';
  *   newTopics?: [{ topicId, topicName, chapterId, chapterName?, subjectId? }],
  *   mcqs?: [{ topicId, question, options, answerIndex, explanation, trap? }],
  *   resources?: [{ topicId, title, body }],
+ *   sourceYear?: number,  -- set when the uploaded document is a previous-year
+ *                             paper; tags every committed question with that
+ *                             year (question.source_year) and source
+ *                             ('tnpsc-<year>'), the same fields /api/pyqs/*
+ *                             filters and groups by.
  * }
  *
  * Writes the admin-reviewed result of a PDF classify pass. The UI has
@@ -35,6 +40,8 @@ export async function POST(request) {
   const newTopics = Array.isArray(body.newTopics) ? body.newTopics : [];
   const mcqs = Array.isArray(body.mcqs) ? body.mcqs : [];
   const resources = Array.isArray(body.resources) ? body.resources : [];
+  const sourceYear = Number.isInteger(body.sourceYear) && body.sourceYear >= 2000 && body.sourceYear <= 2100 ? body.sourceYear : null;
+  const source = sourceYear ? `tnpsc-${sourceYear}` : 'admin-upload-pdf';
 
   if (mcqs.length === 0 && resources.length === 0) {
     return NextResponse.json({ code: 'NOTHING_TO_COMMIT', message: 'No approved questions or resources were included.' }, { status: 400 });
@@ -54,20 +61,21 @@ export async function POST(request) {
       if (!byTopic.has(q.topicId)) byTopic.set(q.topicId, []);
       const hash = crypto.createHash('sha256').update(String(q.question)).digest('hex').slice(0, 16);
       byTopic.get(q.topicId).push({
-        id: `pdf-${hash}`,
+        id: sourceYear ? `tnpsc-${sourceYear}-${hash}` : `pdf-${hash}`,
         question: q.question,
         options: q.options,
         answer: q.answerIndex,
         explanation: q.explanation,
         trap: q.trap ?? null,
         imageData: q.diagramImage ?? null,
+        year: sourceYear,
       });
     }
 
     let insertedQuestions = 0;
     let updatedQuestions = 0;
     for (const [topicId, questions] of byTopic) {
-      const result = await upsertQuestions({ topic: topicId, language: 'en', source: 'admin-upload-pdf', questions });
+      const result = await upsertQuestions({ topic: topicId, language: 'en', source, questions });
       insertedQuestions += result.inserted;
       updatedQuestions += result.updated;
     }

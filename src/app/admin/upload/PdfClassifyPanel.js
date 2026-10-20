@@ -67,6 +67,7 @@ export default function PdfClassifyPanel() {
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [sourceYear, setSourceYear] = useState('');
   const fileInputRef = useRef(null);
   const topics = allTopics(tree);
 
@@ -152,6 +153,7 @@ export default function PdfClassifyPanel() {
       const resolveTopicId = (item) => (item.isNewTopic ? newTopicsByKey.get(newTopicKey(item)).topicId : item.topicId);
 
       const body = {
+        sourceYear: sourceYear ? Number(sourceYear) : null,
         newTopics: [...newTopicsByKey.values()],
         mcqs: included.mcqs.map((m) => ({
           topicId: resolveTopicId(m),
@@ -198,12 +200,30 @@ export default function PdfClassifyPanel() {
           or just hit commit as-is. This is the one admin action that spends an AI call -- the manual YAML
           upload stays free.
         </p>
-        <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" />
           <button type="button" className="btn btn-primary" onClick={analyze} disabled={analyzing}>
             {analyzing ? 'Reading and classifying… large files (100+ questions) can take a few minutes' : 'Analyze'}
           </button>
         </div>
+
+        <label style={{ display: 'block', marginTop: 14, fontSize: '0.85rem', fontWeight: 600 }}>
+          Source year (only if this is a previous-year paper)
+          <input
+            type="number"
+            min={2000}
+            max={2100}
+            placeholder="e.g. 2024"
+            value={sourceYear}
+            onChange={(e) => setSourceYear(e.target.value)}
+            style={{ display: 'block', width: 160, marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }}
+          />
+        </label>
+        <p className="muted" style={{ fontSize: '0.78rem', marginTop: 6 }}>
+          Set this when uploading an official TNPSC prelims paper -- every question committed from this
+          upload is tagged with that year and shows up in PYQs &gt; that year. Leave it blank for ordinary
+          study material/question banks. Upload one paper (one year) at a time.
+        </p>
       </div>
 
       {error && <div className="card" style={{ background: 'var(--warm-tint)' }}><p>{error}</p></div>}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../../../lib/auth.mjs';
+import { requirePermission } from '../../../../../../lib/auth.mjs';
+import { PERMISSIONS } from '../../../../../../lib/permissions.mjs';
 import { listReportsForQuestion, resolveReportsForQuestion } from '../../../../../../lib/contentReports.mjs';
 import { getQuestion, updateQuestion } from '../../../../../../lib/adminCrud.mjs';
 
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 /** GET /api/admin/content/support/:questionId -- the full question plus every report on it, for the detail view. */
 export async function GET(request, { params }) {
-  const admin = await requireAdmin(request);
+  const admin = await requirePermission(request, PERMISSIONS.SUPPORT_READ);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
 
   const { questionId } = await params;
@@ -29,7 +30,7 @@ export async function GET(request, { params }) {
  * }
  */
 export async function POST(request, { params }) {
-  const admin = await requireAdmin(request);
+  const admin = await requirePermission(request, PERMISSIONS.SUPPORT_RESOLVE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
 
   const { questionId } = await params;

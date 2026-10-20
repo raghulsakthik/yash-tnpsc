@@ -17,9 +17,12 @@ const REAL_LEARNER_ID = process.env.APP_LEARNER_ID ?? '00000000-0000-0000-0000-0
 const TEST_LEARNER_ID = '00000000-0000-0000-0000-000000000099';
 
 const ACCOUNTS = [
-  { email: 'test@yash.local', password: 'test1234', role: 'test', learnerId: TEST_LEARNER_ID },
-  { email: 'yashikayash0515@gmail.com', password: 'yashika2026', role: 'learner', learnerId: REAL_LEARNER_ID },
-  { email: 'admin@yash.local', password: 'admin1234', role: 'admin', learnerId: null },
+  { email: 'test@yash.local', password: 'test1234', role: 'test', learnerId: TEST_LEARNER_ID, adminRole: null },
+  { email: 'yashikayash0515@gmail.com', password: 'yashika2026', role: 'learner', learnerId: REAL_LEARNER_ID, adminRole: null },
+  // super_admin: every permission, no subject scoping -- the one account
+  // this seed script creates with admin access at all. Additional
+  // narrower admin roles are created later via /admin/users, not here.
+  { email: 'admin@yash.local', password: 'admin1234', role: 'admin', learnerId: null, adminRole: 'super_admin' },
 ];
 
 const client = new pg.Client({ connectionString });
@@ -42,9 +45,9 @@ try {
   for (const account of ACCOUNTS) {
     const passwordHash = hashPassword(account.password);
     await client.query(
-      `INSERT INTO account (email, password_hash, role, learner_id) VALUES ($1, $2, $3, $4)
+      `INSERT INTO account (email, password_hash, role, learner_id, admin_role) VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, learner_id = EXCLUDED.learner_id`,
-      [account.email, passwordHash, account.role, account.learnerId]
+      [account.email, passwordHash, account.role, account.learnerId, account.adminRole]
     );
     console.log(`${account.role.padEnd(8)} ${account.email}  password: ${account.password}`);
   }

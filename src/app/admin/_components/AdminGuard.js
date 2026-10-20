@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon, FlagIcon } from '../../_components/Icon';
+import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon, FlagIcon, UsersIcon } from '../../_components/Icon';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', Icon: DiamondIcon },
@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/upload', label: 'Bulk Upload', Icon: UploadIcon },
   { href: '/admin/review', label: 'Review Queue', Icon: CheckSquareIcon },
   { href: '/admin/support', label: 'Support Center', Icon: FlagIcon },
+  { href: '/admin/users', label: 'Admin Users', Icon: UsersIcon },
   { href: '/admin/proctoring', label: 'Proctoring', Icon: CameraIcon },
 ];
 

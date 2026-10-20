@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { query } from './db.mjs';
+import { hasPermission } from './permissions.mjs';
 
 const SESSION_COOKIE = 'session_token';
 const SESSION_DAYS = 30;
@@ -49,7 +50,7 @@ export async function getSession(request) {
   if (!token) return null;
 
   const { rows } = await query(
-    `SELECT a.id AS account_id, a.email, a.role, a.learner_id
+    `SELECT a.id AS account_id, a.email, a.role, a.learner_id, a.admin_role
        FROM session s JOIN account a ON a.id = s.account_id
       WHERE s.token = $1 AND s.expires_at > now()`,
     [token]
@@ -57,7 +58,14 @@ export async function getSession(request) {
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  return { token, accountId: row.account_id, email: row.email, role: row.role, learnerId: row.learner_id };
+  return {
+    token,
+    accountId: row.account_id,
+    email: row.email,
+    role: row.role,
+    learnerId: row.learner_id,
+    adminRole: row.admin_role,
+  };
 }
 
 export const SESSION_COOKIE_NAME = SESSION_COOKIE;
@@ -72,4 +80,18 @@ export async function requireLearnerId(request) {
 export async function requireAdmin(request) {
   const session = await getSession(request);
   return session?.role === 'admin' ? session : null;
+}
+
+/**
+ * Resolves the session only if it's an admin AND has the given permission
+ * (see src/lib/permissions.mjs) -- a stricter gate than requireAdmin for
+ * the handful of routes narrow enough to need one (user management, AI
+ * config, publish/approve actions). Most admin routes still use
+ * requireAdmin unchanged; this doesn't replace it everywhere, since this
+ * app has one real admin today and retrofitting all ~60 admin routes to
+ * granular permissions would be churn without a matching need yet.
+ */
+export async function requirePermission(request, permission) {
+  const session = await getSession(request);
+  return hasPermission(session, permission) ? session : null;
 }

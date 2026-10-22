@@ -60,6 +60,13 @@ try {
      ON CONFLICT (learner_id) DO UPDATE SET language = EXCLUDED.language, updated_at = now()`,
     [LEARNER_ID, LANGUAGE]
   );
+  // Auth migration keeps the original learner's data. The first registration
+  // can claim this account by filling its currently-null credentials.
+  await client.query(
+    `INSERT INTO app_user (id, role, status) VALUES ($1, 'STUDENT', 'ACTIVE')
+     ON CONFLICT (id) DO NOTHING`,
+    [LEARNER_ID]
+  );
 
   // -------------------------------------------------------------- syllabus
   let subjects = 0;

@@ -1,0 +1,6 @@
+{
+  "name": "NOVA Learning Hub",
+  "description": "Adaptive examination-learning platform for TNPSC Group 2 featuring curriculum phases, daily learning queues, PYQs, adaptive practice, and mastery analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

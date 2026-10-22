@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Yash</string>
+    <string name="default_notification_channel_id">reminders</string>
+</resources>

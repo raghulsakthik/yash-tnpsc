@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
+import { query, recordEvent } from '../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 import { difficultyBand } from '../../../../domain/difficulty.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,12 @@ export const dynamic = 'force-dynamic';
  * as /api/questions/next so it can be served through the same
  * QuestionSession component. 404 NO_MISTAKES when the bank is empty.
  */
-export async function GET() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
     const { rows } = await query(
       `WITH wrong AS (
@@ -33,7 +39,7 @@ export async function GET() {
         WHERE r.question_id IS NULL
         ORDER BY w.created_at DESC
         LIMIT 1`,
-      [LEARNER_ID]
+      [learnerId]
     );
 
     if (rows.length === 0) {
@@ -46,14 +52,14 @@ export async function GET() {
     const { question_id: questionId, topic_id: topicId } = rows[0];
 
     const { rows: questionRows } = await query(
-      `SELECT q.prompt, q.options, q.difficulty::float8 AS difficulty, q.estimated_seconds, t.name AS topic_name
+      `SELECT q.prompt, q.options, q.image_data, q.difficulty::float8 AS difficulty, q.estimated_seconds, t.name AS topic_name
          FROM question q JOIN topic t ON t.id = q.topic_id
         WHERE q.id = $1`,
       [questionId]
     );
     const q = questionRows[0];
 
-    await recordEvent(LEARNER_ID, 'MISTAKE_REVIEWED', topicId, { questionId });
+    await recordEvent(learnerId, 'MISTAKE_REVIEWED', topicId, { questionId });
 
     return NextResponse.json({
       questionId,
@@ -61,6 +67,7 @@ export async function GET() {
       topicName: q.topic_name,
       prompt: q.prompt,
       options: q.options,
+      imageData: q.image_data,
       estimatedSeconds: q.estimated_seconds,
       difficulty: difficultyBand(q.difficulty),
     });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, pool, LEARNER_ID } from '../../../lib/db.mjs';
+import { query, pool } from '../../../lib/db.mjs';
+import { requireLearnerId } from '../../../lib/auth.mjs';
 import { difficultyBand } from '../../../domain/difficulty.mjs';
 import { allocateSlots, pickTopicQuestions } from '../../../domain/testGen.mjs';
 
@@ -8,56 +9,116 @@ export const dynamic = 'force-dynamic';
 const TARGET_LENGTH = 25;
 
 /**
- * POST /api/tests
- *
- * Generates a weekly test: 25 questions allocated across the examined
- * topics (apt.aptitude's 10 + apt.reasoning's 6 — the same chapters
- * /api/plan/today draws exam weight from) proportional to each chapter's
- * real question count. Foundation topics (fractions, division, ...) are
- * prerequisite-only and never appear here, same as they never become the
- * plan's primary action.
+ * GET /api/tests
+ * Returns the authenticated learner's persisted test history.
  */
-export async function POST() {
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
   try {
-    const [{ rows: chapters }, { rows: withContent }, { rows: seenRows }] = await Promise.all([
-      query(
-        `SELECT c.id AS chapter_id, c.question_count, t.id AS topic_id, t.name AS topic_name
-           FROM chapter c JOIN topic t ON t.chapter_id = c.id
-          WHERE c.id IN ('apt.aptitude', 'apt.reasoning')`
-      ),
+    const { rows } = await query(
+      `SELECT id, status, question_count AS "questionCount", score,
+              started_at AS "startedAt", completed_at AS "completedAt", created_at AS "createdAt"
+         FROM test
+        WHERE learner_id = $1
+        ORDER BY created_at DESC
+        LIMIT 20`,
+      [learnerId]
+    );
+    return NextResponse.json({ tests: rows });
+  } catch (err) {
+    return NextResponse.json({ code: 'TEST_HISTORY_FAILED', message: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/tests
+ * body (optional): { templateId }
+ *
+ * Generates a weekly test. With no templateId: the original default --
+ * 25 questions allocated across the examined topics (apt.aptitude's 10 +
+ * apt.reasoning's 6 — the same chapters /api/plan/today draws exam weight
+ * from) proportional to each chapter's real question count. Foundation
+ * topics (fractions, division, ...) are prerequisite-only and never appear
+ * here, same as they never become the plan's primary action.
+ *
+ * With a templateId (an admin-authored test_template, see /admin/tests):
+ * the topic composition and per-topic question count come straight from
+ * that template instead of the hardcoded default.
+ */
+export async function POST(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const templateId = body?.templateId ?? null;
+
+  try {
+    const [{ rows: withContent }, { rows: seenRows }] = await Promise.all([
       query(`SELECT DISTINCT topic_id, id, difficulty::float8 AS difficulty, prompt, options, estimated_seconds
                FROM question WHERE status = 'PUBLISHED'`),
-      query(`SELECT DISTINCT question_id FROM question_attempt WHERE learner_id = $1`, [LEARNER_ID]),
+      query(`SELECT DISTINCT question_id FROM question_attempt WHERE learner_id = $1`, [learnerId]),
     ]);
 
     const seenIds = new Set(seenRows.map((r) => r.question_id));
-
-    const topicsByChapter = new Map();
-    for (const row of chapters) {
-      if (!topicsByChapter.has(row.chapter_id)) topicsByChapter.set(row.chapter_id, []);
-      topicsByChapter.get(row.chapter_id).push(row);
-    }
-
-    const shares = [];
     const topicMeta = new Map();
-    for (const [, topics] of topicsByChapter) {
-      const share = topics[0].question_count / topics.length;
-      for (const t of topics) {
-        shares.push({ id: t.topic_id, share });
-        topicMeta.set(t.topic_id, t.topic_name);
+    let slots;
+
+    if (templateId) {
+      const { rows: templateTopics } = await query(
+        `SELECT ttt.topic_id, ttt.target_count, t.name AS topic_name
+           FROM test_template_topic ttt JOIN topic t ON t.id = ttt.topic_id
+          WHERE ttt.template_id = $1`,
+        [templateId]
+      );
+      if (templateTopics.length === 0) {
+        return NextResponse.json({ code: 'TEMPLATE_NOT_FOUND', message: `No test template ${templateId}` }, { status: 404 });
       }
+      for (const t of templateTopics) topicMeta.set(t.topic_id, t.topic_name);
+      slots = templateTopics.map((t) => [t.topic_id, t.target_count]);
+    } else {
+      const { rows: chapters } = await query(
+        `SELECT c.id AS chapter_id, c.question_count, t.id AS topic_id, t.name AS topic_name
+           FROM chapter c JOIN topic t ON t.chapter_id = c.id
+          WHERE c.id IN ('apt.aptitude', 'apt.reasoning')`
+      );
+
+      const topicsByChapter = new Map();
+      for (const row of chapters) {
+        if (!topicsByChapter.has(row.chapter_id)) topicsByChapter.set(row.chapter_id, []);
+        topicsByChapter.get(row.chapter_id).push(row);
+      }
+
+      const shares = [];
+      for (const [, topics] of topicsByChapter) {
+        const share = topics[0].question_count / topics.length;
+        for (const t of topics) {
+          shares.push({ id: t.topic_id, share });
+          topicMeta.set(t.topic_id, t.topic_name);
+        }
+      }
+
+      const questionsByTopicPreview = new Map();
+      for (const q of withContent) {
+        if (!topicMeta.has(q.topic_id)) continue;
+        if (!questionsByTopicPreview.has(q.topic_id)) questionsByTopicPreview.set(q.topic_id, []);
+        questionsByTopicPreview.get(q.topic_id).push(q);
+      }
+      const availableShares = shares.filter((s) => (questionsByTopicPreview.get(s.id) ?? []).length > 0);
+      slots = allocateSlots(availableShares, TARGET_LENGTH);
     }
 
     const questionsByTopic = new Map();
     for (const q of withContent) {
-      if (!topicMeta.has(q.topic_id)) continue; // outside apt.aptitude/apt.reasoning
+      if (!topicMeta.has(q.topic_id)) continue;
       if (!questionsByTopic.has(q.topic_id)) questionsByTopic.set(q.topic_id, []);
       questionsByTopic.get(q.topic_id).push(q);
     }
-
-    // Only allocate slots to topics that actually have content yet.
-    const availableShares = shares.filter((s) => (questionsByTopic.get(s.id) ?? []).length > 0);
-    const slots = allocateSlots(availableShares, TARGET_LENGTH);
 
     let picked = [];
     for (const [topicId, count] of slots) {
@@ -84,8 +145,8 @@ export async function POST() {
     try {
       await client.query('BEGIN');
       const { rows: testRows } = await client.query(
-        `INSERT INTO test (learner_id, question_count) VALUES ($1, $2) RETURNING id`,
-        [LEARNER_ID, picked.length]
+        `INSERT INTO test (learner_id, question_count, template_id) VALUES ($1, $2, $3) RETURNING id`,
+        [learnerId, picked.length, templateId]
       );
       const testId = testRows[0].id;
 

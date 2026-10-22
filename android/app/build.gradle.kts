@@ -1,0 +1,125 @@
+import java.util.Properties
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+// local.properties is already gitignored by the Android Studio template
+// (it holds the SDK path on every dev machine) -- piggybacking API_BASE_URL
+// onto it means a real release config lives per-machine, never committed.
+fun localProperty(key: String): String? {
+    val file = rootProject.file("local.properties")
+    if (!file.exists()) return null
+    return Properties().apply { file.inputStream().use { load(it) } }.getProperty(key)
+}
+
+android {
+    namespace = "com.nova.tnpsc"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.nova.tnpsc"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "0.1.0"
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            // 10.0.2.2 is the Android emulator's alias for the host
+            // machine's localhost -- this is what lets the emulator reach
+            // `npm run dev` running on the host (near-carriage uses port 3001).
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3001/\"")
+        }
+        release {
+            isMinifyEnabled = false
+            // Must be passed at build time: `./gradlew assembleRelease -PapiBaseUrl=https://your-app.vercel.app/`
+            // (or set API_BASE_URL in local.properties for a repeatable local
+            // release build). No baked-in default here on purpose -- a release
+            // build silently pointed at the emulator's localhost would look
+            // fine in CI and then fail for every real user, which is worse
+            // than a build that refuses to guess.
+            //
+            // The missing-value check only fires when a release task is
+            // actually in the requested task graph -- AGP configures every
+            // buildType block eagerly even for `assembleDebug`, so throwing
+            // unconditionally here would break debug builds too.
+            val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?) ?: localProperty("API_BASE_URL")
+            val isBuildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = false) }
+            if (apiBaseUrl == null && isBuildingRelease) {
+                throw GradleException(
+                    "No API_BASE_URL for the release build. Pass -PapiBaseUrl=https://your-deployed-app.vercel.app/ " +
+                        "or add API_BASE_URL=https://... to android/local.properties."
+                )
+            }
+            buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: ""}\"")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.activity:activity-compose:1.9.1")
+    // Forces a modern androidx.fragment past a transitive 1.1.0 pulled in
+    // elsewhere -- that old version's FragmentActivity doesn't call
+    // super.onRequestPermissionsResult(), which breaks registerForActivityResult
+    // (the permission launcher in MainActivity.kt) on some devices/OS versions.
+    implementation("androidx.fragment:fragment-ktx:1.8.3")
+
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Networking: Retrofit over OkHttp, kotlinx.serialization for JSON. The
+    // backend's session is an httpOnly cookie (see src/lib/auth.mjs on the
+    // server), not a bearer token, so OkHttp's CookieJar -- backed by
+    // DataStore so it survives process death -- carries auth on every
+    // request instead of an Authorization header.
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Android push. Compiles and links without google-services.json; at
+    // runtime FirebaseApp simply never initializes until that file (from a
+    // real Firebase project) is dropped into app/ -- see push/FcmTokenRegistrar.kt.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
+}

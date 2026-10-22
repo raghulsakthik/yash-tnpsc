@@ -11,9 +11,9 @@ import pg from 'pg';
 import YAML from 'yaml';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const LANGUAGE = process.env.NOVA_LANGUAGE ?? 'en';
-const LEARNER_ID = process.env.NOVA_LEARNER_ID ?? '00000000-0000-0000-0000-000000000001';
-const LEARNER_NAME = process.env.NOVA_LEARNER_NAME ?? 'Learner';
+const LANGUAGE = process.env.APP_LANGUAGE ?? 'en';
+const LEARNER_ID = process.env.APP_LEARNER_ID ?? '00000000-0000-0000-0000-000000000001';
+const LEARNER_NAME = process.env.APP_LEARNER_NAME ?? 'Learner';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {

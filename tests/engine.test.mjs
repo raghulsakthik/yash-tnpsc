@@ -13,12 +13,15 @@ import {
   weakestPrerequisite,
 } from '../src/domain/selection.mjs';
 import { classifyMistake, interventionFor } from '../src/domain/mistakes.mjs';
+import { earnedAchievementIds } from '../src/domain/achievements.mjs';
 import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } from '../src/domain/mastery.mjs';
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
 import { decideAdaptiveAction, scoreCandidateActions, ADAPTIVE_DECISION_CONFIG } from '../src/domain/adaptiveDecision.mjs';
 import { TopicClassification, AdaptiveAction } from '../src/domain/enums.mjs';
 import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
+import { topicStatus, orbitRing, computeStreak } from '../src/domain/progress.mjs';
+import { dateKeyInAppTimezone } from '../src/lib/timezone.mjs';
 
 const attempts = (...flags) => flags.map((correct) => ({ correct: Boolean(correct) }));
 
@@ -563,4 +566,99 @@ test('pickTopicQuestions spreads picks across the difficulty range', () => {
   const difficulties = picked.map((q) => q.difficulty);
   assert.equal(difficulties[0], 0, 'first pick should be from the easy end');
   assert.ok(difficulties[difficulties.length - 1] >= 0.8, 'last pick should be from the hard end');
+});
+
+test('topicStatus: zero attempts is not-started regardless of mastery', () => {
+  assert.equal(topicStatus({ attemptCount: 0, masteryScore: 0.9, revisionDue: false }), 'not-started');
+});
+
+test('topicStatus: a due revision outranks a high mastery score', () => {
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: true }), 'revision-due');
+});
+
+test('topicStatus: mastered vs retained depends on interval length', () => {
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: false, intervalDays: 7 }), 'mastered');
+  assert.equal(topicStatus({ attemptCount: 5, masteryScore: 0.9, revisionDue: false, intervalDays: 30 }), 'retained');
+});
+
+test('topicStatus: mid-range scores land on near-mastery, practising or learning', () => {
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.75, revisionDue: false }), 'near-mastery');
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.5, revisionDue: false }), 'practising');
+  assert.equal(topicStatus({ attemptCount: 3, masteryScore: 0.1, revisionDue: false }), 'learning');
+});
+
+test('orbitRing collapses the eight states into the five orbit rings', () => {
+  assert.equal(orbitRing('mastered'), 'mastered');
+  assert.equal(orbitRing('retained'), 'mastered');
+  assert.equal(orbitRing('near-mastery'), 'learning');
+  assert.equal(orbitRing('practising'), 'learning');
+  assert.equal(orbitRing('revision-due'), 'drifting');
+  assert.equal(orbitRing('learning'), 'struggling');
+  assert.equal(orbitRing('not-started'), 'unmet');
+});
+
+test('earnedAchievementIds: a brand-new learner earns nothing', () => {
+  const zero = { questionsSolved: 0, streak: 0, topicsMastered: 0, testsCompleted: 0, bestTestScore: 0, mistakesCleared: 0 };
+  assert.deepEqual(earnedAchievementIds(zero), []);
+});
+
+test('earnedAchievementIds: thresholds are inclusive and each tier implies the ones below it', () => {
+  const stats = { questionsSolved: 100, streak: 7, topicsMastered: 1, testsCompleted: 1, bestTestScore: 85, mistakesCleared: 0 };
+  const ids = earnedAchievementIds(stats);
+  assert.ok(ids.includes('first-step'));
+  assert.ok(ids.includes('streak-3'));
+  assert.ok(ids.includes('streak-7'));
+  assert.ok(!ids.includes('streak-30'));
+  assert.ok(ids.includes('hundred-questions'));
+  assert.ok(!ids.includes('five-hundred-questions'));
+  assert.ok(ids.includes('first-topic-mastered'));
+  assert.ok(!ids.includes('five-topics-mastered'));
+  assert.ok(ids.includes('high-scorer'));
+  assert.ok(!ids.includes('clean-sweep'));
+});
+
+test('earnedAchievementIds: a perfect test score earns clean-sweep but not high-scorer twice', () => {
+  const stats = { questionsSolved: 0, streak: 0, topicsMastered: 0, testsCompleted: 1, bestTestScore: 100, mistakesCleared: 10 };
+  const ids = earnedAchievementIds(stats);
+  assert.ok(ids.includes('high-scorer'));
+  assert.ok(ids.includes('clean-sweep'));
+  assert.ok(ids.includes('mistake-fixer'));
+});
+
+// Regression coverage for a real bug: computeStreak used to build "today"
+// via `.toISOString().slice(0, 10)`, which converts through UTC first and
+// silently shifts local midnight back a calendar day in any
+// positive-UTC-offset timezone (this app's server runs in Asia/Kolkata,
+// +05:30) -- today's real activity was being treated as not-today, and a
+// streak that should have counted today came up one short.
+function daysAgoKey(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return dateKeyInAppTimezone(d);
+}
+
+test('computeStreak: no activity at all is a zero streak', () => {
+  assert.equal(computeStreak([]), 0);
+});
+
+test("computeStreak: today counts even though it's the only active date", () => {
+  assert.equal(computeStreak([daysAgoKey(0)]), 1);
+});
+
+test("computeStreak: yesterday-only (nothing studied yet today) still counts as an alive streak", () => {
+  assert.equal(computeStreak([daysAgoKey(1)]), 1);
+});
+
+test('computeStreak: three consecutive days including today', () => {
+  assert.equal(computeStreak([daysAgoKey(0), daysAgoKey(1), daysAgoKey(2)]), 3);
+});
+
+test('computeStreak: a gap stops the count at the break, not before it', () => {
+  // Active today and yesterday, then a gap, then an older run -- only the
+  // unbroken run touching today should count.
+  assert.equal(computeStreak([daysAgoKey(0), daysAgoKey(1), daysAgoKey(5), daysAgoKey(6)]), 2);
+});
+
+test('computeStreak: two days ago with nothing yesterday or today breaks the streak to zero', () => {
+  assert.equal(computeStreak([daysAgoKey(2)]), 0);
 });

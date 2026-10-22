@@ -84,3 +84,129 @@ questions:
       84.50 × 3 = 253.50, and 84.50 × 0.5 = 42.25. Adding: 253.50 + 42.25 =
       ₹295.75.
     trap: "₹253.50 is only the cost of 3 litres — the extra 0.5 litre still needs to be added."
+
+  - id: decimals-009
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 12.45 + 7.8?"
+    options: ["20.25", "21.25", "19.25", "4.65"]
+    answer: 0
+    explanation: "Line up the decimal points: 12.45 + 7.8 = 20.25."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-010
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 34.6 + 15.75?"
+    options: ["49.35", "50.35", "51.35", "18.85"]
+    answer: 1
+    explanation: "Line up the decimal points: 34.6 + 15.75 = 50.35."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-011
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 8.125 + 4.25?"
+    options: ["11.375", "12.375", "3.875", "13.375"]
+    answer: 1
+    explanation: "Line up the decimal points: 8.125 + 4.25 = 12.375."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-012
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 56.3 + 29.47?"
+    options: ["86.77", "26.83", "86.27", "85.77"]
+    answer: 3
+    explanation: "Line up the decimal points: 56.3 + 29.47 = 85.77."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-013
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 17.05 + 8.9?"
+    options: ["26.95", "8.15", "24.95", "25.95"]
+    answer: 3
+    explanation: "Line up the decimal points: 17.05 + 8.9 = 25.95."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-014
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is 63.75 + 12.125?"
+    options: ["75.875", "74.875", "76.875", "51.625"]
+    answer: 0
+    explanation: "Line up the decimal points: 63.75 + 12.125 = 75.875."
+    trap: "Misaligning the decimal point while adding is the single most common error in decimal addition."
+
+  - id: decimals-015
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 3/8 to a decimal."
+    options: ["3.75", "2.6667", "0.475", "0.375"]
+    answer: 3
+    explanation: "3 ÷ 8 = 0.375."
+    trap: "2.6667 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-016
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 5/16 to a decimal."
+    options: ["0.4125", "3.2", "3.125", "0.3125"]
+    answer: 3
+    explanation: "5 ÷ 16 = 0.3125."
+    trap: "3.2 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-017
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 7/20 to a decimal."
+    options: ["2.8571", "0.45", "3.5", "0.35"]
+    answer: 3
+    explanation: "7 ÷ 20 = 0.35."
+    trap: "2.8571 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-018
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 9/25 to a decimal."
+    options: ["0.36", "0.46", "2.7778", "3.6"]
+    answer: 0
+    explanation: "9 ÷ 25 = 0.36."
+    trap: "2.7778 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-019
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 11/40 to a decimal."
+    options: ["0.275", "3.6364", "2.75", "0.375"]
+    answer: 0
+    explanation: "11 ÷ 40 = 0.275."
+    trap: "3.6364 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-020
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 13/50 to a decimal."
+    options: ["0.36", "2.6", "0.26", "3.8462"]
+    answer: 2
+    explanation: "13 ÷ 50 = 0.26."
+    trap: "3.8462 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-021
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 17/80 to a decimal."
+    options: ["0.3125", "2.125", "0.2125", "4.7059"]
+    answer: 2
+    explanation: "17 ÷ 80 = 0.2125."
+    trap: "4.7059 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."
+
+  - id: decimals-022
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "Convert 21/125 to a decimal."
+    options: ["0.268", "1.68", "0.168", "5.9524"]
+    answer: 2
+    explanation: "21 ÷ 125 = 0.168."
+    trap: "5.9524 inverts the fraction before dividing — always divide numerator by denominator, not the other way round."

@@ -209,3 +209,147 @@ questions:
       1 m = 100 cm, so 1 sq. m = 100 × 100 = 10,000 sq. cm. Therefore
       10 sq. m = 10 × 10,000 = 100,000 sq. cm.
     trap: "10000 sq. cm. is the conversion factor for just 1 sq. m, not 10 sq. m — the question's '10' still needs to be multiplied in after converting the units."
+
+  - id: area-018
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 12 m and width 8 m?"
+    options: ["88", "108", "96", "40"]
+    answer: 2
+    explanation: "Area of a rectangle = length × width = 12 × 8 = 96 sq. m."
+    trap: "40 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-019
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 15 m and width 9 m?"
+    options: ["135", "126", "48", "150"]
+    answer: 0
+    explanation: "Area of a rectangle = length × width = 15 × 9 = 135 sq. m."
+    trap: "48 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-020
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 20 m and width 14 m?"
+    options: ["280", "266", "300", "68"]
+    answer: 0
+    explanation: "Area of a rectangle = length × width = 20 × 14 = 280 sq. m."
+    trap: "68 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-021
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 18 m and width 11 m?"
+    options: ["58", "216", "187", "198"]
+    answer: 3
+    explanation: "Area of a rectangle = length × width = 18 × 11 = 198 sq. m."
+    trap: "58 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-022
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 25 m and width 16 m?"
+    options: ["82", "425", "400", "384"]
+    answer: 2
+    explanation: "Area of a rectangle = length × width = 25 × 16 = 400 sq. m."
+    trap: "82 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-023
+    difficulty: 0.25
+    estimatedSeconds: 35
+    question: "What is the area of a rectangle with length 22 m and width 13 m?"
+    options: ["273", "70", "308", "286"]
+    answer: 3
+    explanation: "Area of a rectangle = length × width = 22 × 13 = 286 sq. m."
+    trap: "70 is the perimeter formula, not area — easy to reach for the wrong formula under time pressure."
+
+  - id: area-024
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 9 m?"
+    options: ["72", "36", "90", "81"]
+    answer: 3
+    explanation: "Area of a square = side² = 9² = 81 sq. m."
+    trap: "36 is the perimeter of the square, not its area."
+
+  - id: area-025
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 13 m?"
+    options: ["156", "52", "182", "169"]
+    answer: 3
+    explanation: "Area of a square = side² = 13² = 169 sq. m."
+    trap: "52 is the perimeter of the square, not its area."
+
+  - id: area-026
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 17 m?"
+    options: ["272", "306", "68", "289"]
+    answer: 3
+    explanation: "Area of a square = side² = 17² = 289 sq. m."
+    trap: "68 is the perimeter of the square, not its area."
+
+  - id: area-027
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 21 m?"
+    options: ["441", "84", "462", "420"]
+    answer: 0
+    explanation: "Area of a square = side² = 21² = 441 sq. m."
+    trap: "84 is the perimeter of the square, not its area."
+
+  - id: area-028
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 24 m?"
+    options: ["600", "576", "96", "552"]
+    answer: 1
+    explanation: "Area of a square = side² = 24² = 576 sq. m."
+    trap: "96 is the perimeter of the square, not its area."
+
+  - id: area-029
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What is the area of a square with side 28 m?"
+    options: ["112", "784", "756", "812"]
+    answer: 1
+    explanation: "Area of a square = side² = 28² = 784 sq. m."
+    trap: "112 is the perimeter of the square, not its area."
+
+  - id: area-030
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the area of a circle with radius 7 cm. (Use π = 22/7)"
+    options: ["154", "161", "44", "147"]
+    answer: 0
+    explanation: "Area = πr² = (22/7) × 7 × 7 = 154 sq. cm."
+    trap: "44 uses the circumference formula (2πr), not the area formula (πr²)."
+
+  - id: area-031
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the area of a circle with radius 14 cm. (Use π = 22/7)"
+    options: ["616", "88", "602", "630"]
+    answer: 0
+    explanation: "Area = πr² = (22/7) × 14 × 14 = 616 sq. cm."
+    trap: "88 uses the circumference formula (2πr), not the area formula (πr²)."
+
+  - id: area-032
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the area of a circle with radius 21 cm. (Use π = 22/7)"
+    options: ["132", "1407", "1365", "1386"]
+    answer: 3
+    explanation: "Area = πr² = (22/7) × 21 × 21 = 1386 sq. cm."
+    trap: "132 uses the circumference formula (2πr), not the area formula (πr²)."
+
+  - id: area-033
+    difficulty: 0.35
+    estimatedSeconds: 45
+    question: "Find the area of a circle with radius 28 cm. (Use π = 22/7)"
+    options: ["2492", "2436", "2464", "176"]
+    answer: 2
+    explanation: "Area = πr² = (22/7) × 28 × 28 = 2464 sq. cm."
+    trap: "176 uses the circumference formula (2πr), not the area formula (πr²)."

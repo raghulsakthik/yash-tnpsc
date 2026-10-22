@@ -473,3 +473,93 @@ questions:
       Let the number be N. N − 24 = (4/7)N, so N − (4/7)N = 24, giving
       (3/7)N = 24, so N = 56. The sum of its digits is 5 + 6 = 11.
     trap: "10 comes from a slip solving for N (landing near 55 instead of 56) — recheck that (3/7) × 56 = 24 exactly before summing the digits."
+
+  - id: simplification-036
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 15 + 25 ÷ 5"
+    options: ["19", "20", "8", "21"]
+    answer: 1
+    explanation: "By BODMAS, ÷ before +, giving 20."
+    trap: "8 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-037
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 8 × 7 - 12"
+    options: ["45", "43", "46", "44"]
+    answer: 3
+    explanation: "By BODMAS, × before −, giving 44."
+    trap: "44 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-038
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 60 ÷ 4 + 9"
+    options: ["23", "26", "24", "25"]
+    answer: 2
+    explanation: "By BODMAS, ÷ before +, giving 24."
+    trap: "24 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-039
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 36 - 6 × 4"
+    options: ["13", "11", "120", "12"]
+    answer: 3
+    explanation: "By BODMAS, × before −, giving 12."
+    trap: "120 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-040
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 14 × 3 + 22"
+    options: ["64", "63", "65", "66"]
+    answer: 0
+    explanation: "By BODMAS, × before +, giving 64."
+    trap: "64 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-041
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 81 ÷ 9 × 3"
+    options: ["26", "29", "27", "28"]
+    answer: 2
+    explanation: "By BODMAS, left to right among ÷ and ×, giving 27."
+    trap: "27 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-042
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 45 + 18 ÷ 6"
+    options: ["47", "10.5", "48", "49"]
+    answer: 2
+    explanation: "By BODMAS, ÷ before +, giving 48."
+    trap: "10.5 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-043
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 96 ÷ 8 - 5"
+    options: ["9", "8", "7", "6"]
+    answer: 2
+    explanation: "By BODMAS, ÷ before −, giving 7."
+    trap: "7 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-044
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 11 × 11 - 21"
+    options: ["102", "100", "101", "99"]
+    answer: 1
+    explanation: "By BODMAS, × before −, giving 100."
+    trap: "100 comes from working strictly left to right, ignoring operator precedence."
+
+  - id: simplification-045
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "Simplify: 100 - 36 ÷ 4"
+    options: ["91", "16", "90", "92"]
+    answer: 0
+    explanation: "By BODMAS, ÷ before −, giving 91."
+    trap: "16 comes from working strictly left to right, ignoring operator precedence."

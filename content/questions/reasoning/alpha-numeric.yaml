@@ -231,3 +231,183 @@ questions:
       the same mirror rule to $ (position 6), 1 (position 9) and # (position
       11): 32−6=26 (F), 32−9=23 (•), 32−11=21 (3). So $1# maps to F•3.
     trap: "F£3 gets the first and third symbols right but the middle one wrong — check the mirror position of '1' (position 9) carefully: 32−9=23, which is •, not £."
+
+  - id: alpha-numeric-018
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter C?"
+    options: ["4", "3", "2", "24"]
+    answer: 1
+    explanation: "C is the 3th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-019
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter G?"
+    options: ["20", "7", "6", "8"]
+    answer: 1
+    explanation: "G is the 7th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-020
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter L?"
+    options: ["15", "13", "11", "12"]
+    answer: 3
+    explanation: "L is the 12th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-021
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter O?"
+    options: ["15", "12", "14", "16"]
+    answer: 0
+    explanation: "O is the 15th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-022
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter S?"
+    options: ["20", "8", "19", "18"]
+    answer: 2
+    explanation: "S is the 19th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-023
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter V?"
+    options: ["21", "23", "22", "5"]
+    answer: 2
+    explanation: "V is the 22th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-024
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter E?"
+    options: ["5", "6", "22", "4"]
+    answer: 0
+    explanation: "E is the 5th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-025
+    difficulty: 0.15
+    estimatedSeconds: 25
+    question: "If A=1, B=2, C=3, ... Z=26, what number represents the letter I?"
+    options: ["10", "18", "8", "9"]
+    answer: 3
+    explanation: "I is the 9th letter of the alphabet."
+    trap: "Being off by one when counting letter positions quickly is the single most common error here."
+
+  - id: alpha-numeric-026
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 4 positions after K in the alphabet?"
+    options: ["N", "Q", "O", "P"]
+    answer: 2
+    explanation: "K is position 11. Adding 4 gives position 15, which is O."
+    trap: "Counting K itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-027
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 6 positions after Q in the alphabet?"
+    options: ["V", "Y", "W", "X"]
+    answer: 2
+    explanation: "Q is position 17. Adding 6 gives position 23, which is W."
+    trap: "Counting Q itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-028
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 8 positions after H in the alphabet?"
+    options: ["O", "R", "P", "Q"]
+    answer: 2
+    explanation: "H is position 8. Adding 8 gives position 16, which is P."
+    trap: "Counting H itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-029
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 3 positions after M in the alphabet?"
+    options: ["O", "R", "P", "Q"]
+    answer: 2
+    explanation: "M is position 13. Adding 3 gives position 16, which is P."
+    trap: "Counting M itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-030
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 10 positions after B in the alphabet?"
+    options: ["K", "N", "L", "M"]
+    answer: 2
+    explanation: "B is position 2. Adding 10 gives position 12, which is L."
+    trap: "Counting B itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-031
+    difficulty: 0.20
+    estimatedSeconds: 30
+    question: "What letter is 7 positions after F in the alphabet?"
+    options: ["L", "O", "M", "N"]
+    answer: 2
+    explanation: "F is position 6. Adding 7 gives position 13, which is M."
+    trap: "Counting F itself as the first step (instead of the first step after it) lands one letter short."
+
+  - id: alpha-numeric-032
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 2 positions in the alphabet, how is \"CAT\" coded?"
+    options: ["FDW", "CAT", "ECV", "DBU"]
+    answer: 2
+    explanation: "Shift each letter of CAT forward by 2: C→E, A→C, T→V, giving \"ECV\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."
+
+  - id: alpha-numeric-033
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 3 positions in the alphabet, how is \"DOG\" coded?"
+    options: ["HSK", "DOG", "GRJ", "FQI"]
+    answer: 2
+    explanation: "Shift each letter of DOG forward by 3: D→G, O→R, G→J, giving \"GRJ\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."
+
+  - id: alpha-numeric-034
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 1 position in the alphabet, how is \"SUN\" coded?"
+    options: ["UWP", "VXQ", "TVO", "SUN"]
+    answer: 2
+    explanation: "Shift each letter of SUN forward by 1: S→T, U→V, N→O, giving \"TVO\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."
+
+  - id: alpha-numeric-035
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 4 positions in the alphabet, how is \"PEN\" coded?"
+    options: ["UJS", "PEN", "TIR", "SHQ"]
+    answer: 2
+    explanation: "Shift each letter of PEN forward by 4: P→T, E→I, N→R, giving \"TIR\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."
+
+  - id: alpha-numeric-036
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 2 positions in the alphabet, how is \"BIRD\" coded?"
+    options: ["ELUG", "BIRD", "DKTF", "CJSE"]
+    answer: 2
+    explanation: "Shift each letter of BIRD forward by 2: B→D, I→K, R→T, D→F, giving \"DKTF\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."
+
+  - id: alpha-numeric-037
+    difficulty: 0.30
+    estimatedSeconds: 40
+    question: "If every letter in a word is shifted forward by 3 positions in the alphabet, how is \"FISH\" coded?"
+    options: ["JMWL", "FISH", "ILVK", "HKUJ"]
+    answer: 2
+    explanation: "Shift each letter of FISH forward by 3: F→I, I→L, S→V, H→K, giving \"ILVK\"."
+    trap: "Shifting by one position too many or too few gives a coded word that looks plausible but is wrong letter-by-letter."

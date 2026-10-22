@@ -200,3 +200,75 @@ questions:
       Amount = 5,000 × 1.12² = 5,000 × 1.2544 = ₹6,272. Compound interest
       = 6,272 − 5,000 = ₹1,272.
     trap: "₹1,172 comes from a slip computing 1.12² (using something closer to 1.1² = 1.21 instead of the correct 1.2544) — recompute 1.12 × 1.12 carefully."
+
+  - id: compound-interest-017
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹5,000 at 8% per annum for 3 years, compounded annually."
+    options: ["1348.56", "1298.56", "1248.56", "1200"]
+    answer: 1
+    explanation: "Amount = P(1 + R/100)^T = 5000 × (1 + 8/100)^3 = ₹6,298.56. CI = Amount − P = ₹1,298.56."
+    trap: "₹1,200 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-018
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹8,000 at 6% per annum for 2 years, compounded annually."
+    options: ["1038.8", "960", "938.8", "988.8"]
+    answer: 3
+    explanation: "Amount = P(1 + R/100)^T = 8000 × (1 + 6/100)^2 = ₹8,988.8. CI = Amount − P = ₹988.8."
+    trap: "₹960 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-019
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹12,000 at 10% per annum for 4 years, compounded annually."
+    options: ["5519.2", "4800", "5619.2", "5569.2"]
+    answer: 3
+    explanation: "Amount = P(1 + R/100)^T = 12000 × (1 + 10/100)^4 = ₹17,569.2. CI = Amount − P = ₹5,569.2."
+    trap: "₹4,800 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-020
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹6,500 at 12% per annum for 2 years, compounded annually."
+    options: ["1603.6", "1703.6", "1653.6", "1560"]
+    answer: 2
+    explanation: "Amount = P(1 + R/100)^T = 6500 × (1 + 12/100)^2 = ₹8,153.6. CI = Amount − P = ₹1,653.6."
+    trap: "₹1,560 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-021
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹9,500 at 7% per annum for 3 years, compounded annually."
+    options: ["1995", "2187.91", "2087.91", "2137.91"]
+    answer: 3
+    explanation: "Amount = P(1 + R/100)^T = 9500 × (1 + 7/100)^3 = ₹11,637.91. CI = Amount − P = ₹2,137.91."
+    trap: "₹1,995 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-022
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹15,000 at 5% per annum for 4 years, compounded annually."
+    options: ["3232.59", "3000", "3182.59", "3282.59"]
+    answer: 0
+    explanation: "Amount = P(1 + R/100)^T = 15000 × (1 + 5/100)^4 = ₹18,232.59. CI = Amount − P = ₹3,232.59."
+    trap: "₹3,000 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-023
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹7,200 at 9% per annum for 5 years, compounded annually."
+    options: ["3828.09", "3878.09", "3928.09", "3240"]
+    answer: 1
+    explanation: "Amount = P(1 + R/100)^T = 7200 × (1 + 9/100)^5 = ₹11,078.09. CI = Amount − P = ₹3,878.09."
+    trap: "₹3,240 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."
+
+  - id: compound-interest-024
+    difficulty: 0.40
+    estimatedSeconds: 55
+    question: "Find the compound interest on ₹10,800 at 11% per annum for 2 years, compounded annually."
+    options: ["2376", "2556.68", "2456.68", "2506.68"]
+    answer: 3
+    explanation: "Amount = P(1 + R/100)^T = 10800 × (1 + 11/100)^2 = ₹13,306.68. CI = Amount − P = ₹2,506.68."
+    trap: "₹2,376 is the simple interest for the same numbers — compound interest grows faster because each year's interest earns interest too."

@@ -1,4 +1,4 @@
--- NOVA slice 1 schema.
+-- Yash slice 1 schema.
 -- Deliberately small. Columns for the full mastery model are added in later
 -- migrations, when the engines that use them exist. See docs: "Schema perfectionism".
 

@@ -36,6 +36,14 @@ export const env = Object.freeze({
   s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
 });
 
+// Checks object storage, not called automatically: Vercel's serverless
+// model re-runs this module's top level on every cold start of every
+// function, not once at server boot -- an eager, unconditional throw here
+// (as this used to be) took down every database-backed route in
+// production the moment S3 wasn't configured, even routes that never
+// touch object storage. objectStorage.mjs's own requireS3() already
+// enforces this lazily, exactly where it's actually needed. This stays
+// available for an explicit health/readiness check to call.
 export function assertProductionConfig() {
   if (!isProduction || isBuild) return;
   const requiredKeys = ['DATABASE_URL', 'APP_URL', 'CRON_SECRET'];
@@ -48,6 +56,10 @@ export function assertProductionConfig() {
   if (env.cronSecret.length < 32) {
     throw new Error('CRON_SECRET must be at least 32 characters in production');
   }
+}
+
+export function assertObjectStorageConfig() {
+  if (!isProduction || isBuild) return;
   if (!['s3'].includes(env.objectStorageMode)) {
     throw new Error('OBJECT_STORAGE_MODE must be s3 in production');
   }
@@ -55,5 +67,3 @@ export function assertProductionConfig() {
   const missingStorage = storageKeys.filter((key) => !process.env[key]);
   if (missingStorage.length) throw new Error(`Production object storage configuration incomplete: ${missingStorage.join(', ')}`);
 }
-
-if (isProduction && !isBuild) assertProductionConfig();

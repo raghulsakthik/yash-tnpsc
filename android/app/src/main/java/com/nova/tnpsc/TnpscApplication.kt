@@ -7,6 +7,8 @@ import com.nova.tnpsc.data.learn.LearnApi
 import com.nova.tnpsc.data.lesson.LessonApi
 import com.nova.tnpsc.data.network.ApiClient
 import com.nova.tnpsc.data.plan.PlanApi
+import com.nova.tnpsc.data.platform.PlatformApi
+import com.nova.tnpsc.data.platform.CurriculumApi
 import com.nova.tnpsc.data.practice.PracticeApi
 import com.nova.tnpsc.data.profile.ProfileApi
 import com.nova.tnpsc.data.pyq.PyqApi
@@ -51,6 +53,10 @@ class TnpscApplication : Application() {
         private set
     lateinit var featureApi: FeatureApi
         private set
+    lateinit var platformApi: PlatformApi
+        private set
+    lateinit var curriculumApi: CurriculumApi
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -68,5 +74,7 @@ class TnpscApplication : Application() {
         testsApi = apiClient.create(TestsApi::class.java)
         pyqApi = apiClient.create(PyqApi::class.java)
         featureApi = apiClient.create(FeatureApi::class.java)
+        platformApi = apiClient.create(PlatformApi::class.java)
+        curriculumApi = apiClient.create(CurriculumApi::class.java)
     }
 }

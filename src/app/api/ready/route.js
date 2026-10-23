@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const [{ rows: dbRows }, { rows: migrationRows }] = await Promise.all([
       query('SELECT 1 AS ok'),
-      query(`SELECT version FROM schema_migration ORDER BY version DESC LIMIT 1`),
+      query(`SELECT version FROM schema_migration ORDER BY applied_at DESC LIMIT 1`),
     ]);
 
     return NextResponse.json({

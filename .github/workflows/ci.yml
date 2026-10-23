@@ -38,6 +38,14 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Verify checkout and dependency lock
+        run: |
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Branch/ref: ${GITHUB_REF}"
+          echo "Node: $(node --version)"
+          echo "npm: $(npm --version)"
+          node -e "const p=require('./package.json'); const l=require('./package-lock.json'); const dep=p.dependencies?.['@opentelemetry/api']||p.devDependencies?.['@opentelemetry/api']; const root=l.packages?.['']?.dependencies?.['@opentelemetry/api']||l.packages?.['']?.devDependencies?.['@opentelemetry/api']; const entry=l.packages?.['node_modules/@opentelemetry/api']; console.log('package.json @opentelemetry/api:',dep||'MISSING'); console.log('lock root @opentelemetry/api:',root||'MISSING'); console.log('lock package entry:',entry?.version||'MISSING'); if(dep!=='1.10.0'||root!=='1.10.0'||entry?.version!=='1.10.0') process.exit(1);"
+
       - run: npm ci
       - run: npm test
       - run: npm run validate:content

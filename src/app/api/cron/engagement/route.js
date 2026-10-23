@@ -1,3 +1,4 @@
+import { env } from '../../../../lib/env.mjs';
 import { NextResponse } from 'next/server';
 import { sendEngagementEmail } from '../../../../lib/engagement.mjs';
 import { emailConfigured } from '../../../../lib/email.mjs';
@@ -18,12 +19,10 @@ export const dynamic = 'force-dynamic';
  * external pinger needs it added to its request headers by hand.
  */
 export async function GET(request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get('authorization');
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ code: 'FORBIDDEN', message: 'Missing or invalid cron secret' }, { status: 401 });
-    }
+  const secret = env.cronSecret;
+  const auth = request.headers.get('authorization');
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Valid cron secret required' }, { status: 401 });
   }
 
   if (!emailConfigured) {

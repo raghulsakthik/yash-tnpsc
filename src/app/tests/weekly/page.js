@@ -7,7 +7,8 @@ import LiveTest from '../../_components/LiveTest';
 function TestWeeklyInner() {
   const searchParams = useSearchParams();
   const templateId = searchParams.get('template');
-  return <LiveTest templateId={templateId} />;
+  const unitId = searchParams.get('unit');
+  return <LiveTest templateId={templateId} completionUnitId={unitId} />;
 }
 
 // useSearchParams() opts the whole page out of static prerendering unless

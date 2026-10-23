@@ -17,26 +17,27 @@ export default function PlacementPlan() {
   }, []);
 
   const firstTopicId = result?.firstTopicId ?? 'aptitude.whole-numbers';
+  const placement = result?.placement;
+  const levelName = placement?.levelName ?? 'Foundation';
 
   return (
     <main>
       <StepHeader step={4} total={4} />
       <div className="shell-main narrow" style={{ paddingTop: 40 }}>
         <p className="eyebrow" style={{ color: 'var(--warm-accent)' }}>Your plan</p>
-        <h1 style={{ fontSize: '2.25rem' }}>Starting with the basics</h1>
+        <h1 style={{ fontSize: '2.25rem' }}>Your starting level: {levelName}</h1>
         <p className="muted" style={{ marginTop: 14 }}>
           {result
-            ? `You answered ${result.correctCount} of ${result.answeredCount} questions correctly. That's real signal now -- it already feeds your mastery and what gets recommended next.`
-            : "That's real signal now -- it already feeds your mastery and what gets recommended next."}
+            ? `You answered ${result.correctCount} of ${result.answeredCount} questions correctly (${result.score ?? 0}%). NOVA placed you using that evidence instead of sending everyone through the same starting point.`
+            : "Your diagnostic determines the starting point; NOVA then adapts from your actual performance."}
         </p>
 
         <div className="card" style={{ marginTop: 24 }}>
-          <span className="eyebrow">Why start here</span>
+          <span className="eyebrow">Placement decision</span>
           <p style={{ marginTop: 12 }}>
-            Every topic in Aptitude builds on whole numbers, place value and basic operations. Starting there
-            first means nothing later assumes something you have not actually seen -- the same rule the rest
-            of the app follows (a topic&apos;s prerequisites have to be solid before it gets recommended).
+            {placement?.reason ?? 'Your diagnostic evidence determines the first phase and week available in the curriculum.'}
           </p>
+          {placement?.phaseName ? <p className="muted" style={{ marginTop: 8 }}>Path: {placement.phaseName} · Week {placement.weekNumber} · Day {placement.dayNumber}</p> : null}
         </div>
 
         <div className="card-dark" style={{ marginTop: 20 }}>

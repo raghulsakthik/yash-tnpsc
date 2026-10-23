@@ -101,14 +101,16 @@ const TABS = ['Orbit', 'Records'];
 export default function JourneyTabs() {
   const [tab, setTab] = useState('Orbit');
   const [data, setData] = useState(null);
+  const [curriculum, setCurriculum] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('/api/journey', { cache: 'no-store' })
-      .then((res) => res.json().then((d) => ({ ok: res.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok) throw new Error(d.message ?? 'Could not load your journey');
+    Promise.all([fetch('/api/journey', { cache: 'no-store' }), fetch('/api/curriculum/active', { cache: 'no-store' })])
+      .then(async ([journeyRes, curriculumRes]) => {
+        const d = await journeyRes.json();
+        if (!journeyRes.ok) throw new Error(d.message ?? 'Could not load your journey');
         setData(d);
+        if (curriculumRes.ok) setCurriculum(await curriculumRes.json());
       })
       .catch((err) => setError(err.message));
   }, []);
@@ -127,6 +129,21 @@ export default function JourneyTabs() {
 
   return (
     <div>
+      {curriculum?.current && (
+        <div className="card" style={{ marginTop: 20, marginBottom: 20 }}>
+          <span className="eyebrow">Current learning path</span>
+          <h3 style={{ marginTop: 8 }}>{curriculum.current.phase_name}</h3>
+          <p style={{ marginTop: 6 }}>Week {curriculum.current.week_number} · Day {curriculum.current.day_number} · {curriculum.current.day_title}</p>
+          <p className="muted" style={{ marginTop: 8 }}>{curriculum.current.week_objective || curriculum.current.day_purpose}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+            {curriculum.units.map((unit) => (
+              <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <span>{unit.title}</span><span className="muted" style={{ textTransform: 'capitalize' }}>{unit.progress_status.replaceAll('_', ' ').toLowerCase()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 10, marginTop: 20, marginBottom: 20 }}>
         {TABS.map((t) => (
           <button key={t} type="button" className={`pill-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>

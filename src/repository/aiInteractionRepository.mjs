@@ -14,15 +14,15 @@
 // rather than reusing it.
 import { query } from '../lib/db.mjs';
 
-export async function findCachedResponse({ topicId, type, questionId = null }, client = { query }) {
+export async function findCachedResponse({ learnerId, topicId, type, questionId = null }, client = { query }) {
   const result = questionId
     ? await client.query(
-        `SELECT response, model, created_at, intervention_id FROM ai_interaction WHERE question_id = $1 AND type = $2`,
-        [questionId, type]
+        `SELECT response, model, created_at, intervention_id FROM ai_interaction WHERE learner_id = $1 AND question_id = $2 AND type = $3`,
+        [learnerId, questionId, type]
       )
     : await client.query(
-        `SELECT response, model, created_at, intervention_id FROM ai_interaction WHERE topic_id = $1 AND type = $2 AND question_id IS NULL`,
-        [topicId, type]
+        `SELECT response, model, created_at, intervention_id FROM ai_interaction WHERE learner_id = $1 AND topic_id = $2 AND type = $3 AND question_id IS NULL`,
+        [learnerId, topicId, type]
       );
   return result.rows[0] ?? null;
 }
@@ -31,7 +31,9 @@ export async function insertAiInteraction(
   { learnerId, topicId, questionId = null, type, promptContext, response, model, interventionId = null },
   client = { query }
 ) {
-  const conflictClause = questionId ? 'ON CONFLICT (question_id, type) DO NOTHING' : 'ON CONFLICT (topic_id, type) WHERE question_id IS NULL DO NOTHING';
+  const conflictClause = questionId
+    ? 'ON CONFLICT (learner_id, question_id, type) WHERE question_id IS NOT NULL DO NOTHING'
+    : 'ON CONFLICT (learner_id, topic_id, type) WHERE question_id IS NULL DO NOTHING';
   const result = await client.query(
     `INSERT INTO ai_interaction (learner_id, topic_id, question_id, type, prompt_context, response, model, intervention_id)
      VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8)

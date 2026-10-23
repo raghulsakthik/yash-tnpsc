@@ -1,70 +1,27 @@
-// Phase 28.3 — ExamReadinessService. Every signal is read from a phase
-// that already computes it — mastery/retention/speed/confidence
-// (learner_topic_state, Phase 1), PYQ performance (Phase 21), mock-test
-// performance and recent trend (this phase's own real test history),
-// subject coverage (this phase), consistency (Phase 1). Nothing here
-// recomputes a score another module owns; this only weighs and persists a
-// comparable snapshot.
-import { computeExamReadinessIndex, explainReadinessChange } from '../domain/examReadiness.mjs';
-import { buildSubjectPerformance } from '../domain/learnerAnalytics.mjs';
-import {
-  findAverageMastery,
-  findAverageConsistency,
-  findSubjectCoverage,
-  findTouchedSubjectCount,
-  findSubjectMastery,
-  findTestHistory,
-} from '../repository/analyticsRepository.mjs';
-import { getPyqPerformanceSummary } from './pyqService.mjs';
-import { getTestAnalytics } from './analyticsService.mjs';
-import { findLatestReadinessSnapshot, insertReadinessSnapshot } from '../repository/readinessSnapshotRepository.mjs';
-
-const TREND_SIGNAL = { IMPROVING: 1, STABLE: 0.5, DECLINING: 0, INSUFFICIENT_DATA: 0.5 };
-const RECENT_MOCK_TEST_WINDOW = 5;
+import { computeExamReadinessIndex, explainReadinessChange, EXAM_READINESS_DISCLAIMER } from '../domain/examReadiness.mjs';
+import { getReadinessEvidence, getLatestReadinessSnapshot, saveReadinessSnapshot } from '../repository/readinessRepository.mjs';
 
 export async function getExamReadiness(learnerId) {
-  const [mastery, consistency, subjectsWithContent, touchedSubjects, pyqPerformance, testAnalytics, subjectMasteryRows, history] = await Promise.all([
-    findAverageMastery(learnerId),
-    findAverageConsistency(learnerId),
-    findSubjectCoverage(),
-    findTouchedSubjectCount(learnerId),
-    getPyqPerformanceSummary(learnerId),
-    getTestAnalytics(learnerId),
-    findSubjectMastery(learnerId),
-    findTestHistory(learnerId),
-  ]);
-
-  const recentScores = history.slice(-RECENT_MOCK_TEST_WINDOW).map((t) => t.score);
-  const mockTestPerformance = recentScores.length > 0 ? recentScores.reduce((a, b) => a + b, 0) / recentScores.length / 100 : 0;
-
+  const evidence = await getReadinessEvidence(learnerId);
+  const mastery = evidence.mastery;
+  const tests = evidence.tests;
+  const pyq = evidence.pyq;
+  const recentTestSignal = Number(tests.completed) > 0 ? Number(tests.latest_score) / 100 : 0;
+  const trend = Number(tests.completed) < 2 ? 0.5 : Number(tests.latest_score) >= Number(tests.avg_score) ? 1 : 0;
   const signals = {
-    mastery: mastery.avg_mastery ?? 0,
-    pyqPerformance: pyqPerformance.overall.pyq.accuracy !== null ? pyqPerformance.overall.pyq.accuracy / 100 : 0,
-    mockTestPerformance,
-    recentTrend: TREND_SIGNAL[testAnalytics.scoreTrend] ?? 0.5,
-    retention: mastery.avg_retention ?? 0,
-    speed: mastery.avg_speed ?? 0,
-    confidenceCalibration: mastery.avg_confidence ?? 0,
-    subjectCoverage: subjectsWithContent > 0 ? touchedSubjects / subjectsWithContent : 0,
-    consistency: consistency ?? 0,
+    mastery: Number(mastery.accuracy ?? 0),
+    pyqPerformance: Number(pyq.accuracy ?? 0),
+    mockTestPerformance: recentTestSignal,
+    recentTrend: trend,
+    retention: Number(mastery.accuracy ?? 0),
+    speed: Number(mastery.speed ?? 0),
+    confidenceCalibration: Number(mastery.accuracy ?? 0),
+    subjectCoverage: Number(evidence.coverage.total) > 0 ? Number(evidence.subjects.touched) / Number(evidence.coverage.total) : 0,
+    consistency: Math.min(1, Number(evidence.activity.active_days) / 20),
   };
-
   const index = computeExamReadinessIndex(signals);
-  const previous = await findLatestReadinessSnapshot(learnerId);
+  const previous = await getLatestReadinessSnapshot(learnerId);
   const explanation = explainReadinessChange(index, previous ? { overall: previous.overall_score, breakdown: previous.breakdown } : null);
-
-  await insertReadinessSnapshot({ learnerId, overallScore: index.overall, breakdown: index.breakdown });
-
-  const bySubject = buildSubjectPerformance(
-    subjectMasteryRows.map((r) => ({ subjectId: r.subject_id, subjectName: r.subject_name, averageMastery: r.average_mastery }))
-  );
-
-  return {
-    overall: index.overall,
-    label: index.label,
-    breakdown: index.breakdown,
-    bySubject,
-    explanation,
-    disclaimer: 'This is a readiness index, not a guaranteed pass probability.',
-  };
+  await saveReadinessSnapshot({ learnerId, overall: index.overall, breakdown: index.breakdown });
+  return { ...index, signals, explanation, disclaimer: EXAM_READINESS_DISCLAIMER };
 }

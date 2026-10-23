@@ -109,6 +109,26 @@ export function CheckSquareIcon(props) {
   );
 }
 
+export function FlagIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <line x1="4" y1="22" x2="4" y2="3" />
+    </svg>
+  );
+}
+
+export function UsersIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 export function DiamondIcon(props) {
   return (
     <svg {...base} {...props}>

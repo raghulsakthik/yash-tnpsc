@@ -1,3 +1,4 @@
+import { env } from './env.mjs';
 import { query, LEARNER_ID } from './db.mjs';
 import { examWeight, selectTopic, weakestPrerequisite } from '../domain/selection.mjs';
 import { buildDailyPlan } from '../domain/planner.mjs';
@@ -107,7 +108,7 @@ export async function sendEngagementEmail(learnerId = LEARNER_ID) {
       <p style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B6459; margin: 0 0 12px;">Yash</p>
       <h2 style="font-size: 22px; margin: 0 0 16px; line-height: 1.3;">${subject}</h2>
       <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">${line}</p>
-      <a href="${process.env.APP_URL ?? 'http://localhost:3000'}"
+      <a href="${env.appUrl || 'http://localhost:3000'}"
          style="display: inline-block; background: #2F3192; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;">
         Open the app
       </a>

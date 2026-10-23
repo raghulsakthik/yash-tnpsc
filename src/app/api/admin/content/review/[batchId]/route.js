@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../../lib/auth.mjs';
+import { hasPermission, PERMISSIONS, canActOnTopic } from '../../../../../../lib/permissions.mjs';
+import { query } from '../../../../../../lib/db.mjs';
 import { approveBatch, rejectBatch, ContentReviewError } from '../../../../../../lib/contentReview.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -7,12 +9,25 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/admin/content/review/[batchId]
  * body: { decision: 'approve' | 'reject' }
+ *
+ * A batch can be question-sourced (template/pdf/ai) or material-sourced,
+ * so this checks review.question OR review.content rather than requiring
+ * one specific permission -- a Question Reviewer and a Content Reviewer
+ * are both legitimately allowed here, just for different batch kinds.
  */
 export async function POST(request, { params }) {
   const admin = await requireAdmin(request);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  if (!hasPermission(admin, PERMISSIONS.REVIEW_QUESTION) && !hasPermission(admin, PERMISSIONS.REVIEW_CONTENT)) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Your admin role cannot review content' }, { status: 403 });
+  }
 
   const { batchId } = await params;
+  const { rows: batchRows } = await query(`SELECT topic_id FROM content_review_batch WHERE id = $1`, [batchId]);
+  if (!batchRows.length) return NextResponse.json({ code: 'NOT_FOUND', message: 'Review batch not found' }, { status: 404 });
+  if (!(await canActOnTopic(admin, PERMISSIONS.REVIEW_CONTENT, batchRows[0].topic_id)) && !(await canActOnTopic(admin, PERMISSIONS.REVIEW_QUESTION, batchRows[0].topic_id))) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this review batch' }, { status: 403 });
+  }
   let body;
   try {
     body = await request.json();
@@ -25,7 +40,7 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const result = body.decision === 'approve' ? await approveBatch(batchId) : await rejectBatch(batchId);
+    const result = body.decision === 'approve' ? await approveBatch(batchId, admin.id) : await rejectBatch(batchId, admin.id);
     return NextResponse.json({ decision: body.decision, ...result });
   } catch (err) {
     if (err instanceof ContentReviewError) {

@@ -1,5 +1,5 @@
 {
-  "name": "yash",
+  "name": "nova",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -42,12 +42,13 @@
     "validate:content": "node scripts/validate-content.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
-    "db:seed-accounts": "node scripts/seed-accounts.mjs",
     "setup": "npm run db:migrate && npm run validate:content && npm run db:seed",
+    "db:seed-accounts": "node scripts/seed-accounts.mjs",
     "engagement:start": "node scripts/engagement-scheduler.mjs",
     "activity:start": "node scripts/activity-notifications-scheduler.mjs"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.10.0",
     "firebase-admin": "^14.5.0",
     "mammoth": "^1.13.0",
     "next": "^15.0.0",

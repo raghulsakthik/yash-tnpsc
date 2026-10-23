@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.nova.tnpsc.TnpscApplication
 import com.nova.tnpsc.data.journey.JourneyResponse
+import com.nova.tnpsc.data.features.ActiveCurriculumResponse
 import com.nova.tnpsc.data.journey.OrbitPoint
 import com.nova.tnpsc.ui.components.Eyebrow
 import com.nova.tnpsc.ui.components.NovaCard
@@ -58,12 +59,15 @@ private fun ringRadius(ring: String): Float = when (ring) {
 fun JourneyScreen() {
     val app = LocalContext.current.applicationContext as TnpscApplication
     var journey by remember { mutableStateOf<JourneyResponse?>(null) }
+    var curriculum by remember { mutableStateOf<ActiveCurriculumResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         try {
             val res = app.journeyApi.get()
             if (res.isSuccessful) journey = res.body()
+            val curriculumRes = app.featureApi.activeCurriculum()
+            if (curriculumRes.isSuccessful) curriculum = curriculumRes.body()
             else error = "Could not load your journey"
         } catch (e: Exception) {
             error = e.message ?: "Could not reach the server"
@@ -88,6 +92,30 @@ fun JourneyScreen() {
                     color = NovaInkMuted,
                     style = MaterialTheme.typography.bodyLarge,
                 )
+            }
+        }
+
+        if (curriculum?.current != null) {
+            val c = curriculum!!
+            val current = c.current!!
+            item {
+                NovaCard {
+                    Eyebrow("Current learning path")
+                    Spacer(Modifier.height(8.dp))
+                    Text(current.phaseName ?: "Current phase", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Week ${current.weekNumber} · Day ${current.dayNumber} · ${current.dayTitle ?: "Today"}", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text(current.weekObjective ?: current.dayPurpose ?: "Continue your adaptive curriculum.", color = NovaInkMuted, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(12.dp))
+                    c.units.forEach { unit ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(unit.title, style = MaterialTheme.typography.bodyMedium)
+                            Text(unit.progressStatus.replace('_', ' '), color = NovaInkMuted, style = MaterialTheme.typography.labelLarge)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
             }
         }
 

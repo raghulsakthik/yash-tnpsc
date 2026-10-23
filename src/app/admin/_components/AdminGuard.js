@@ -3,17 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon } from '../../_components/Icon';
+import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon, FlagIcon, UsersIcon } from '../../_components/Icon';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', Icon: DiamondIcon },
   { href: '/admin/subjects', label: 'Subjects & Topics', Icon: BookOpenIcon },
+  { href: '/admin/curriculum', label: 'Curriculum Builder', Icon: BookOpenIcon },
   { href: '/admin/lessons', label: 'Lessons', Icon: PencilIcon },
   { href: '/admin/questions', label: 'Questions', Icon: QuestionIcon },
   { href: '/admin/tests', label: 'Tests', Icon: GridIcon },
   { href: '/admin/quicklab', label: 'Quick Lab', Icon: BoltIcon },
   { href: '/admin/upload', label: 'Bulk Upload', Icon: UploadIcon },
   { href: '/admin/review', label: 'Review Queue', Icon: CheckSquareIcon },
+  { href: '/admin/support', label: 'Support Center', Icon: FlagIcon },
+  { href: '/admin/users', label: 'Admin Users', Icon: UsersIcon },
   { href: '/admin/proctoring', label: 'Proctoring', Icon: CameraIcon },
 ];
 

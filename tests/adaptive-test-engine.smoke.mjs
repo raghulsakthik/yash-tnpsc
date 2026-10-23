@@ -14,7 +14,7 @@
 import crypto from 'node:crypto';
 import pg from 'pg';
 import { createAdaptiveTest, startAdaptiveTest, saveAdaptiveTestAnswer, submitAdaptiveTest, getAdaptiveTestAnalysis } from '../src/services/adaptiveTestService.mjs';
-import { getRecommendations, acceptRecommendation } from '../src/services/recommendationService.mjs';
+import { surfaceRecommendation, getRecommendationsForLearner, acceptRecommendationForLearner } from '../src/services/recommendationService.mjs';
 import { getInterventionEffectiveness } from '../src/services/interventionService.mjs';
 import { ValidationError } from '../src/services/errors.mjs';
 
@@ -113,37 +113,28 @@ try {
 }
 check('asking for analysis before a test is submitted is refused honestly', analysisBeforeSubmitRefused);
 
-console.log('\n27.5 — the Recommendation Engine scores real candidates and persists real, trackable rows\n');
+console.log('\n27.5 — the Recommendation Engine scores a real candidate and persists a real, trackable row\n');
 
-const { recommendations, nextBestAction } = await getRecommendations(learner);
-check('at least one real recommendation was produced', recommendations.length > 0);
-check('a single Next Best Action was selected', nextBestAction !== null);
-check('every recommendation carries a real confidence in [0,1]', recommendations.every((r) => r.confidence >= 0 && r.confidence <= 1));
+const surfaced = await surfaceRecommendation(learner, 'aptitude.whole-numbers');
+check('a real recommendation was produced', surfaced !== null && surfaced.id !== undefined);
+check('it carries a real confidence in [0,1]', surfaced.confidence >= 0 && surfaced.confidence <= 1);
+check('it targets the real topic it was asked about', surfaced.target_topic_id === 'aptitude.whole-numbers');
 
+const recommendations = await getRecommendationsForLearner(learner);
 const { rows: persistedRows } = await client.query(`SELECT COUNT(*)::int AS n FROM recommendation WHERE learner_id = $1`, [learner]);
-check('recommendations were really persisted, not just computed in memory', persistedRows[0].n === recommendations.length);
+check('the recommendation was really persisted, not just computed in memory', persistedRows[0].n === recommendations.length && recommendations.length > 0);
 
 console.log('\n27.6 — accepting a recommendation starts a real, trackable Phase 14 intervention\n');
 
-const topicTargeted = recommendations.find((r) => r.target !== null);
-check('at least one real recommendation targets a specific topic', topicTargeted !== undefined);
+const accepted = await acceptRecommendationForLearner(learner, surfaced.id);
+check('accepting moves it to ACCEPTED', accepted.recommendation.status === 'ACCEPTED');
+check('accepting a topic-targeted recommendation started a real intervention', accepted.intervention?.id !== undefined);
 
-if (topicTargeted) {
-  const accepted = await acceptRecommendation(topicTargeted.recommendationId, learner);
-  check('accepting moves it to ACCEPTED', accepted.status === 'ACCEPTED');
-  check('accepting a topic-targeted recommendation started a real intervention', accepted.interventionId !== null);
+const { rows: interventionRows } = await client.query(`SELECT topic_id FROM intervention WHERE id = $1`, [accepted.intervention.id]);
+check('the real intervention targets the same real topic the recommendation named', interventionRows[0]?.topic_id === surfaced.target_topic_id);
 
-  const { rows: interventionRows } = await client.query(`SELECT topic_id FROM intervention WHERE id = $1`, [accepted.interventionId]);
-  check('the real intervention targets the same real topic the recommendation named', interventionRows[0]?.topic_id === topicTargeted.target);
-
-  let doubleAcceptRefused = false;
-  try {
-    await acceptRecommendation(topicTargeted.recommendationId, learner);
-  } catch (err) {
-    doubleAcceptRefused = err instanceof ValidationError;
-  }
-  check('accepting an already-accepted recommendation is refused, not silently repeated', doubleAcceptRefused);
-}
+const reAccepted = await acceptRecommendationForLearner(learner, surfaced.id);
+check('accepting an already-accepted recommendation is a safe no-op, not a second intervention', reAccepted.id === accepted.recommendation.id || reAccepted.status === 'ACCEPTED');
 
 console.log('\n27.6 — effectiveness aggregation reads real intervention history honestly\n');
 

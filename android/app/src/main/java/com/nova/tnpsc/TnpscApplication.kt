@@ -12,6 +12,7 @@ import com.nova.tnpsc.data.profile.ProfileApi
 import com.nova.tnpsc.data.pyq.PyqApi
 import com.nova.tnpsc.data.quicklab.QuickLabApi
 import com.nova.tnpsc.data.tests.TestsApi
+import com.nova.tnpsc.data.features.FeatureApi
 import com.nova.tnpsc.push.FcmTokenRegistrar
 
 /**
@@ -48,6 +49,8 @@ class TnpscApplication : Application() {
         private set
     lateinit var pyqApi: PyqApi
         private set
+    lateinit var featureApi: FeatureApi
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -64,5 +67,6 @@ class TnpscApplication : Application() {
         quickLabApi = apiClient.create(QuickLabApi::class.java)
         testsApi = apiClient.create(TestsApi::class.java)
         pyqApi = apiClient.create(PyqApi::class.java)
+        featureApi = apiClient.create(FeatureApi::class.java)
     }
 }

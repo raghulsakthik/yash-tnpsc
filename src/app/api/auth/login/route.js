@@ -14,7 +14,7 @@ export async function POST(request) {
   }
 
   const { rows } = await query(
-    'SELECT id, password_hash, role, learner_id FROM account WHERE email = $1',
+    'SELECT id, password_hash, role FROM app_user WHERE lower(email) = lower($1) AND status = \'ACTIVE\'',
     [email]
   );
   const account = rows[0];

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../../lib/auth.mjs';
+import { requirePermission } from '../../../../../lib/auth.mjs';
+import { PERMISSIONS, canActOnTopic, canActOnSubject } from '../../../../../lib/permissions.mjs';
 import { parseQuestionYaml, createTopic, upsertQuestions, ContentUploadError } from '../../../../../lib/adminContent.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export const dynamic = 'force-dynamic';
  * content growth.
  */
 export async function POST(request) {
-  const admin = await requireAdmin(request);
+  const admin = await requirePermission(request, PERMISSIONS.CONTENT_PUBLISH);
   if (!admin) {
     return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
   }
@@ -51,9 +52,11 @@ export async function POST(request) {
           { status: 400 }
         );
       }
+      if (!(await canActOnSubject(admin, PERMISSIONS.CONTENT_PUBLISH, subjectId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
       await createTopic({ topicId, topicName, chapterId, chapterName, subjectId });
     }
 
+    if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_PUBLISH, doc.topic))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
     const result = await upsertQuestions(doc);
 
     return NextResponse.json({

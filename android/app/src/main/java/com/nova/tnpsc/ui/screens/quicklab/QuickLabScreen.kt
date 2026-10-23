@@ -73,7 +73,7 @@ fun QuickLabScreen(navController: NavHostController) {
         } else if (modes == null) {
             item { Text("Loading…", color = NovaInkMuted) }
         } else {
-            items(modes!!) { mode ->
+            items(modes!!, key = { it.slug }) { mode ->
                 NovaCard(
                     border = if (mode.recommended) NovaWarmAccent else null,
                     modifier = Modifier.clickable { navController.navigate("quicklab/${mode.slug}") },

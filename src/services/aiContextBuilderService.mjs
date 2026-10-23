@@ -6,7 +6,7 @@
 // buildHintContext() (Phase 8) already set.
 import { getTopicState } from './learnerStateService.mjs';
 import { getEffectiveRetention } from './retentionEngineService.mjs';
-import { getRecommendations } from './recommendationService.mjs';
+import { getRecommendationsForLearner } from './recommendationService.mjs';
 import { detectTopicPatterns } from '../domain/aiPatternDetection.mjs';
 import { analyzeConfidenceIssues } from '../domain/diagnostic.mjs';
 import { findApprovedQuestionsForTopic, findQuestionById, findTopicById, findPrerequisiteTopicsWithNames } from '../repository/aiKnowledgeRepository.mjs';
@@ -87,12 +87,18 @@ export async function buildPatternContext(learnerId, topicId) {
 // Phase 30.3 — the real candidate set Phase 27's recommendation engine
 // already scored, unchanged — AI only narrates which one won and why.
 export async function buildRecommendationContext(learnerId) {
-  const { recommendations, nextBestAction } = await getRecommendations(learnerId, { limit: 5 });
+  // The real recommendation engine (src/services/recommendationService.mjs)
+  // surfaces one topic-scoped recommendation at a time rather than a
+  // ranked multi-candidate list — the most recently surfaced real row is
+  // the real "current" one to narrate; nothing here invents a ranking it
+  // doesn't have.
+  const recommendations = await getRecommendationsForLearner(learnerId, 5);
+  const top = recommendations[0] ?? null;
   return {
-    topicId: nextBestAction?.target ?? null,
-    topicName: nextBestAction?.target ?? 'no specific topic',
-    topCandidate: nextBestAction,
-    otherCandidates: recommendations.filter((r) => r.recommendationId !== nextBestAction?.recommendationId),
+    topicId: top?.target_topic_id ?? null,
+    topicName: top?.target_topic_id ?? 'no specific topic',
+    topCandidate: top ? { action: top.action, confidence: top.confidence, reason: top.reason } : null,
+    otherCandidates: recommendations.slice(1).map((r) => ({ action: r.action, confidence: r.confidence, reason: r.reason })),
   };
 }
 

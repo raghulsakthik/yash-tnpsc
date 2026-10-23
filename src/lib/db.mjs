@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { env } from './env.mjs';
 
 // pg's default DATE parser (OID 1082) returns a JS Date anchored at LOCAL
 // midnight for the given date string. Calling .toISOString() on that then
@@ -17,7 +18,7 @@ const globalForPg = globalThis;
 export const pool =
   globalForPg.__appPool ??
   new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: env.databaseUrl,
     max: 5,
   });
 
@@ -29,7 +30,7 @@ export function query(text, params) {
 }
 
 export const LEARNER_ID =
-  process.env.APP_LEARNER_ID ?? '00000000-0000-0000-0000-000000000001';
+  env.learnerId || '00000000-0000-0000-0000-000000000001';
 
 /** Append an analytics event. Never read by the learning engine. */
 export async function recordEvent(learnerId, event, topicId = null, metadata = {}) {

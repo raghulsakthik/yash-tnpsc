@@ -9,6 +9,32 @@ export const dynamic = 'force-dynamic';
 const TARGET_LENGTH = 25;
 
 /**
+ * GET /api/tests
+ * Returns the authenticated learner's persisted test history.
+ */
+export async function GET(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
+  try {
+    const { rows } = await query(
+      `SELECT id, status, question_count AS "questionCount", score,
+              started_at AS "startedAt", completed_at AS "completedAt", created_at AS "createdAt"
+         FROM test
+        WHERE learner_id = $1
+        ORDER BY created_at DESC
+        LIMIT 20`,
+      [learnerId]
+    );
+    return NextResponse.json({ tests: rows });
+  } catch (err) {
+    return NextResponse.json({ code: 'TEST_HISTORY_FAILED', message: err.message }, { status: 500 });
+  }
+}
+
+/**
  * POST /api/tests
  * body (optional): { templateId }
  *

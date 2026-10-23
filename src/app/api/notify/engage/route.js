@@ -1,3 +1,4 @@
+import { env } from '../../../../lib/env.mjs';
 import { NextResponse } from 'next/server';
 import { sendEngagementEmail } from '../../../../lib/engagement.mjs';
 import { emailConfigured } from '../../../../lib/email.mjs';
@@ -11,7 +12,12 @@ export const dynamic = 'force-dynamic';
  * plan. The same content the 3-hourly schedule (src/instrumentation.js)
  * sends -- this just lets it be triggered on demand instead of waited for.
  */
-export async function POST() {
+export async function POST(request) {
+  const secret = env.cronSecret;
+  const auth = request.headers.get('authorization');
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Valid cron secret required' }, { status: 401 });
+  }
   if (!emailConfigured) {
     return NextResponse.json({ code: 'EMAIL_NOT_CONFIGURED', message: 'SMTP is not set up on the server' }, { status: 503 });
   }

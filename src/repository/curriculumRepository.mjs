@@ -64,3 +64,8 @@ export async function findPrerequisitesForTopic(topicId, client = { query }) {
   );
   return result.rows;
 }
+
+export async function findAllPrerequisiteEdges(client = { query }) {
+  const result = await client.query('SELECT topic_id, prerequisite_topic_id, strength FROM topic_prerequisite');
+  return result.rows;
+}

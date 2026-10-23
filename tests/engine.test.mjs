@@ -17,6 +17,8 @@ import { earnedAchievementIds } from '../src/domain/achievements.mjs';
 import { conceptScore, consistencyScore, confidenceCalibration, masteryScore } from '../src/domain/mastery.mjs';
 import { recallPerformance, nextInterval, isDue, retentionValue, MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS } from '../src/domain/revision.mjs';
 import { buildDailyPlan } from '../src/domain/planner.mjs';
+import { decideAdaptiveAction, scoreCandidateActions, ADAPTIVE_DECISION_CONFIG } from '../src/domain/adaptiveDecision.mjs';
+import { TopicClassification, AdaptiveAction } from '../src/domain/enums.mjs';
 import { allocateSlots, pickTopicQuestions } from '../src/domain/testGen.mjs';
 import { topicStatus, orbitRing, computeStreak } from '../src/domain/progress.mjs';
 import { dateKeyInAppTimezone } from '../src/lib/timezone.mjs';
@@ -426,6 +428,85 @@ test('with no due revision and no topic, the plan says so rather than guessing',
   const plan = buildDailyPlan({ topics: [], revisionDueCount: 0, selectedTopic: null });
   assert.equal(plan.primaryAction, 'NONE');
   assert.equal(plan.topicId, null);
+});
+
+test('adaptive decision prefers a prerequisite lesson when the gate is blocked', () => {
+  const decision = decideAdaptiveAction({
+    topicId: 'aptitude.percentage',
+    classification: TopicClassification.PREREQUISITE_BLOCKED,
+    accuracy: 0.75,
+    speed: 0.7,
+    retention: 0.8,
+    mastery: 0.7,
+    misconceptionRisk: 0.2,
+    prerequisiteRisk: 0.9,
+    revisionDue: false,
+    attemptCount: 12,
+  });
+  assert.equal(decision.action, AdaptiveAction.PREREQUISITE_LESSON);
+  assert.ok(decision.score >= 0.9);
+  assert.ok(decision.candidates.length >= 8);
+});
+
+test('adaptive decision prefers timed practice when accuracy is good but speed is poor', () => {
+  const decision = decideAdaptiveAction({
+    topicId: 'aptitude.ratio',
+    classification: TopicClassification.WEAK,
+    accuracy: 0.8,
+    speed: 0.2,
+    retention: 0.8,
+    mastery: 0.65,
+    misconceptionRisk: 0,
+    prerequisiteRisk: 0,
+    revisionDue: false,
+    attemptCount: 8,
+  });
+  assert.equal(decision.action, AdaptiveAction.TIMED_PRACTICE);
+});
+
+test('adaptive decision gives a hard revision trigger priority over practice', () => {
+  const decision = decideAdaptiveAction({
+    topicId: 'history.sangam',
+    classification: TopicClassification.STRONG,
+    accuracy: 0.9,
+    speed: 0.9,
+    retention: 0.4,
+    mastery: 0.85,
+    misconceptionRisk: 0,
+    prerequisiteRisk: 0,
+    revisionDue: true,
+    attemptCount: 20,
+  });
+  assert.equal(decision.action, AdaptiveAction.MEMORY_ECHO);
+});
+
+test('adaptive scoring remains auditable and config thresholds are centralized', () => {
+  const candidates = scoreCandidateActions({
+    topicId: 'x', classification: TopicClassification.STRONG, accuracy: 0.9, speed: 0.9,
+    retention: 0.9, mastery: 0.9, misconceptionRisk: 0, prerequisiteRisk: 0,
+    revisionDue: false, attemptCount: ADAPTIVE_DECISION_CONFIG.miniAssessmentAttemptInterval,
+  });
+  assert.equal(candidates.length, 8);
+  assert.ok(candidates.every((candidate) => Number.isFinite(candidate.score)));
+  assert.ok(candidates.some((candidate) => candidate.action === AdaptiveAction.MINI_ASSESSMENT));
+});
+
+test('daily plan uses the adaptive action instead of silently falling back to generic practice', () => {
+  const plan = buildDailyPlan({
+    topics: [],
+    revisionDueCount: 0,
+    selectedTopic: { id: 'aptitude.ratio', name: 'Ratio', attemptCount: 10 },
+    adaptiveDecision: {
+      action: AdaptiveAction.TIMED_PRACTICE,
+      score: 0.72,
+      reason: 'accuracy holds but pace does not',
+      context: { weakestPrerequisite: null },
+    },
+  });
+  assert.equal(plan.primaryAction, AdaptiveAction.TIMED_PRACTICE);
+  assert.equal(plan.topicId, 'aptitude.ratio');
+  assert.match(plan.reason, /pace/);
+  assert.equal(plan.items[0].decisionScore, 0.72);
 });
 
 // ------------------------------------------------------------------ testGen

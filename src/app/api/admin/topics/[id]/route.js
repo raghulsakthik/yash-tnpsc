@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '../../../../../lib/auth.mjs';
+import { requirePermission } from '../../../../../lib/auth.mjs';
+import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
+import { query } from '../../../../../lib/db.mjs';
 import { updateTopic, deleteTopic } from '../../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../../lib/adminContent.mjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(request, { params }) {
-  const admin = await requireAdmin(request);
+  const admin = await requirePermission(request, PERMISSIONS.TOPIC_UPDATE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
   const { id } = await params;
   try {
+    if (!(await canActOnTopic(admin, PERMISSIONS.TOPIC_UPDATE, id))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
     await updateTopic(id, await request.json());
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -19,10 +22,11 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const admin = await requireAdmin(request);
+  const admin = await requirePermission(request, PERMISSIONS.TOPIC_DELETE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
   const { id } = await params;
   try {
+    if (!(await canActOnTopic(admin, PERMISSIONS.TOPIC_DELETE, id))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
     await deleteTopic(id);
     return NextResponse.json({ ok: true });
   } catch (err) {

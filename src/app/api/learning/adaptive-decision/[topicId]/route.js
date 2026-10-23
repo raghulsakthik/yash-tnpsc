@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireUser } from '../../../../../lib/auth.mjs';
 import { decideNextActionForTopic } from '../../../../../services/adaptiveDecisionService.mjs';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/learning/adaptive-decision/:topicId
- *
- * The Adaptive Decision Engine: scores all eight candidate actions
- * (REPEAT_LESSON, PREREQUISITE_LESSON, PRACTICE, TIMED_PRACTICE, REVISION,
- * MEMORY_ECHO, ADVANCE_TOPIC, MINI_ASSESSMENT) for this learner on this
- * topic from the same evidence Phase 4 (classification) and Phase 6 (the
- * digital twin's risk signals) already compute, and returns the winner plus
- * every runner-up's score — an auditable decision, not just an assertion.
- */
 export async function GET(request, { params }) {
+  const user = await requireUser();
+  if (!user) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Login required' }, { status: 401 });
   const { topicId } = await params;
   try {
-    const decision = await decideNextActionForTopic(LEARNER_ID, topicId);
-    return NextResponse.json(decision);
+    return NextResponse.json(await decideNextActionForTopic(user.id, topicId));
   } catch (err) {
     return NextResponse.json({ code: 'ADAPTIVE_DECISION_FAILED', message: err.message }, { status: 500 });
   }

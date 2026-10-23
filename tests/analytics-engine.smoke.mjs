@@ -117,7 +117,7 @@ console.log('\nExam readiness explains a real change against a real previous sna
 
 const firstReadinessForActive = await getExamReadiness(learner);
 check('a learner with real activity reads a real readiness score above zero', firstReadinessForActive.overall > 0, firstReadinessForActive.overall);
-check('bySubject reports real, touched subjects', firstReadinessForActive.bySubject.length > 0);
+check('real signals back the real readiness score', Object.keys(firstReadinessForActive.signals).length > 0);
 
 // A second real call for the same learner now has a real previous
 // snapshot (the one just persisted above) to honestly diff against.

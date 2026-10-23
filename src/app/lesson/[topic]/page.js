@@ -1,10 +1,13 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function Lesson({ params }) {
+function LessonInner({ params }) {
   const { topic } = use(params);
+  const searchParams = useSearchParams();
+  const unitId = searchParams.get('unit');
   const [lesson, setLesson] = useState(null);
   const [error, setError] = useState(null);
   const [altExplanation, setAltExplanation] = useState(null);
@@ -162,11 +165,28 @@ export default function Lesson({ params }) {
             </div>
           )}
 
-          <Link href={`/practice/${topic}`} className="btn btn-primary btn-block" style={{ marginTop: 28 }}>
+          {unitId && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-block"
+              style={{ marginTop: 28 }}
+              onClick={async () => {
+                const res = await fetch('/api/curriculum/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unitId }) });
+                if (res.ok) window.location.href = '/learn';
+              }}
+            >
+              I understand this concept ✓
+            </button>
+          )}
+          <Link href={`/practice/${topic}${unitId ? `?unit=${encodeURIComponent(unitId)}` : ''}`} className="btn btn-primary btn-block" style={{ marginTop: 12 }}>
             Practice this now
           </Link>
         </div>
       )}
     </main>
   );
+}
+
+export default function Lesson({ params }) {
+  return <Suspense fallback={null}><LessonInner params={params} /></Suspense>;
 }

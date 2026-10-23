@@ -9,6 +9,7 @@ import LiveQuestion from '../../_components/LiveQuestion';
 function PyqInner({ topic }) {
   const searchParams = useSearchParams();
   const year = searchParams.get('year');
+  const unitId = searchParams.get('unit');
 
   const query = new URLSearchParams();
   if (topic !== 'all') query.set('topic', topic);
@@ -27,6 +28,7 @@ function PyqInner({ topic }) {
           nextQuestionUrl={`/api/pyqs/next${qs ? `?${qs}` : ''}`}
           submitUrl="/api/attempts"
           mode="PRACTICE"
+          completionUnitId={unitId}
           emptyCode="NO_QUESTIONS"
           emptyTitle="No past-year questions here yet"
           emptyMessage="This topic/year combination has no real transcribed questions on record."

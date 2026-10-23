@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '../../../../lib/db.mjs';
 import { difficultyBand } from '../../../../domain/difficulty.mjs';
+import { requireLearnerId } from '../../../../lib/auth.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +12,14 @@ export const dynamic = 'force-dynamic';
  * IN_PROGRESS), her answers and marks so far, and the test's status/score.
  */
 export async function GET(request, { params }) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   const { id } = await params;
 
   try {
     const { rows: testRows } = await query(
-      `SELECT id, status, question_count, score::float8 AS score, started_at, completed_at FROM test WHERE id = $1`,
-      [id]
+      `SELECT id, status, question_count, score::float8 AS score, started_at, completed_at FROM test WHERE id = $1 AND learner_id = $2`,
+      [id, learnerId]
     );
     if (testRows.length === 0) {
       return NextResponse.json({ code: 'TEST_NOT_FOUND', message: `No test ${id}` }, { status: 404 });

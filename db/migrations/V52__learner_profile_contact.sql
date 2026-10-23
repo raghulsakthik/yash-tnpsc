@@ -1,0 +1,1 @@
+ALTER TABLE learner_profile ADD COLUMN IF NOT EXISTS phone TEXT;

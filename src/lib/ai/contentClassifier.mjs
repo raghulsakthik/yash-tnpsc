@@ -35,6 +35,8 @@ Your job: split the text into individual MCQs and individual study-note chunks, 
 the single best-matching existing topic id. Only propose a brand new topic when nothing in the existing list is
 a reasonable match -- reusing an existing topic is always preferred over inventing one.
 
+For each numbered question, preserve its printed question number in questionNumber; if the source has no reliable number, use null.
+
 CRITICAL -- be exhaustive, not a representative sample: extract EVERY numbered question in the document
 (worked examples AND "practice questions" sections both count), not just the first few or one per section.
 A document with 50 questions across 6 sections must produce roughly 50 mcqs, grouped under several different
@@ -58,6 +60,7 @@ Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
   "mcqs": [
     {
       "question": string,
+      "questionNumber": number | null,
       "options": [string, ...],          // 2-6 options, exact text, no "A)" prefixes
       "answerIndex": number,              // 0-based index into options
       "explanation": string,              // why that answer is correct
@@ -115,6 +118,7 @@ function sanitizeDiagramFields(raw, maxPage) {
 function sanitizeMcq(raw, validTopicIds, maxPage) {
   if (!raw || typeof raw !== 'object') return null;
   const question = cleanString(raw.question);
+  const questionNumber = Number.isInteger(raw.questionNumber) && raw.questionNumber > 0 ? raw.questionNumber : null;
   const options = Array.isArray(raw.options) ? raw.options.map((o) => cleanString(o)).filter(Boolean) : [];
   if (!question || options.length < 2) return null;
 
@@ -126,6 +130,7 @@ function sanitizeMcq(raw, validTopicIds, maxPage) {
 
   return {
     question,
+    questionNumber,
     options,
     answerIndex,
     explanation: cleanString(raw.explanation, 'No explanation provided.'),

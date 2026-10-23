@@ -3,6 +3,7 @@ import { pool, recordEvent } from '../../../lib/db.mjs';
 import { requireLearnerId } from '../../../lib/auth.mjs';
 import { recordAttempt, RecordAttemptError } from '../../../lib/attempts.mjs';
 import { checkAndUnlockAchievements } from '../../../lib/achievements.mjs';
+import { maybeEvaluateIntervention } from '../../../services/recommendationService.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,10 +84,13 @@ export async function POST(request) {
       });
     }
 
+    const intervention = (!result.duplicate && result.topicId)
+      ? await maybeEvaluateIntervention(learnerId, result.topicId).catch(() => null)
+      : null;
     const newAchievements = result.duplicate ? [] : await checkAndUnlockAchievements(learnerId).catch(() => []);
 
     const { topicId, ...response } = result;
-    return NextResponse.json({ ...response, newAchievements });
+    return NextResponse.json({ ...response, interventionEvaluation: intervention, newAchievements });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err instanceof RecordAttemptError) {

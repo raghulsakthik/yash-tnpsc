@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '../../../../../lib/db.mjs';
+import { requireLearnerId } from '../../../../../lib/auth.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
  * revealed until the whole test is submitted.
  */
 export async function POST(request, { params }) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   const { id } = await params;
   let body;
   try {
@@ -25,13 +28,15 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const { rows: testRows } = await query(`SELECT status FROM test WHERE id = $1`, [id]);
+    const { rows: testRows } = await query(`SELECT status FROM test WHERE id = $1 AND learner_id = $2`, [id, learnerId]);
     if (testRows.length === 0) {
       return NextResponse.json({ code: 'TEST_NOT_FOUND', message: `No test ${id}` }, { status: 404 });
     }
     if (testRows[0].status !== 'IN_PROGRESS') {
       return NextResponse.json({ code: 'TEST_COMPLETED', message: 'This test has already been submitted' }, { status: 409 });
     }
+    const { rows: questionRows } = await query(`SELECT 1 FROM test_question WHERE test_id=$1 AND question_id=$2`, [id, questionId]);
+    if (questionRows.length === 0) return NextResponse.json({ code: 'QUESTION_NOT_IN_TEST', message: 'Question does not belong to this test' }, { status: 400 });
 
     await query(
       `INSERT INTO test_answer (test_id, question_id, selected_index, marked_for_review, time_taken_ms, answered_at)

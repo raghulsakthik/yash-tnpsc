@@ -67,6 +67,10 @@ export default function PdfClassifyPanel() {
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [sourceYear, setSourceYear] = useState('');
+  const [examCode, setExamCode] = useState('TNPSC');
+  const [examGroup, setExamGroup] = useState('Group 2');
+  const [paper, setPaper] = useState('');
   const fileInputRef = useRef(null);
   const topics = allTopics(tree);
 
@@ -94,16 +98,43 @@ export default function PdfClassifyPanel() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      const res = await fetch('/api/admin/content/classify', {
+      const queueRes = await fetch('/api/admin/content/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileBase64, fileName: file.name }),
+        body: JSON.stringify({
+          files: [{
+            fileBase64,
+            fileName: file.name,
+            mimeType: file.type || null,
+            sourceYear: sourceYear ? Number(sourceYear) : null,
+            examCode: examCode.trim() || null,
+            examGroup: examGroup.trim() || null,
+            paper: paper.trim() || null,
+          }],
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not analyze that document');
+      const queued = await queueRes.json();
+      if (!queueRes.ok) throw new Error(queued.message ?? 'Could not queue that document');
+
+      let data = null;
+      for (let attempt = 0; attempt < 180; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const statusRes = await fetch(`/api/admin/content/process/${queued.batchId}`, { cache: 'no-store' });
+        const status = await statusRes.json();
+        if (!statusRes.ok) throw new Error(status.message ?? 'Could not read processing status');
+        const job = status.jobs?.[0];
+        if (job?.status === 'FAILED') throw new Error(job.error ?? 'Document processing failed');
+        if (job?.status === 'COMPLETED') {
+          data = job.result ?? {};
+          break;
+        }
+      }
+      if (!data) throw new Error('Document processing timed out. The job is still persisted and can be resumed from its batch status.');
       setProposal({
-        mcqs: data.mcqs.map((m) => ({ ...m, included: true })),
-        resources: data.resources.map((r) => ({ ...r, included: true })),
+        processingBatchId: queued.batchId,
+        sourceFileName: file.name,
+        mcqs: (data.mcqs ?? []).map((m) => ({ ...m, included: true })),
+        resources: (data.resources ?? []).map((r) => ({ ...r, included: true })),
         truncated: data.truncated,
       });
     } catch (err) {
@@ -152,6 +183,12 @@ export default function PdfClassifyPanel() {
       const resolveTopicId = (item) => (item.isNewTopic ? newTopicsByKey.get(newTopicKey(item)).topicId : item.topicId);
 
       const body = {
+        sourceYear: sourceYear ? Number(sourceYear) : null,
+        examCode: examCode.trim() || null,
+        examGroup: examGroup.trim() || null,
+        paper: paper.trim() || null,
+        processingBatchId: proposal.processingBatchId,
+        sourceFileName: proposal.sourceFileName,
         newTopics: [...newTopicsByKey.values()],
         mcqs: included.mcqs.map((m) => ({
           topicId: resolveTopicId(m),
@@ -160,6 +197,8 @@ export default function PdfClassifyPanel() {
           answerIndex: m.answerIndex,
           explanation: m.explanation,
           trap: m.trap,
+          questionNumber: m.questionNumber ?? null,
+          sourcePage: m.sourcePage ?? null,
           diagramImage: m.diagramImage ?? null,
         })),
         resources: included.resources.map((r) => ({
@@ -198,12 +237,39 @@ export default function PdfClassifyPanel() {
           or just hit commit as-is. This is the one admin action that spends an AI call -- the manual YAML
           upload stays free.
         </p>
-        <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" />
           <button type="button" className="btn btn-primary" onClick={analyze} disabled={analyzing}>
-            {analyzing ? 'Reading and classifying… large files (100+ questions) can take a few minutes' : 'Analyze'}
+            {analyzing ? 'Queued — processing document in the background…' : 'Analyze'}
           </button>
         </div>
+
+        <label style={{ display: 'block', marginTop: 14, fontSize: '0.85rem', fontWeight: 600 }}>
+          Source year (only if this is a previous-year paper)
+          <input
+            type="number"
+            min={2000}
+            max={2100}
+            placeholder="e.g. 2024"
+            value={sourceYear}
+            onChange={(e) => setSourceYear(e.target.value)}
+            style={{ display: 'block', width: 160, marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }}
+          />
+        </label>
+        <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Exam code
+            <input value={examCode} onChange={(e) => setExamCode(e.target.value)} placeholder="TNPSC" style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+          </label>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Exam / Group
+            <input value={examGroup} onChange={(e) => setExamGroup(e.target.value)} placeholder="Group 2" style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+          </label>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Paper name
+            <input value={paper} onChange={(e) => setPaper(e.target.value)} placeholder="e.g. Preliminary Paper" style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }} />
+          </label>
+        </div>
+        <p className="muted" style={{ fontSize: '0.78rem', marginTop: 6 }}>
+          For a real previous-year paper, set the year and exam identity. The pipeline preserves paper, page and question-number provenance so every imported PYQ can be audited back to its source.
+        </p>
       </div>
 
       {error && <div className="card" style={{ background: 'var(--warm-tint)' }}><p>{error}</p></div>}

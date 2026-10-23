@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,11 +25,14 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nova.tnpsc.TnpscApplication
+import com.nova.tnpsc.data.features.ReportRequest
 import com.nova.tnpsc.data.practice.AchievementUnlock
 import com.nova.tnpsc.data.practice.AttemptRequest
 import com.nova.tnpsc.data.practice.AttemptResponse
@@ -60,10 +66,15 @@ private val LETTERS = listOf("A", "B", "C", "D", "E", "F")
 @Composable
 fun PracticeScreen(topic: String, mode: String) {
     val app = LocalContext.current.applicationContext as TnpscApplication
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     var question by remember { mutableStateOf<QuestionResponse?>(null) }
     var selected by remember { mutableStateOf<Int?>(null) }
+    var confidence by remember { mutableStateOf<Int?>(null) }
     var result by remember { mutableStateOf<AttemptResponse?>(null) }
+    var bookmarked by remember { mutableStateOf(false) }
+    var reportOpen by remember { mutableStateOf(false) }
+    var reportSent by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var empty by remember { mutableStateOf(false) }
@@ -82,7 +93,11 @@ fun PracticeScreen(topic: String, mode: String) {
         error = null
         empty = false
         selected = null
+        confidence = null
         result = null
+        bookmarked = false
+        reportOpen = false
+        reportSent = false
         aiHint = null
         aiHintName = null
         aiUnavailable = false
@@ -115,12 +130,26 @@ fun PracticeScreen(topic: String, mode: String) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${question?.topicName ?: topic} · ${mode.lowercase()}",
                     style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    // Long topic names ("Directive Principles of State Policy")
+                    // would otherwise push the difficulty badge off-screen
+                    // in this SpaceBetween row -- weight lets the title
+                    // truncate instead, badge always stays visible and fixed-width.
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                question?.let { Text(it.difficulty, color = NovaSuccess, fontWeight = FontWeight.SemiBold) }
+                question?.let {
+                    Text(
+                        it.difficulty,
+                        color = NovaSuccess,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
         }
 
@@ -149,6 +178,23 @@ fun PracticeScreen(topic: String, mode: String) {
             item { Text("Loading…", color = NovaInkMuted) }
         } else {
             val q = question!!
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = {
+                        val next = !bookmarked
+                        bookmarked = next
+                        scope.launch {
+                            runCatching {
+                                if (next) app.featureApi.addBookmark(mapOf("questionId" to q.questionId))
+                                else app.featureApi.removeBookmark(q.questionId)
+                            }
+                        }
+                    }) { Text(if (bookmarked) "★ Saved" else "☆ Save for later") }
+                }
+            }
             item { Text(q.prompt, style = MaterialTheme.typography.headlineLarge) }
 
             q.imageData?.let { imageData ->
@@ -174,6 +220,18 @@ fun PracticeScreen(topic: String, mode: String) {
 
             if (result == null) {
                 item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("How sure are you?", color = NovaInkMuted, style = MaterialTheme.typography.bodySmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            (1..5).forEach { level ->
+                                OutlinedButton(onClick = { confidence = level }) {
+                                    Text(if (confidence == level) "✓ $level" else level.toString())
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
                     val scope = androidx.compose.runtime.rememberCoroutineScope()
                     Button(
                         enabled = selected != null,
@@ -189,6 +247,7 @@ fun PracticeScreen(topic: String, mode: String) {
                                             questionId = q.questionId,
                                             selectedIndex = idx,
                                             timeTakenMs = timeTakenMs,
+                                            confidence = confidence,
                                             mode = mode,
                                         )
                                     )
@@ -283,13 +342,49 @@ fun PracticeScreen(topic: String, mode: String) {
                 }
 
                 item {
+                    if (reportSent) {
+                        Text("Thanks — this question has been flagged for review.", color = NovaInkMuted, style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        TextButton(onClick = { reportOpen = true }) { Text("Report this question") }
+                    }
+                    if (reportOpen) {
+                        AlertDialog(
+                            onDismissRequest = { reportOpen = false },
+                            title = { Text("What's wrong with this question?") },
+                            text = {
+                                Column {
+                                    listOf(
+                                        "wrong_answer" to "The marked answer is wrong",
+                                        "wrong_explanation" to "The explanation is wrong",
+                                        "unclear" to "The question is unclear",
+                                        "multiple_correct" to "More than one option looks correct",
+                                        "outdated" to "The information is outdated",
+                                        "typo" to "Typo or formatting error",
+                                        "wrong_topic" to "Wrong topic",
+                                        "other" to "Something else",
+                                    ).forEach { (reason, label) ->
+                                        TextButton(onClick = {
+                                            reportOpen = false
+                                            scope.launch {
+                                                val response = runCatching { app.featureApi.report(q.questionId, ReportRequest(reason)) }.getOrNull()
+                                                if (response?.isSuccessful == true) reportSent = true
+                                            }
+                                        }) { Text(label) }
+                                    }
+                                }
+                            },
+                            confirmButton = { TextButton(onClick = { reportOpen = false }) { Text("Cancel") } },
+                        )
+                    }
+                }
+                item {
                     OutlinedButton(onClick = { reloadKey += 1 }) { Text("Next question") }
                 }
             }
         }
 
         item {
-            Text("$correctCount of $answered correct this session", color = NovaInkMuted, style = MaterialTheme.typography.bodySmall)
+            Text("$correctCount of $answered correct this session",  color = NovaInkMuted, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

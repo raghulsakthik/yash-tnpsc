@@ -72,7 +72,7 @@ export async function getAiTutorResponse(learnerId, task, params = {}) {
   const { context, cacheTopicId, cacheQuestionId, noCache } = await resolveContext(learnerId, task, params);
 
   if (!noCache) {
-    const cached = await findCachedResponse({ topicId: cacheTopicId, type: task, questionId: cacheQuestionId });
+    const cached = await findCachedResponse({ learnerId, topicId: cacheTopicId, type: task, questionId: cacheQuestionId });
     if (cached) {
       return { task, topicId: cacheTopicId, questionId: cacheQuestionId, source: 'cache', text: cached.response, model: cached.model };
     }

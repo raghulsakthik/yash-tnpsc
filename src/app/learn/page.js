@@ -7,17 +7,31 @@ import { StatusBadge, ProgressBar } from '../_components/ui';
 
 export default function Learn() {
   const [subjects, setSubjects] = useState(null);
+  const [curriculum, setCurriculum] = useState(null);
   const [error, setError] = useState(null);
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/learn', { cache: 'no-store' })
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok) throw new Error(data.message ?? 'Could not load subjects');
+    Promise.all([fetch('/api/learn', { cache: 'no-store' }), fetch('/api/curriculum/active', { cache: 'no-store' })])
+      .then(async ([subjectRes, curriculumRes]) => {
+        const data = await subjectRes.json();
+        if (!subjectRes.ok) throw new Error(data.message ?? 'Could not load subjects');
         setSubjects(data.subjects);
+        if (curriculumRes.ok) setCurriculum(await curriculumRes.json());
       })
       .catch((err) => setError(err.message));
   }, []);
+
+  async function completeUnit(unitId) {
+    setCompleting(true);
+    try {
+      const res = await fetch('/api/curriculum/complete', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ unitId }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not complete the unit');
+      const refreshed = await fetch('/api/curriculum/active', { cache: 'no-store' });
+      if (refreshed.ok) setCurriculum(await refreshed.json());
+    } catch (err) { setError(err.message); } finally { setCompleting(false); }
+  }
 
   return (
     <AppShell>
@@ -31,6 +45,22 @@ export default function Learn() {
         </div>
       )}
       {!error && !subjects && <p className="muted" style={{ marginTop: 14 }}>Loading…</p>}
+
+      {curriculum?.current && (
+        <div className="card" style={{ marginTop: 24, border: '1px solid var(--primary)' }}>
+          <span className="eyebrow">Adaptive curriculum · Today</span>
+          <h2 style={{ marginTop: 8 }}>{curriculum.current.phaseName} · Week {curriculum.current.weekNumber} · Day {curriculum.current.dayNumber}</h2>
+          <p className="muted" style={{ marginTop: 8 }}>{curriculum.current.dayTitle} — {curriculum.current.dayPurpose}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+            {curriculum.units.map((unit) => (
+              <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: 12, border: '1px solid var(--border)', borderRadius: 10 }}>
+                <div><strong>{unit.title}</strong><div className="muted" style={{ marginTop: 4, fontSize: '0.85rem' }}>{unit.unitType.replaceAll('_', ' ')}</div></div>
+                {unit.progressStatus === 'COMPLETED' ? <span className="muted">Completed ✓</span> : unit.actionUrl && (unit.topicId || unit.unitType === 'TEST') ? <Link href={unit.actionUrl} className="btn btn-primary" style={{ textDecoration: 'none' }}>Start →</Link> : <button type="button" disabled={completing} onClick={() => completeUnit(unit.id)}>{completing ? 'Saving…' : 'Complete'}</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {subjects && (
         <div className="grid-2" style={{ marginTop: 24 }}>

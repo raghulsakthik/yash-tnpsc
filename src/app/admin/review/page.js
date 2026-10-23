@@ -33,7 +33,8 @@ function BatchCard({ batch, onDecide }) {
         <div>
           <span className="eyebrow">{batch.topicName}</span>
           <p style={{ marginTop: 6, fontWeight: 600 }}>
-            {batch.questions.length} questions · {batch.generationSource} · quality {Math.round(batch.avgQualityScore * 100)}%
+            {batch.questions.length} questions · {(batch.resources ?? []).length} study notes · {batch.generationSource}
+            {batch.avgQualityScore != null ? ` · quality ${Math.round(batch.avgQualityScore * 100)}%` : ''}
           </p>
           <p className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>
             Generated {new Date(batch.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
@@ -57,6 +58,11 @@ function BatchCard({ batch, onDecide }) {
           {batch.questions.map((q) => (
             <div key={q.id} className="card-sunk">
               <p style={{ fontWeight: 600 }}>{q.prompt}</p>
+              {(q.source_year || q.paper || q.question_number || q.source_page) && (
+                <p className="muted" style={{ marginTop: 6, fontSize: '0.75rem' }}>
+                  PYQ provenance: {q.exam_code || 'TNPSC'} · {q.exam_group || 'Exam'} · {q.source_year || '—'} · {q.paper || q.source || '—'} · Q{q.question_number || '—'} · page {q.source_page || '—'}
+                </p>
+              )}
               <ul style={{ marginTop: 8, paddingLeft: 20, fontSize: '0.85rem' }}>
                 {q.options.map((o, i) => (
                   <li key={i} style={{ fontWeight: i === q.answer_index ? 700 : 400, color: i === q.answer_index ? 'var(--success)' : 'inherit' }}>
@@ -70,6 +76,17 @@ function BatchCard({ batch, onDecide }) {
                   Common mistake: {q.common_mistake}
                 </p>
               )}
+            </div>
+          ))}
+          {(batch.resources ?? []).map((r) => (
+            <div key={r.id} className="card-sunk">
+              <p style={{ fontWeight: 600 }}>Study material: {r.title}</p>
+              <p className="muted" style={{ marginTop: 8, fontSize: '0.84rem', whiteSpace: 'pre-wrap' }}>
+                {r.body}
+              </p>
+              <p className="muted" style={{ marginTop: 6, fontSize: '0.75rem' }}>
+                Source: {r.source} · status: {r.status}
+              </p>
             </div>
           ))}
         </div>

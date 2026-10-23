@@ -15,17 +15,23 @@ function sweep() {
   }
 }
 
-export function createPendingQuestion(correctIndex) {
+export function createPendingQuestion(correctIndex, { learnerId, mode } = {}) {
   sweep();
   const token = crypto.randomBytes(16).toString('hex');
-  pending.set(token, { correctIndex, expiresAt: Date.now() + TTL_MS });
+  pending.set(token, { correctIndex, learnerId: learnerId ?? null, mode: mode ?? null, expiresAt: Date.now() + TTL_MS });
   return token;
 }
 
-export function resolvePendingQuestion(token) {
+export function resolvePendingQuestion(token, { learnerId, mode } = {}) {
   const entry = pending.get(token);
   if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    pending.delete(token);
+    return null;
+  }
+  if (entry.learnerId && entry.learnerId !== learnerId) return null;
+  if (entry.mode && entry.mode !== mode) return null;
+  // Consume only after the caller has presented the right learner + mode.
   pending.delete(token);
-  if (entry.expiresAt < Date.now()) return null;
-  return entry.correctIndex;
+  return entry;
 }

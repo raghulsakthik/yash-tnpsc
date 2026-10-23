@@ -1,9 +1,0 @@
--- Phase 25: pure content, zero new code — the same precedent Phase 20 set
--- for proving the content pipeline is subject-agnostic, now applied to
--- Phase 22's existing, unchanged game engine. "Constitution Match" is one
--- of the named subject-specific games in the consolidated 25-29 brief.
---
--- No schema change here — the real game_definition row itself (its real
--- target_topic_ids resolved from the real gs.indian-polity chapter,
--- Phase 20's 11 real, authored questions) is seeded by scripts/seed.mjs
--- alongside V24's two, for the same reason: migrate runs before seed.

@@ -31,7 +31,7 @@ export async function GET(request, { params }) {
   }
 
   const { prompt, revealPrompt, hint, options, correctIndex, memorize } = generateQuestion(mode);
-  const token = createPendingQuestion(correctIndex);
+  const token = createPendingQuestion(correctIndex, { learnerId, mode });
 
   return NextResponse.json({ token, prompt, revealPrompt, hint, options, memorize: Boolean(memorize) });
 }

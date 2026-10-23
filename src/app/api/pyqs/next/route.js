@@ -43,8 +43,9 @@ export async function GET(request) {
     }
 
     const { rows: candidates } = await query(
-      `SELECT q.id, q.topic_id, t.name AS topic_name, q.prompt, q.options, q.image_data,
-              q.difficulty::float8 AS difficulty, q.estimated_seconds, q.source, q.source_year,
+      `SELECT q.id, q.topic_id, t.name AS topic_name, c.id AS chapter_id, c.name AS chapter_name, s.id AS subject_id, s.name AS subject_name,
+              q.prompt, q.options, q.image_data, q.difficulty::float8 AS difficulty, q.estimated_seconds, q.source, q.source_year,
+              q.exam_code, q.exam_group, q.paper, q.question_number, q.source_page,
               COUNT(a.id)::int AS seen_count,
               COALESCE(
                 (SELECT COUNT(*) FROM question_attempt a2
@@ -53,9 +54,11 @@ export async function GET(request) {
               )::int AS attempts_since_last_seen
          FROM question q
          JOIN topic t ON t.id = q.topic_id
+         JOIN chapter c ON c.id = t.chapter_id
+         JOIN subject s ON s.id = c.subject_id
          LEFT JOIN question_attempt a ON a.question_id = q.id AND a.learner_id = $1
         WHERE ${conditions.join(' AND ')}
-        GROUP BY q.id, t.name`,
+        GROUP BY q.id, t.name, c.id, c.name, s.id, s.name`,
       params
     );
 
@@ -81,6 +84,15 @@ export async function GET(request) {
       difficulty: difficultyBand(chosen.difficulty),
       sourceYear: chosen.source_year,
       source: chosen.source,
+      subjectId: chosen.subject_id,
+      subjectName: chosen.subject_name,
+      chapterId: chosen.chapter_id,
+      chapterName: chosen.chapter_name,
+      examCode: chosen.exam_code,
+      examGroup: chosen.exam_group,
+      paper: chosen.paper,
+      questionNumber: chosen.question_number,
+      sourcePage: chosen.source_page,
     });
   } catch (err) {
     return NextResponse.json({ code: 'PYQ_NEXT_FAILED', message: err.message }, { status: 500 });

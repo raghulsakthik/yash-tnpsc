@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+/* Smooth theme transition styles across backgrounds, borders, text, and shadows */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 450ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 450ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 350ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 450ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 350ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 350ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* View transition enhancements when supported */
+::view-transition-old(root) {
+  animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both fadeOut;
+}
+::view-transition-new(root) {
+  animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both fadeIn;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes themeGlow {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+.animate-theme-glow {
+  animation: themeGlow 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Celebratory Animations for Milestone Alerts */
+@keyframes celebratoryPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35), 0 4px 18px -2px rgba(245, 158, 11, 0.2);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18), 0 8px 24px -2px rgba(245, 158, 11, 0.32);
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes shimmerGleam {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+}
+
+@keyframes sparkleTwinkle {
+  0%, 100% {
+    transform: scale(0.85) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes badgeGlowBorder {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.85);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 1);
+  }
+}
+
+.celebrate-alert-item {
+  animation: celebratoryPulse 3.5s ease-in-out infinite, badgeGlowBorder 2.5s ease-in-out infinite;
+}
+
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmerGleam 2.8s infinite;
+  pointer-events: none;
+}
+
+.animate-sparkle-twinkle {
+  animation: sparkleTwinkle 2.2s ease-in-out infinite;
+}
+

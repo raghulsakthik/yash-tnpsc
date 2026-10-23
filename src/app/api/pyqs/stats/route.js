@@ -21,12 +21,12 @@ export async function GET(request) {
   try {
     const [{ rows: byYear }, { rows: byTopic }, { rows: totals }] = await Promise.all([
       query(
-        `SELECT q.source_year AS year, COUNT(*)::int AS total,
+        `SELECT q.source_year AS year, q.exam_code, q.exam_group, q.paper, COUNT(*)::int AS total,
                 COUNT(DISTINCT qa.question_id)::int AS attempted
            FROM question q
            LEFT JOIN question_attempt qa ON qa.question_id = q.id AND qa.learner_id = $1
           WHERE q.status = 'PUBLISHED' AND q.source_year IS NOT NULL
-          GROUP BY q.source_year
+          GROUP BY q.source_year, q.exam_code, q.exam_group, q.paper
           ORDER BY q.source_year DESC`,
         [learnerId]
       ),
@@ -57,7 +57,7 @@ export async function GET(request) {
       totalQuestions: byTopic.reduce((sum, r) => sum + r.total, 0),
       attempted: t.attempted,
       accuracy: t.attempted > 0 ? Math.round((t.correct / t.attempted) * 100) : null,
-      byYear: byYear.map((r) => ({ year: r.year, total: r.total, attempted: r.attempted })),
+      byYear: byYear.map((r) => ({ year: r.year, examCode: r.exam_code, examGroup: r.exam_group, paper: r.paper, total: r.total, attempted: r.attempted })),
       byTopic: byTopic.map((r) => ({
         topicId: r.topic_id,
         topicName: r.topic_name,

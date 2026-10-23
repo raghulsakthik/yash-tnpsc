@@ -16,7 +16,7 @@ const DEEPEN = 'DEEPEN';
  * Two modes, picked automatically from the signals already on hand:
  *  - wrong answer -> a rescue explanation from a different angle
  *  - correct but slow or low-confidence -> a "make this automatic" tip
- * Both are cached per (question, type) and reused for every future learner
+ * Both are cached per learner, question, and type and reused for every future learner
  * who hits the same situation on the same question -- see the ai_interaction
  * table. Any failure -- no API key, network error, bad response -- returns
  * { available: false } with a normal 200, never an error: the deterministic
@@ -60,11 +60,11 @@ export async function POST(request) {
     const learnerName = learnerNameRows[0]?.name ?? 'there';
 
     const { rows: cached } = await query(
-      `SELECT response FROM ai_interaction WHERE question_id = $1 AND type = $2`,
-      [questionId, type]
+      `SELECT response FROM ai_interaction WHERE learner_id = $1 AND question_id = $2 AND type = $3`,
+      [learnerId, questionId, type]
     );
     if (cached.length > 0) {
-      // Shared across every learner who hits this question, so her real
+      // Scoped to the current learner and question, so her real
       // name is applied fresh here rather than trusted to be baked
       // correctly into cached text generated for whoever asked first.
       return NextResponse.json({ available: true, text: cached[0].response, learnerName, cached: true });
@@ -116,7 +116,7 @@ export async function POST(request) {
     await query(
       `INSERT INTO ai_interaction (learner_id, topic_id, question_id, type, prompt_context, response, model)
        VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7)
-       ON CONFLICT (question_id, type) DO NOTHING`,
+       ON CONFLICT (learner_id, question_id, type) WHERE question_id IS NOT NULL DO NOTHING`,
       [learnerId, q.topic_id, questionId, type, JSON.stringify(context), result.text, result.model]
     );
 

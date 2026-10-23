@@ -36,8 +36,8 @@ android {
         debug {
             // 10.0.2.2 is the Android emulator's alias for the host
             // machine's localhost -- this is what lets the emulator reach
-            // `npm run dev` running on the host.
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/\"")
+            // `npm run dev` running on the host (near-carriage uses port 3001).
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3001/\"")
         }
         release {
             isMinifyEnabled = false
@@ -86,6 +86,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.1")
     // Forces a modern androidx.fragment past a transitive 1.1.0 pulled in

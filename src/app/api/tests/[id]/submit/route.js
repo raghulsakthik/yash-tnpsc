@@ -29,7 +29,7 @@ export async function POST(request, { params }) {
   const client = await pool.connect();
 
   try {
-    const { rows: testRows } = await client.query(`SELECT status, question_count FROM test WHERE id = $1`, [id]);
+    const { rows: testRows } = await client.query(`SELECT status, question_count FROM test WHERE id = $1 AND learner_id = $2`, [id, learnerId]);
     if (testRows.length === 0) {
       return NextResponse.json({ code: 'TEST_NOT_FOUND', message: `No test ${id}` }, { status: 404 });
     }

@@ -7,24 +7,39 @@ import { classifyTopics } from '../domain/diagnostic.mjs';
 import { TopicClassification } from '../domain/enums.mjs';
 import { getTopicState } from './learnerStateService.mjs';
 import { NotFoundError } from './errors.mjs';
-import { findPrerequisitesForTopic } from '../repository/curriculumRepository.mjs';
+import { findAllPrerequisiteEdges } from '../repository/curriculumRepository.mjs';
 import { findAccuracyForTopics } from '../repository/learnerStateRepository.mjs';
 import { isRevisionDue } from '../repository/adaptiveDecisionRepository.mjs';
 
 async function classifyForTopic(learnerId, topicId, accuracy, attemptCount) {
-  const prereqEdges = await findPrerequisitesForTopic(topicId);
-  const prereqIds = prereqEdges.map((e) => e.prerequisite_topic_id);
-  const prereqAccuracyRows = await findAccuracyForTopics(learnerId, prereqIds);
-  const accuracyByTopic = new Map(prereqAccuracyRows.map((r) => [r.topic_id, r.accuracy]));
-  for (const id of prereqIds) if (!accuracyByTopic.has(id)) accuracyByTopic.set(id, 0);
-
-  const prerequisiteGraph = new Map([
-    [topicId, prereqEdges.map((e) => ({ id: e.prerequisite_topic_id, strength: Number(e.strength) }))],
-  ]);
-  const topics = [{ topicId, accuracy: accuracy * 100, questionCount: attemptCount }];
-
-  const [classification] = classifyTopics(topics, prerequisiteGraph);
-  return classification;
+  const edges = await findAllPrerequisiteEdges();
+  const graph = new Map();
+  for (const edge of edges) {
+    const list = graph.get(edge.topic_id) ?? [];
+    list.push({ id: edge.prerequisite_topic_id, strength: Number(edge.strength) });
+    graph.set(edge.topic_id, list);
+  }
+  // Build the full ancestor closure, not only the immediate parents. A deep
+  // prerequisite must be allowed to become the root-cause signal; otherwise
+  // an unobserved grandparent would incorrectly look like a 0% failure.
+  const ids = new Set([topicId]);
+  const queue = [topicId];
+  while (queue.length) {
+    const current = queue.shift();
+    for (const edge of edges) {
+      if (edge.topic_id !== current || ids.has(edge.prerequisite_topic_id)) continue;
+      ids.add(edge.prerequisite_topic_id);
+      queue.push(edge.prerequisite_topic_id);
+    }
+  }
+  const rows = await findAccuracyForTopics(learnerId, [...ids]);
+  const accuracyByTopic = new Map(rows.map((r) => [r.topic_id, r.accuracy]));
+  const topics = [...ids].map((id) => ({
+    topicId: id,
+    accuracy: id === topicId ? accuracy * 100 : (accuracyByTopic.get(id) ?? 0) * 100,
+    questionCount: id === topicId ? attemptCount : (accuracyByTopic.has(id) ? 1 : 0),
+  }));
+  return classifyTopics(topics, graph).find((c) => c.topicId === topicId);
 }
 
 /**

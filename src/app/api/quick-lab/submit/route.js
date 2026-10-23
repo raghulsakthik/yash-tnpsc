@@ -31,13 +31,13 @@ export async function POST(request) {
     return NextResponse.json({ code: 'MISSING_FIELDS', message: 'token and selectedIndex are required' }, { status: 400 });
   }
 
-  const correctIndex = resolvePendingQuestion(token);
-  if (correctIndex === null) {
+  const pending = resolvePendingQuestion(token, { learnerId, mode });
+  if (pending === null) {
     return NextResponse.json({ code: 'TOKEN_EXPIRED', message: 'This question has expired' }, { status: 410 });
   }
 
-  const correct = selectedIndex === correctIndex;
+  const correct = selectedIndex === pending.correctIndex;
   await recordEvent(learnerId, 'QUICKLAB_ANSWERED', null, { mode, correct, timeTakenMs });
 
-  return NextResponse.json({ correct, correctIndex });
+  return NextResponse.json({ correct, correctIndex: pending.correctIndex });
 }

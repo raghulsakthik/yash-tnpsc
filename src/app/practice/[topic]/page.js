@@ -1,11 +1,14 @@
 'use client';
 
-import { use } from 'react';
+import { Suspense, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LiveQuestion from '../../_components/LiveQuestion';
 
-export default function Practice({ params }) {
+function PracticeInner({ params }) {
   const { topic } = use(params);
+  const searchParams = useSearchParams();
+  const unitId = searchParams.get('unit');
 
   return (
     <main className="narrow" style={{ margin: '0 auto', paddingBottom: 60, paddingLeft: 24, paddingRight: 24 }}>
@@ -22,8 +25,13 @@ export default function Practice({ params }) {
           nextQuestionUrl={`/api/questions/next?topic=${topic}`}
           submitUrl="/api/attempts"
           mode="PRACTICE"
+          completionUnitId={unitId}
         />
       </div>
     </main>
   );
+}
+
+export default function Practice({ params }) {
+  return <Suspense fallback={null}><PracticeInner params={params} /></Suspense>;
 }

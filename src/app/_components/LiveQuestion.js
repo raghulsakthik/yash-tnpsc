@@ -23,6 +23,7 @@ export default function LiveQuestion({
   emptyTitle = 'Nothing here right now',
   emptyMessage = 'Come back later.',
   topicLabel,
+  completionUnitId = null,
 }) {
   const [question, setQuestion] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -39,6 +40,9 @@ export default function LiveQuestion({
   const [aiUnavailable, setAiUnavailable] = useState(false);
   const [newAchievements, setNewAchievements] = useState([]);
   const [bookmarked, setBookmarked] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('wrong_answer');
+  const [reportSent, setReportSent] = useState(false);
   const lastTimeTakenMs = useRef(null);
 
   const shownAt = useRef(Date.now());
@@ -55,6 +59,8 @@ export default function LiveQuestion({
     setNewAchievements([]);
     setAiUnavailable(false);
     setBookmarked(false);
+    setReportOpen(false);
+    setReportSent(false);
     try {
       const res = await fetch(nextQuestionUrl, { cache: 'no-store' });
       const data = await res.json();
@@ -99,9 +105,17 @@ export default function LiveQuestion({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not record that answer');
       setResult(data);
-      setAnswered((n) => n + 1);
+      const nextAnswered = answered + 1;
+      setAnswered(nextAnswered);
       if (data.correct) setCorrectCount((n) => n + 1);
       setNewAchievements(data.newAchievements ?? []);
+      if (completionUnitId && nextAnswered >= sessionLength) {
+        await fetch('/api/curriculum/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ unitId: completionUnitId, score: ((correctCount + (data.correct ? 1 : 0)) / nextAnswered) * 100 }),
+        });
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -315,7 +329,62 @@ export default function LiveQuestion({
 
           <AchievementUnlockBanner achievements={newAchievements} />
 
-          <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={loadNext} disabled={loading}>
+          {reportSent ? (
+            <p className="muted" style={{ marginTop: 16, fontSize: '0.85rem' }}>Thanks -- this has been flagged for review.</p>
+          ) : reportOpen ? (
+            <div className="card-sunk" style={{ marginTop: 16 }}>
+              <span className="eyebrow">What's wrong with this question?</span>
+              <select
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                style={{ display: 'block', width: '100%', marginTop: 10, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'inherit' }}
+              >
+                <option value="wrong_answer">The marked answer is wrong</option>
+                <option value="wrong_explanation">The explanation is wrong</option>
+                <option value="unclear">The question is unclear</option>
+                <option value="multiple_correct">More than one option looks correct</option>
+                <option value="no_correct_answer">None of the options are correct</option>
+                <option value="outdated">The information is outdated</option>
+                <option value="typo">Typo or formatting error</option>
+                <option value="wrong_topic">This is filed under the wrong topic</option>
+                <option value="duplicate">This is a duplicate of another question</option>
+                <option value="other">Something else</option>
+              </select>
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button type="button" className="btn" onClick={() => setReportOpen(false)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/questions/${question.questionId}/report`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: reportReason }),
+                      });
+                    } catch {
+                      // Best-effort -- the report button isn't worth blocking the session on a network blip.
+                    }
+                    setReportOpen(false);
+                    setReportSent(true);
+                  }}
+                >
+                  Submit report
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn"
+              style={{ marginTop: 16, background: 'none', border: 'none', color: 'var(--ink-muted)', fontSize: '0.8rem', padding: 0 }}
+              onClick={() => setReportOpen(true)}
+            >
+              Report this question
+            </button>
+          )}
+
+          <button type="button" className="btn btn-primary" style={{ marginTop: 16, display: 'block' }} onClick={loadNext} disabled={loading}>
             Next question
           </button>
         </div>

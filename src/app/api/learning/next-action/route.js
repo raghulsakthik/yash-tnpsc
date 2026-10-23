@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
-import { getInitialLearningAction } from '../../../../services/learningPlanService.mjs';
+import { requireUser } from '../../../../lib/auth.mjs';
+import { decideNextActionForTopic } from '../../../../services/adaptiveDecisionService.mjs';
+import { selectDailyTopicForLearner } from '../../../../services/dailyPlanService.mjs';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/learning/next-action
- *
- * The Foundation Learning Engine's one valid initial action: of the
- * foundation-adjacent topics, which are actually safe to start right now
- * (PrerequisiteGate), which one is neediest among those (LessonSelector),
- * and at what difficulty (DifficultySelector). Works for a learner with no
- * state at all — this is the entry point before /api/plan/today has
- * anything real to work with.
- */
-export async function GET() {
+export async function GET(request) {
+  const user = await requireUser();
+  if (!user) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Login required' }, { status: 401 });
+  const requestedTopic = new URL(request.url).searchParams.get('topic');
   try {
-    const action = await getInitialLearningAction(LEARNER_ID);
-    return NextResponse.json(action);
+    let topicId = requestedTopic;
+    if (!topicId) {
+      const { selectedTopic } = await selectDailyTopicForLearner(user.id);
+      topicId = selectedTopic?.id;
+    }
+    if (!topicId) return NextResponse.json({ code: 'NO_LEARNING_TOPIC', message: 'No published learning topic is available.' }, { status: 404 });
+    return NextResponse.json(await decideNextActionForTopic(user.id, topicId));
   } catch (err) {
     return NextResponse.json({ code: 'NEXT_ACTION_FAILED', message: err.message }, { status: 500 });
   }

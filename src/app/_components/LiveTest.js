@@ -17,7 +17,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
  * work. Nothing is captured until the learner explicitly clicks through —
  * the browser's own permission prompts are the actual consent mechanism.
  */
-export default function LiveTest({ templateId = null }) {
+export default function LiveTest({ templateId = null, completionUnitId = null }) {
   const router = useRouter();
   const proctoring = useProctoring();
   const [phase, setPhase] = useState('consent'); // consent | starting | active | denied
@@ -85,6 +85,22 @@ export default function LiveTest({ templateId = null }) {
       const res = await fetch(`/api/tests/${testId}/submit`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not submit the test');
+      if (completionUnitId) {
+        await fetch('/api/curriculum/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            unitId: completionUnitId,
+            score: Number(data.score ?? data.percentage ?? 0),
+            topicPerformance: (data.perTopic ?? []).map((item) => ({
+              topicId: item.topicId,
+              topicName: item.topicName,
+              correct: item.correct,
+              total: item.total,
+            })),
+          }),
+        });
+      }
       proctoring.stopRecording();
       try {
         sessionStorage.setItem(`test-new-achievements:${testId}`, JSON.stringify(data.newAchievements ?? []));

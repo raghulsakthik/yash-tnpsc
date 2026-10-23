@@ -1,3 +1,4 @@
+import { env } from './env.mjs';
 import { query, recordEvent } from './db.mjs';
 import { computeStreak } from '../domain/progress.mjs';
 import { dateKeyInAppTimezone, hourInAppTimezone } from './timezone.mjs';
@@ -99,7 +100,7 @@ function motivationEmailHtml({ subject, body }) {
       <p style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B6459; margin: 0 0 12px;">Yash</p>
       <h2 style="font-size: 22px; margin: 0 0 16px; line-height: 1.3;">${subject}</h2>
       ${paragraphs}
-      <a href="${process.env.APP_URL ?? 'http://localhost:3000'}"
+      <a href="${env.appUrl || 'http://localhost:3000'}"
          style="display: inline-block; background: #2F3192; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;">
         Open the app
       </a>
@@ -108,8 +109,8 @@ function motivationEmailHtml({ subject, body }) {
 
 /** All `role = 'learner'` accounts -- test/admin accounts never get engagement nudges. */
 async function learnerAccounts() {
-  const { rows } = await query(`SELECT learner_id FROM account WHERE role = 'learner'`);
-  return rows.map((r) => r.learner_id);
+  const { rows } = await query(`SELECT id FROM app_user WHERE role IN ('STUDENT','TEACHER') AND status = 'ACTIVE'`);
+  return rows.map((r) => r.id);
 }
 
 /**

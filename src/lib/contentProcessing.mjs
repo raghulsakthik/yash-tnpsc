@@ -3,6 +3,7 @@ import { getSyllabusTree } from './adminContent.mjs';
 import { extractText } from './documentExtract.mjs';
 import { renderPdfDiagramToPng } from './pdfRender.mjs';
 import { classifyContent } from './ai/contentClassifier.mjs';
+import { putObject, getObject, deleteObject, contentObjectKey, isObjectStorageConfigured } from './objectStorage.mjs';
 
 export class ContentProcessingError extends Error {
   constructor(code, message) {
@@ -59,11 +60,14 @@ export async function createProcessingBatch({ adminId, files }) {
     );
     const batchId = batches[0].id;
     for (const file of files) {
+      if (!isObjectStorageConfigured()) throw new ContentProcessingError('OBJECT_STORAGE_UNAVAILABLE', 'Object storage is not configured.');
+      const objectKey = contentObjectKey(batchId, file.fileName);
+      const stored = await putObject(objectKey, file.data, file.mimeType ?? 'application/octet-stream');
       await client.query(
         `INSERT INTO content_processing_job
-          (batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_data, created_by, status, stage, progress)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'QUEUED', 'QUEUED', 0)`,
-        [batchId, file.fileName, file.sourceYear ?? null, file.examCode ?? null, file.examGroup ?? null, file.paper ?? null, file.mimeType ?? null, file.data, adminId]
+          (batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_object_key, source_size_bytes, source_sha256, created_by, status, stage, progress)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'QUEUED', 'QUEUED', 0)`,
+        [batchId, file.fileName, file.sourceYear ?? null, file.examCode ?? null, file.examGroup ?? null, file.paper ?? null, file.mimeType ?? null, stored.key, stored.size, stored.sha256, adminId]
       );
     }
     await client.query('COMMIT');
@@ -81,7 +85,7 @@ export async function processJob(jobId) {
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
-      `SELECT id, batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_data, status
+      `SELECT id, batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_data, source_object_key, status
          FROM content_processing_job WHERE id = $1 FOR UPDATE`,
       [jobId]
     );
@@ -95,7 +99,7 @@ export async function processJob(jobId) {
     await client.query(`UPDATE content_processing_batch SET status = 'PROCESSING', updated_at = now() WHERE id = $1`, [job.batch_id]);
     await client.query('COMMIT');
 
-    const buffer = job.source_data;
+    const buffer = job.source_object_key ? await getObject(job.source_object_key) : job.source_data;
     if (!buffer || buffer.length === 0) throw new ContentProcessingError('EMPTY_FILE', 'The stored upload is empty.');
 
     const { pages, isPdf } = await extractText(buffer, job.file_name);
@@ -128,6 +132,7 @@ export async function processJob(jobId) {
       completed_at: new Date(),
     });
     await query(`UPDATE content_processing_job SET source_data = NULL WHERE id = $1`, [jobId]);
+    if (job.source_object_key) { try { await deleteObject(job.source_object_key); } catch {} }
     await updateBatch(job.batch_id);
   } catch (err) {
     const message = err?.message ?? 'Processing failed';
@@ -138,6 +143,22 @@ export async function processJob(jobId) {
     } catch {}
     throw err;
   }
+}
+
+export async function claimNextProcessingJob() {
+  const { rows } = await query(`
+    UPDATE content_processing_job
+       SET status = 'PROCESSING', stage = 'EXTRACTING', started_at = COALESCE(started_at, now()), updated_at = now()
+     WHERE id = (
+       SELECT id FROM content_processing_job
+        WHERE status = 'QUEUED'
+           OR (status = 'PROCESSING' AND updated_at < now() - interval '10 minutes')
+        ORDER BY CASE WHEN status = 'PROCESSING' THEN 0 ELSE 1 END, created_at
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+     )
+     RETURNING id`, []);
+  return rows[0]?.id ?? null;
 }
 
 export async function processBatch(batchId) {

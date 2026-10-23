@@ -13,6 +13,7 @@ data class ProfileResponse(
     val exam: String? = null,
     val language: String? = null,
     val dailyGoalMinutes: Int = 30,
+    val onboarded: Boolean = true,
     val streak: Int = 0,
     val longestStreak: Int = 0,
     val questionsSolved: Int = 0,

@@ -1,7 +1,8 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS } from '../../../../../lib/permissions.mjs';
-import { createProcessingBatch, processBatch, ContentProcessingError } from '../../../../../lib/contentProcessing.mjs';
+import { checkRateLimit } from '../../../../../lib/rateLimit.mjs';
+import { createProcessingBatch, ContentProcessingError } from '../../../../../lib/contentProcessing.mjs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -11,6 +12,8 @@ const allowed = new Set(['.pdf', '.docx', '.txt', '.md']);
 export async function POST(request) {
   const admin = await requirePermission(request, PERMISSIONS.CONTENT_CREATE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  const rate = await checkRateLimit({ key: `content-process:${admin.id}`, limit: 20, windowSeconds: 60 });
+  if (!rate.allowed) return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many content-processing requests.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } });
   try {
     const body = await request.json();
     const files = Array.isArray(body.files) ? body.files : [];
@@ -27,7 +30,6 @@ export async function POST(request) {
       return { fileName, mimeType: file.mimeType ?? null, sourceYear: Number.isInteger(file.sourceYear) ? file.sourceYear : null, examCode: file.examCode ?? null, examGroup: file.examGroup ?? null, paper: file.paper ?? null, data };
     });
     const batchId = await createProcessingBatch({ adminId: admin.id, files: normalized });
-    after(async () => { await processBatch(batchId); });
     return NextResponse.json({ batchId, status: 'QUEUED', fileCount: normalized.length }, { status: 202 });
   } catch (err) {
     if (err instanceof ContentProcessingError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });

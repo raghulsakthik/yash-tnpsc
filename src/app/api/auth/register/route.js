@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '../../../../lib/rateLimit.mjs';
 import { pool } from '../../../../lib/db.mjs';
 import { createSession, hashPassword, validateRegistration } from '../../../../lib/auth.mjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+  const rate = await checkRateLimit({ key: `auth:${ip}`, limit: 10, windowSeconds: 60 });
+  if (!rate.allowed) return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many authentication attempts. Try again shortly.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } });
   let body;
   try { body = await request.json(); } catch {
     return NextResponse.json({ code: 'BAD_JSON', message: 'Body is not JSON' }, { status: 400 });

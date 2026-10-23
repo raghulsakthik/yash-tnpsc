@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import com.nova.tnpsc.ui.screens.learn.LearnScreen
 import com.nova.tnpsc.ui.screens.learn.SubjectScreen
 import com.nova.tnpsc.ui.screens.lesson.LessonScreen
 import com.nova.tnpsc.ui.screens.login.LoginScreen
+import com.nova.tnpsc.ui.screens.onboarding.OnboardingScreen
 import com.nova.tnpsc.ui.screens.practice.PracticeScreen
 import com.nova.tnpsc.ui.screens.profile.ProfileScreen
 import com.nova.tnpsc.ui.screens.pyq.PyqPracticeScreen
@@ -96,7 +98,13 @@ fun NovaApp(authRepository: AuthRepository, onLoggedIn: suspend () -> Unit) {
     when (authState) {
         is AuthState.Unknown -> YashLoadingScreen()
         is AuthState.LoggedOut -> LoginScreen(authRepository)
-        is AuthState.LoggedIn -> MainNavHost(authRepository)
+        is AuthState.LoggedIn -> {
+            var checked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+            var onboarded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+            val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as com.nova.tnpsc.TnpscApplication
+            LaunchedEffect(Unit) { onboarded = app.profileApi.get().body()?.onboarded ?: true; checked = true }
+            if (!checked) YashLoadingScreen() else if (!onboarded) OnboardingScreen(onComplete = { onboarded = true }) else MainNavHost(authRepository)
+        }
     }
 }
 

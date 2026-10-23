@@ -1,55 +1,61 @@
-# NOVA — Android
+# NOVA — Android Client
 
-Native Kotlin + Jetpack Compose client for NOVA, mirroring the web prototype
-(`src/app/proto` in the repo root) screen-for-screen from the same design
-tokens — Fraunces for headings and numbers, Inter for body/UI, the exact
-NOVA color palette. Like the web prototype, this is a **visual prototype only**:
-every screen is driven by hardcoded mock data in `data/MockData.kt`, nothing
-calls a network or persists anything.
+Native Kotlin + Jetpack Compose client for the NOVA adaptive-learning platform. The Android client uses the **same canonical Next.js backend and PostgreSQL state** as Web; it does not maintain a separate learning engine or mobile backend.
 
-## What's here
+## Current integration
 
-- `ui/theme/` — the NOVA design tokens as a Compose `MaterialTheme`
-  (`Color.kt`, `Type.kt`, `Shape.kt`, `Theme.kt`). Actual Fraunces/Inter
-  `.ttf` files are bundled under `app/src/main/res/font/`.
-- `ui/components/` — shared primitives (`NovaCard`, `StatusBadge`,
-  `NovaProgressBar`, `OptionRow`, `NovaStat`) so screens compose from the
-  same building blocks rather than each hand-rolling styles.
-- `navigation/NovaNavGraph.kt` — bottom navigation (Home / Learn / Practice /
-  Journey / Profile) + the `NavHost` graph.
-- `ui/screens/` — Home, Learn, Subject, Practice, Journey, Profile. (A
-  starting slice, not all 26 web screens — see "What's not here yet" below.)
-- `data/MockData.kt` — static fixtures mirroring
-  `src/app/proto/_data/mock.js` on the web.
+- Secure session-cookie authentication with persistent CookieJar.
+- Shared backend base URL through `BuildConfig.API_BASE_URL`.
+- Login/logout/session restore.
+- Home → server-selected adaptive daily plan.
+- Learn → live subjects/topics/mastery.
+- Practice → server-selected questions, attempts, hints and learner-state updates.
+- Revision and mistake review.
+- Lessons and alternate explanations.
+- Journey/progress.
+- Quick Lab → server challenge generation and server grading.
+- Tests → create, answer, submit and result.
+- PYQs → real source-year metadata and statistics.
+- Bookmarks, notifications, achievements, mistakes, search and progress.
+- Weekly review and readiness from live analytics.
+- Milestones/profile from live learner data.
+- FCM registration hooks and notification permission handling.
+- Platform API contracts for dashboard, analytics, readiness, study time, notes, onboarding preferences, interventions and curriculum completion.
 
-## Building
+## Backend contract
+
+Development emulator URL:
+
+```text
+http://10.0.2.2:3001/
+```
+
+This must not be changed for local Android emulator development.
+
+Production release builds require an explicit deployed HTTPS API URL:
 
 ```bash
-cd android
+./gradlew assembleRelease -PapiBaseUrl=https://YOUR_PRODUCTION_API/
+```
+
+No production build silently falls back to the emulator URL.
+
+## Build
+
+```bash
 ./gradlew assembleDebug
 ```
 
-The debug APK lands at `app/build/outputs/apk/debug/app-debug.apk`. Open the
-`android/` folder directly in Android Studio to run it on an emulator or
-device — `./gradlew installDebug` with a connected device/emulator also
-works from the command line.
+Release:
 
-`local.properties` (holding `sdk.dir`) is machine-specific and gitignored —
-Android Studio generates it automatically on first open; from the command
-line, create it yourself:
-
-```
-sdk.dir=/path/to/your/Android/sdk
+```bash
+./gradlew assembleRelease -PapiBaseUrl=https://YOUR_PRODUCTION_API/
 ```
 
-## What's not here yet
+## Feature-parity rule
 
-This mirrors the native-foundation + design-system + navigation phases of
-the project (Android Phases 1–3 in the architecture brief), plus a few key
-screens proven out end-to-end (Home, Learn → Subject, Practice with working
-answer selection, Journey's orbit visualization, Profile). The remaining 20
-screens from the web prototype (Lesson, Quick Lab gameplay, PYQs, Tests,
-Milestones, Weekly Review, Notifications, onboarding/placement, etc.),
-offline-first storage (Room), and the adaptive engine wiring are not built
-yet — same "static prototype first" approach as the web side, just not
-finished across every screen.
+Web and Android are considered compatible only when both clients use the same backend contracts for:
+
+`auth → onboarding → dashboard → curriculum → adaptive plan → lesson → practice → revision → Quick Lab → PYQ → tests → analytics/readiness → progress → notifications → profile`.
+
+UI may be native to each platform, but learner state, scoring, adaptive decisions, ownership, PYQ provenance and content governance remain server-side canonical.

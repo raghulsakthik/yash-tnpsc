@@ -33,6 +33,11 @@ await client.query(`
 
 const { rows } = await client.query('SELECT version FROM schema_migration');
 const applied = new Set(rows.map((r) => r.version));
+// Historical migrations contain a few duplicate numeric versions with different
+// descriptive suffixes. The numeric V## is the real ordering identity; once any
+// migration for that numeric version is recorded, do not replay a sibling file.
+const appliedNumbers = new Set(rows.map((r) => Number(r.version.match(/^V(\d+)__/)?.[1] ?? -1)));
+const migrationNumber = (version) => Number(version.match(/^V(\d+)__/)?.[1] ?? -1);
 
 const files = (await readdir(MIGRATIONS_DIR))
   .filter((f) => f.endsWith('.sql'))
@@ -44,7 +49,7 @@ const files = (await readdir(MIGRATIONS_DIR))
 let count = 0;
 for (const file of files) {
   const version = file.replace(/\.sql$/, '');
-  if (applied.has(version)) continue;
+  if (applied.has(version) || appliedNumbers.has(migrationNumber(version))) continue;
 
   const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
   try {
@@ -54,6 +59,7 @@ for (const file of files) {
     await client.query('COMMIT');
     console.log(`applied ${version}`);
     count += 1;
+    appliedNumbers.add(migrationNumber(version));
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(`failed ${version}: ${err.message}`);

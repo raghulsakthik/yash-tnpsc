@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '../../../../lib/rateLimit.mjs';
 import { query } from '../../../../lib/db.mjs';
 import { verifyPassword, createSession } from '../../../../lib/auth.mjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+  const rate = await checkRateLimit({ key: `auth:${ip}`, limit: 10, windowSeconds: 60 });
+  if (!rate.allowed) return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many authentication attempts. Try again shortly.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } });
   const body = await request.json().catch(() => null);
   const email = body?.email?.trim().toLowerCase();
   const password = body?.password;

@@ -36,7 +36,7 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.replace('/login'), 1800);
     } catch {
-      setError('Unable to reach NOVA right now. Please try again.');
+      setError('Unable to reach YASH right now. Please try again.');
     } finally {
       setSubmitting(false);
     }

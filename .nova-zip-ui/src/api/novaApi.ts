@@ -207,7 +207,7 @@ export function mapStructuredCourses(payload: Json) {
         durationMinutes: Math.max(10, Number(lesson.totalUnits || 1) * 5),
         description: `${lesson.completedUnits || 0} of ${lesson.totalUnits || 0} units completed.`,
         keyConcepts: [],
-        summaryNote: 'Learning content is supplied by the NOVA curriculum backend.',
+        summaryNote: 'Learning content is supplied by the YASH curriculum backend.',
         steps: { learnCompleted: Number(lesson.completion || 0) >= 25, understandCompleted: Number(lesson.completion || 0) >= 50, practiceCompleted: Number(lesson.completion || 0) >= 75, assessmentCompleted: Number(lesson.completion || 0) >= 100 },
         isCompleted: Number(lesson.completion || 0) >= 100,
       }));

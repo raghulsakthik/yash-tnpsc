@@ -63,7 +63,7 @@ export async function sendPasswordResetEmail(to, token) {
   await getTransporter().sendMail({
     from: process.env.SMTP_USER,
     to,
-    subject: 'Reset your NOVA password',
+    subject: 'Reset your YASH password',
     text: `Reset your password: ${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
     html: `<p>Reset your password by clicking <a href="${resetUrl}">this link</a>.</p><p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
   });

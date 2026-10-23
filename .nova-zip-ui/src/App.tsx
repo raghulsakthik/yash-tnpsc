@@ -130,7 +130,7 @@ export default function App() {
   }, [isDarkMode]);
 
   // Production data bootstrap: the ZIP UI remains the presentation layer;
-  // all learner-facing data is loaded from the real NOVA API/session.
+  // all learner-facing data is loaded from the real YASH API/session.
   useEffect(() => {
     let cancelled = false;
     async function loadProductionData() {
@@ -187,7 +187,7 @@ export default function App() {
           setIsLoggedIn(false);
           setIsAuthModalOpen(true);
         } else {
-          setDataError(error instanceof Error ? error.message : 'Unable to load NOVA data');
+          setDataError(error instanceof Error ? error.message : 'Unable to load YASH data');
         }
       } finally {
         if (!cancelled) setIsDataLoading(false);

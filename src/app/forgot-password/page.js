@@ -26,7 +26,7 @@ export default function ForgotPassword() {
       }
       setMessage(data.message);
     } catch {
-      setError('Unable to reach NOVA right now. Please try again.');
+      setError('Unable to reach YASH right now. Please try again.');
     } finally {
       setSubmitting(false);
     }

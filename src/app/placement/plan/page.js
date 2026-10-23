@@ -28,8 +28,8 @@ export default function PlacementPlan() {
         <h1 style={{ fontSize: '2.25rem' }}>Your starting level: {levelName}</h1>
         <p className="muted" style={{ marginTop: 14 }}>
           {result
-            ? `You answered ${result.correctCount} of ${result.answeredCount} questions correctly (${result.score ?? 0}%). NOVA placed you using that evidence instead of sending everyone through the same starting point.`
-            : "Your diagnostic determines the starting point; NOVA then adapts from your actual performance."}
+            ? `You answered ${result.correctCount} of ${result.answeredCount} questions correctly (${result.score ?? 0}%). YASH placed you using that evidence instead of sending everyone through the same starting point.`
+            : "Your diagnostic determines the starting point; YASH then adapts from your actual performance."}
         </p>
 
         <div className="card" style={{ marginTop: 24 }}>

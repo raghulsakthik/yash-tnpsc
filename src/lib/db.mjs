@@ -19,7 +19,10 @@ export const pool =
   globalForPg.__appPool ??
   new pg.Pool({
     connectionString: env.databaseUrl,
-    max: 5,
+    max: env.dbPoolMax,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+    maxUses: 7_500,
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPg.__appPool = pool;

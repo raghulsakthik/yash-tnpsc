@@ -43,6 +43,7 @@ import {
   mapPyq,
   mapMistake,
   mapPracticeQuestion,
+  mapResources,
   mapStructuredCourses,
 } from './api/novaApi';
 import { updateLessonStep } from './utils/courseCompletion';
@@ -83,6 +84,8 @@ export default function App() {
   const [practiceQuestions, setPracticeQuestions] = useState<PracticeQuestion[]>([]);
   const [pyqs, setPyqs] = useState<PYQItem[]>([]);
   const [mistakes, setMistakes] = useState<MistakeItem[]>([]);
+  const [uploadedResources, setUploadedResources] = useState<ReturnType<typeof mapResources>>([]);
+  const [mistakeQuestion, setMistakeQuestion] = useState<ReturnType<typeof mapPracticeQuestion>>(null);
   const [tests, setTests] = useState<TestSession[]>([]);
   const [structuredCourses, setStructuredCourses] = useState<StructuredCourse[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -138,10 +141,11 @@ export default function App() {
         if (cancelled) return;
         setIsLoggedIn(true);
 
-        const [profileData, dashboard, courseData, plan, analytics, notificationData, achievementData, calendar, notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats] = await Promise.all([
+        const [profileData, dashboard, courseData, plan, analytics, notificationData, achievementData, calendar, notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
           novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.analytics(),
           novaApi.notifications(), novaApi.achievements(), novaApi.calendar(), novaApi.notes(), novaApi.tests(), novaApi.bookmarks(), novaApi.pyq(), novaApi.mistake().catch(() => null),
           novaApi.question('mixed').catch(() => null), novaApi.curriculumTree(), novaApi.activeCurriculum(), novaApi.curriculumProgress(), novaApi.quickLabStats().catch(() => ({ attempts: 0, correct: 0, accuracy: 0 })),
+          novaApi.resources().catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -167,7 +171,11 @@ export default function App() {
         if (mappedPractice) setPracticeQuestions([mappedPractice]);
         const mappedPyq = mapPyq(pyqData);
         if (mappedPyq) setPyqs([mappedPyq]);
-        if (mistakeData) setMistakes(mapMistake(mistakeData));
+        if (mistakeData) {
+          setMistakes(mapMistake(mistakeData));
+          setMistakeQuestion(mapPracticeQuestion(mistakeData));
+        }
+        if (resourceData) setUploadedResources(mapResources(resourceData));
         setNotes((notesData?.notes || []) as NoteItem[]);
         // The ZIP course UI is preserved; its data is now built from the real curriculum API.
         setStructuredCourses(mapStructuredCourses(courseData));
@@ -421,7 +429,17 @@ export default function App() {
 
   const handlePracticeAnswer = async (question: PracticeQuestion, selectedIndex: number, timeTakenMs: number) => {
     const result = await novaApi.attempt({ attemptId: crypto.randomUUID(), questionId: question.id, selectedIndex, timeTakenMs, mode: 'PRACTICE' });
+    if (result.correct && mistakes.some((m) => m.id === question.id)) {
+      const refreshed = await novaApi.mistake().catch(() => null);
+      setMistakes(refreshed ? mapMistake(refreshed) : []);
+      setMistakeQuestion(refreshed ? mapPracticeQuestion(refreshed) : null);
+    }
     return { correct: Boolean(result.correct), correctIndex: Number(result.correctIndex), explanation: result.explanation || question.explanation };
+  };
+
+  const handlePracticeMistake = () => {
+    if (mistakeQuestion) setPracticeQuestions([mistakeQuestion]);
+    setCurrentView('practise');
   };
 
   const handlePyqAnswer = async (question: PYQItem, selectedIndex: number, timeTakenMs: number) => {
@@ -475,11 +493,21 @@ export default function App() {
     }
   };
 
-  const handleUpdateProfile = (updated: Partial<UserProfile>) => {
+  const handleUpdateProfile = async (updated: Partial<UserProfile>) => {
     setProfile((prev) => ({
       ...prev,
       ...updated,
     }));
+    try {
+      await novaApi.updateProfile({
+        name: updated.name,
+        phone: updated.phone,
+        emailNotifications: updated.emailNotifications,
+        smsNotifications: updated.smsNotifications,
+      });
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to save profile');
+    }
   };
 
   const totalBookmarks = courses.filter((c) => c.isBookmarked).length;
@@ -698,17 +726,17 @@ export default function App() {
 
             {/* EXAM HUB -> MISTAKE ENGINE VIEW */}
             {currentView === 'mistakes' && (
-              <MistakesView mistakes={mistakes} onAddXp={handleAddXp} />
+              <MistakesView mistakes={mistakes} onPractice={handlePracticeMistake} />
             )}
 
             {/* RESOURCES -> LINKS VIEW */}
             {currentView === 'resources-links' && (
-              <ResourcesView resources={resources} defaultTab="links" />
+              <ResourcesView resources={[...resources, ...uploadedResources]} defaultTab="links" />
             )}
 
             {/* RESOURCES -> DOWNLOAD VIEW */}
             {currentView === 'resources-download' && (
-              <ResourcesView resources={resources} defaultTab="download" />
+              <ResourcesView resources={[...resources, ...uploadedResources]} defaultTab="download" />
             )}
           </main>
         </div>

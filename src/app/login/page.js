@@ -59,7 +59,10 @@ export default function Login() {
               <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
             </label>
             <label style={styles.label}>
-              Password
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Password</span>
+                <Link href="/forgot-password" style={{ fontSize: 10.5, fontWeight: 700, color: '#ea580c', textDecoration: 'none' }}>Forgot?</Link>
+              </div>
               <div style={styles.passwordWrap}>
                 <input style={{ ...styles.input, paddingRight: 72 }} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" autoComplete="current-password" required />
                 <button type="button" onClick={() => setShowPassword(v => !v)} style={styles.showButton}>{showPassword ? 'Hide' : 'Show'}</button>

@@ -231,6 +231,23 @@ try {
     games += 1;
   }
 
+  // V49's curriculum_subject backfill depends on real subject rows, which
+  // don't exist at migration time against a fresh database -- same class
+  // of ordering bug as the game_definition and learning_week/day/unit
+  // seeding above.
+  await client.query(
+    `INSERT INTO curriculum_subject (curriculum_id, section_id, subject_id, sort_order)
+     SELECT 'tnpsc-group-2-v1',
+            CASE WHEN id = 'general-studies' THEN 'tnpsc2.general-studies'
+                 WHEN id = 'aptitude-mental-ability' THEN 'tnpsc2.aptitude'
+                 WHEN id IN ('language-en', 'language-ta') THEN 'tnpsc2.language'
+                 ELSE 'tnpsc2.current-affairs' END,
+            id, sort_order
+       FROM subject
+      WHERE id IN ('general-studies', 'aptitude-mental-ability', 'language-en', 'language-ta')
+     ON CONFLICT (curriculum_id, subject_id) DO UPDATE SET section_id = EXCLUDED.section_id, sort_order = EXCLUDED.sort_order`
+  );
+
   // V35's real learning_week/learning_day/learning_unit rows (db/migrations
   // is schema-only; the orientation+foundation week-1 units reference the
   // real topic 'aptitude.whole-numbers' seeded above, which doesn't exist

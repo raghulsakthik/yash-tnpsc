@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   BookOpen,
@@ -9,11 +9,11 @@ import {
   ChevronRight,
   ArrowRight,
   Sparkles,
-  HelpCircle,
   FileCheck2,
 } from 'lucide-react';
 import { StructuredCourse, StructuredLesson } from '../types';
 import { BrandLogo } from './BrandLogo';
+import { novaApi } from '../api/novaApi';
 
 interface StructuredLessonPlayerModalProps {
   course: StructuredCourse;
@@ -27,6 +27,8 @@ interface StructuredLessonPlayerModalProps {
   ) => void;
   onAddXp?: (amount: number) => void;
 }
+
+type AnswerResult = { correct: boolean; correctIndex: number; explanation: string } | null;
 
 export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalProps> = ({
   course,
@@ -46,40 +48,64 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
       : 'assessment'
   );
 
+  // Real lesson content (src/app/api/lesson/:topic), fetched for this
+  // lesson's real topic id -- lesson.id IS the topic id (see
+  // mapStructuredCourses in api/novaApi.ts).
+  const [lessonContent, setLessonContent] = useState<any>(null);
+  const [lessonLoading, setLessonLoading] = useState(true);
+  const [lessonError, setLessonError] = useState(false);
+
+  // Real practice question (src/app/api/questions/next) and its graded
+  // result -- the backend never reveals the correct answer until a real
+  // attempt is submitted (src/app/api/attempts).
+  const [practiceQuestion, setPracticeQuestion] = useState<any>(null);
+  const [practiceLoading, setPracticeLoading] = useState(true);
   const [selectedPracticeOption, setSelectedPracticeOption] = useState<number | null>(null);
-  const [practiceSubmitted, setPracticeSubmitted] = useState(false);
+  const [practiceResult, setPracticeResult] = useState<AnswerResult>(null);
+  const [practiceSubmitting, setPracticeSubmitting] = useState(false);
+
+  // Real PYQ (src/app/api/pyqs/next?topic=), scoped to this topic -- some
+  // topics genuinely have no PYQ yet, which is shown honestly, not faked.
+  const [pyqQuestion, setPyqQuestion] = useState<any>(null);
+  const [pyqLoading, setPyqLoading] = useState(true);
   const [selectedPyqOption, setSelectedPyqOption] = useState<number | null>(null);
-  const [pyqSubmitted, setPyqSubmitted] = useState(false);
+  const [pyqResult, setPyqResult] = useState<AnswerResult>(null);
+  const [pyqSubmitting, setPyqSubmitting] = useState(false);
   const [showRewardToast, setShowRewardToast] = useState(false);
+  const practiceStartedAt = React.useRef<number>(Date.now());
+  const pyqStartedAt = React.useRef<number>(Date.now());
+
+  useEffect(() => {
+    let cancelled = false;
+    setLessonLoading(true);
+    setLessonError(false);
+    novaApi.lesson(lesson.id)
+      .then((data) => { if (!cancelled) setLessonContent(data); })
+      .catch(() => { if (!cancelled) setLessonError(true); })
+      .finally(() => { if (!cancelled) setLessonLoading(false); });
+
+    setPracticeLoading(true);
+    setPracticeQuestion(null);
+    setSelectedPracticeOption(null);
+    setPracticeResult(null);
+    novaApi.question(lesson.id)
+      .then((data) => { if (!cancelled) { setPracticeQuestion(data); practiceStartedAt.current = Date.now(); } })
+      .catch(() => { if (!cancelled) setPracticeQuestion(null); })
+      .finally(() => { if (!cancelled) setPracticeLoading(false); });
+
+    setPyqLoading(true);
+    setPyqQuestion(null);
+    setSelectedPyqOption(null);
+    setPyqResult(null);
+    novaApi.pyqForTopic(lesson.id)
+      .then((data) => { if (!cancelled) { setPyqQuestion(data); pyqStartedAt.current = Date.now(); } })
+      .catch(() => { if (!cancelled) setPyqQuestion(null); })
+      .finally(() => { if (!cancelled) setPyqLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [lesson.id]);
 
   if (!isOpen) return null;
-
-  const currentPractice = lesson.practiceQuestions?.[0] || {
-    question: `Key conceptual question for ${lesson.title}: Which of the following is an essential requirement under the TNPSC syllabus?`,
-    options: [
-      'Constitutional validity determined by Judicial Review',
-      'Executive discretion over fundamental rights',
-      'Subordination of judiciary to executive ordinances',
-      'Suspension of Article 20 and 21 during Emergency',
-    ],
-    correctIndex: 0,
-    explanation:
-      'Under the Indian Constitution, judicial review safeguards the supremacy of the constitution, and Articles 20 and 21 cannot be suspended even during a National Emergency.',
-  };
-
-  const currentPyq = lesson.assessmentQuestion || {
-    examYear: 'TNPSC Group 2 (2023)',
-    question: `[TNPSC PYQ] In the context of ${lesson.title}, which doctrine or constitutional mandate was upheld by the Supreme Court?`,
-    options: [
-      'Basic Structure Doctrine (Kesavananda Bharati)',
-      'Privy Purse Abolition Act only',
-      'Complete immunity of administrative tribunals',
-      'Substantive unitary centralization',
-    ],
-    correctIndex: 0,
-    explanation:
-      'The landmark Kesavananda Bharati case (1973) established that Parliament cannot alter the basic structure of the Constitution.',
-  };
 
   const handleCompleteLearn = () => {
     onUpdateStep(lesson.id, 'learnCompleted', true);
@@ -91,28 +117,52 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
     setActiveTab('practice');
   };
 
-  const handleCheckPractice = () => {
-    setPracticeSubmitted(true);
-    if (selectedPracticeOption === currentPractice.correctIndex) {
-      onUpdateStep(lesson.id, 'practiceCompleted', true);
+  const handleSubmitPractice = async () => {
+    if (!practiceQuestion || selectedPracticeOption === null) return;
+    setPracticeSubmitting(true);
+    try {
+      const result = await novaApi.attempt({
+        attemptId: crypto.randomUUID(),
+        questionId: practiceQuestion.questionId,
+        selectedIndex: selectedPracticeOption,
+        timeTakenMs: Date.now() - practiceStartedAt.current,
+        mode: 'PRACTICE',
+      });
+      setPracticeResult({ correct: Boolean(result.correct), correctIndex: Number(result.correctIndex), explanation: result.explanation || '' });
+      if (result.correct) onUpdateStep(lesson.id, 'practiceCompleted', true);
+    } finally {
+      setPracticeSubmitting(false);
     }
   };
 
-  const handleCheckAssessment = () => {
-    setPyqSubmitted(true);
-    if (selectedPyqOption === currentPyq.correctIndex) {
-      onUpdateStep(lesson.id, 'assessmentCompleted', true);
-      if (onAddXp) onAddXp(50);
-      setShowRewardToast(true);
-      setTimeout(() => setShowRewardToast(false), 4000);
+  const handleSubmitAssessment = async () => {
+    if (!pyqQuestion || selectedPyqOption === null) return;
+    setPyqSubmitting(true);
+    try {
+      const result = await novaApi.attempt({
+        attemptId: crypto.randomUUID(),
+        questionId: pyqQuestion.questionId,
+        selectedIndex: selectedPyqOption,
+        timeTakenMs: Date.now() - pyqStartedAt.current,
+        mode: 'PRACTICE',
+      });
+      setPyqResult({ correct: Boolean(result.correct), correctIndex: Number(result.correctIndex), explanation: result.explanation || '' });
+      if (result.correct) {
+        onUpdateStep(lesson.id, 'assessmentCompleted', true);
+        if (onAddXp) onAddXp(50);
+        setShowRewardToast(true);
+        setTimeout(() => setShowRewardToast(false), 4000);
+      }
+    } finally {
+      setPyqSubmitting(false);
     }
   };
 
-  const allDone =
-    lesson.steps.learnCompleted &&
-    lesson.steps.understandCompleted &&
-    lesson.steps.practiceCompleted &&
-    lesson.steps.assessmentCompleted;
+  const hasLessonContent = Boolean(lessonContent?.concept || lessonContent?.definition || (lessonContent?.resources || []).length);
+  const reinforcementPoints: string[] = [
+    ...(lessonContent?.formulas || []),
+    ...(lessonContent?.shortcuts || []),
+  ];
 
   return (
     <div
@@ -224,39 +274,52 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   Step 1 of 4 · Syllabus Foundation
                 </span>
                 <h3 className="mt-1 text-xl font-bold text-neutral-900 dark:text-white">
-                  {lesson.title}
+                  {lessonContent?.title || lesson.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
                   {lesson.description}
                 </p>
               </div>
 
-              {/* Comprehensive Study Text */}
-              <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed space-y-4">
-                <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 shadow-xs">
-                  <h4 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                    <FileCheck2 className="h-4 w-4 text-neutral-700 dark:text-neutral-300" />
-                    Essential Syllabus Notes
-                  </h4>
-                  <p className="mt-2 text-neutral-700 dark:text-neutral-300 font-sans">
-                    {lesson.summaryNote}
-                  </p>
+              {lessonLoading ? (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading real lesson content…</p>
+              ) : !hasLessonContent ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-400">
+                  No lesson content has been written for this topic yet. You can still practice and attempt real questions below.
                 </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    TNPSC Syllabus Focus Points:
-                  </h4>
-                  <ul className="list-disc pl-5 space-y-1.5 text-neutral-600 dark:text-neutral-400">
-                    {lesson.keyConcepts.map((concept, idx) => (
-                      <li key={idx}>
-                        <strong className="text-neutral-800 dark:text-neutral-200">{concept}</strong>:
-                        High frequency concept tested across previous prelims & mains papers.
-                      </li>
-                    ))}
-                  </ul>
+              ) : (
+                <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed space-y-4">
+                  {lessonContent?.concept && (
+                    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 shadow-xs">
+                      <h4 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                        <FileCheck2 className="h-4 w-4 text-neutral-700 dark:text-neutral-300" />
+                        Concept
+                      </h4>
+                      <p className="mt-2 text-neutral-700 dark:text-neutral-300 font-sans">{lessonContent.concept}</p>
+                    </div>
+                  )}
+                  {lessonContent?.example?.problem && (
+                    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 shadow-xs">
+                      <h4 className="text-base font-semibold text-neutral-900 dark:text-white">Worked Example</h4>
+                      <p className="mt-2 text-neutral-700 dark:text-neutral-300">{lessonContent.example.problem}</p>
+                      {Array.isArray(lessonContent.example.steps) && lessonContent.example.steps.length > 0 && (
+                        <ol className="mt-2 list-decimal pl-5 space-y-1 text-neutral-600 dark:text-neutral-400">
+                          {lessonContent.example.steps.map((step: string, idx: number) => <li key={idx}>{step}</li>)}
+                        </ol>
+                      )}
+                      {lessonContent.example.answer && (
+                        <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Answer: {lessonContent.example.answer}</p>
+                      )}
+                    </div>
+                  )}
+                  {(lessonContent?.resources || []).map((r: any, idx: number) => (
+                    <div key={idx} className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 shadow-xs">
+                      <h4 className="text-base font-semibold text-neutral-900 dark:text-white">{r.title}</h4>
+                      <p className="mt-2 text-neutral-700 dark:text-neutral-300">{r.body}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
               <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <button
@@ -278,35 +341,32 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   Step 2 of 4 · Conceptual Clarity
                 </span>
                 <h3 className="mt-1 text-lg font-bold text-neutral-900 dark:text-white">
-                  Deconstruct Key Pillars & Provisions
+                  Formulas, Shortcuts & Common Mistakes
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                  Ensure you understand these definitions before testing your diagnostic speed:
+                  Review these before testing yourself in Practice:
                 </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                {lesson.keyConcepts.map((concept, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60"
-                  >
-                    <div>
-                      <span className="text-xs font-semibold text-neutral-400">Pillar 0{idx + 1}</span>
-                      <h4 className="mt-1 text-base font-bold text-neutral-900 dark:text-white">
-                        {concept}
-                      </h4>
-                      <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
-                        Frequently recurring in TNPSC matching questions and Assertion-Reasoning sets. Review statutory definitions and judicial precedents.
-                      </p>
+              {reinforcementPoints.length === 0 && !(lessonContent?.commonMistakes || []).length ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-400">
+                  No formulas, shortcuts or common-mistake notes have been added for this topic yet.
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {reinforcementPoints.map((point, idx) => (
+                    <div key={idx} className="flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60">
+                      <p className="text-sm text-neutral-800 dark:text-neutral-200">{point}</p>
                     </div>
-                    <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Concept Verified</span>
+                  ))}
+                  {(lessonContent?.commonMistakes || []).map((point: string, idx: number) => (
+                    <div key={`mistake-${idx}`} className="flex flex-col justify-between rounded-2xl border border-red-200 bg-red-50/40 p-5 dark:border-red-900/40 dark:bg-red-950/20">
+                      <span className="text-[10px] font-bold uppercase text-red-600 dark:text-red-400">Common Mistake</span>
+                      <p className="mt-1 text-sm text-neutral-800 dark:text-neutral-200">{point}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex justify-between items-center pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <button
@@ -334,69 +394,73 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   Step 3 of 4 · Adaptive Guided Practice
                 </span>
                 <h3 className="mt-1 text-lg font-bold text-neutral-900 dark:text-white">
-                  Solve Concept Check MCQ
+                  Solve a Real Practice Question
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                  Apply what you have understood to this diagnostic challenge:
+                  Graded by the real adaptive engine -- this updates your real topic mastery.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60 space-y-4">
-                <p className="font-semibold text-neutral-900 dark:text-white text-base">
-                  {currentPractice.question}
-                </p>
-
-                <div className="space-y-2.5">
-                  {currentPractice.options.map((opt, idx) => {
-                    const isSelected = selectedPracticeOption === idx;
-                    const isCorrect = idx === currentPractice.correctIndex;
-
-                    let optionStyle =
-                      'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200';
-
-                    if (practiceSubmitted) {
-                      if (isCorrect) {
-                        optionStyle =
-                          'border-emerald-500 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200';
-                      } else if (isSelected && !isCorrect) {
-                        optionStyle =
-                          'border-red-500 bg-red-50 text-red-950 dark:bg-red-950/40 dark:text-red-200';
-                      }
-                    } else if (isSelected) {
-                      optionStyle =
-                        'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-700 dark:text-white';
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={practiceSubmitted}
-                        onClick={() => setSelectedPracticeOption(idx)}
-                        className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left text-sm transition-all ${optionStyle}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-inherit text-xs font-bold">
-                            {String.fromCharCode(65 + idx)}
-                          </span>
-                          <span>{opt}</span>
-                        </div>
-                        {practiceSubmitted && isCorrect && (
-                          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
+              {practiceLoading ? (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading a real question for this topic…</p>
+              ) : !practiceQuestion ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-400">
+                  No published question is available for this topic yet.
                 </div>
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60 space-y-4">
+                  <p className="font-semibold text-neutral-900 dark:text-white text-base">
+                    {practiceQuestion.prompt}
+                  </p>
 
-                {practiceSubmitted && (
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-800/80">
-                    <p className="font-bold text-neutral-900 dark:text-white">Explanation:</p>
-                    <p className="mt-1 text-neutral-600 dark:text-neutral-300">
-                      {currentPractice.explanation}
-                    </p>
+                  <div className="space-y-2.5">
+                    {(practiceQuestion.options || []).map((opt: string, idx: number) => {
+                      const isSelected = selectedPracticeOption === idx;
+                      const isCorrect = practiceResult ? idx === practiceResult.correctIndex : false;
+
+                      let optionStyle =
+                        'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200';
+
+                      if (practiceResult) {
+                        if (isCorrect) {
+                          optionStyle = 'border-emerald-500 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200';
+                        } else if (isSelected && !isCorrect) {
+                          optionStyle = 'border-red-500 bg-red-50 text-red-950 dark:bg-red-950/40 dark:text-red-200';
+                        }
+                      } else if (isSelected) {
+                        optionStyle = 'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-700 dark:text-white';
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={Boolean(practiceResult)}
+                          onClick={() => setSelectedPracticeOption(idx)}
+                          className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left text-sm transition-all ${optionStyle}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-inherit text-xs font-bold">
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span>{opt}</span>
+                          </div>
+                          {practiceResult && isCorrect && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+
+                  {practiceResult && (
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-800/80">
+                      <p className="font-bold text-neutral-900 dark:text-white">Explanation:</p>
+                      <p className="mt-1 text-neutral-600 dark:text-neutral-300">{practiceResult.explanation}</p>
+                      {!practiceResult.correct && (
+                        <p className="mt-2 font-semibold text-red-600 dark:text-red-400">Not quite -- this step only clears on a correct answer. Try again from Practice once you review.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-between items-center pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <button
@@ -406,15 +470,15 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   ← Back to Understand
                 </button>
 
-                {!practiceSubmitted ? (
+                {!practiceResult ? (
                   <button
-                    disabled={selectedPracticeOption === null}
-                    onClick={handleCheckPractice}
+                    disabled={selectedPracticeOption === null || !practiceQuestion || practiceSubmitting}
+                    onClick={handleSubmitPractice}
                     className="rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
                   >
-                    Submit Practice Answer
+                    {practiceSubmitting ? 'Submitting…' : 'Submit Practice Answer'}
                   </button>
-                ) : (
+                ) : practiceResult.correct ? (
                   <button
                     onClick={() => setActiveTab('assessment')}
                     className="flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
@@ -422,7 +486,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                     <span>Proceed to Required PYQ Test</span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           )}
@@ -435,74 +499,80 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
                     Step 4 of 4 · Required Assessment Barrier
                   </span>
-                  <span className="rounded-md border border-purple-200 bg-white px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:border-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                    {currentPyq.examYear}
-                  </span>
+                  {pyqQuestion?.difficulty && (
+                    <span className="rounded-md border border-purple-200 bg-white px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:border-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      {pyqQuestion.difficulty}
+                    </span>
+                  )}
                 </div>
                 <h3 className="mt-1 text-lg font-bold text-neutral-900 dark:text-white">
-                  TNPSC Official PYQ Examination Check
+                  Real TNPSC Previous-Year Question
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                  You must pass this official question to verify lesson completion and unlock the next milestone:
+                  You must answer this correctly to verify lesson completion:
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60 space-y-4">
-                <p className="font-semibold text-neutral-900 dark:text-white text-base">
-                  {currentPyq.question}
-                </p>
-
-                <div className="space-y-2.5">
-                  {currentPyq.options.map((opt, idx) => {
-                    const isSelected = selectedPyqOption === idx;
-                    const isCorrect = idx === currentPyq.correctIndex;
-
-                    let optionStyle =
-                      'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200';
-
-                    if (pyqSubmitted) {
-                      if (isCorrect) {
-                        optionStyle =
-                          'border-emerald-500 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200';
-                      } else if (isSelected && !isCorrect) {
-                        optionStyle =
-                          'border-red-500 bg-red-50 text-red-950 dark:bg-red-950/40 dark:text-red-200';
-                      }
-                    } else if (isSelected) {
-                      optionStyle =
-                        'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-700 dark:text-white';
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={pyqSubmitted}
-                        onClick={() => setSelectedPyqOption(idx)}
-                        className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left text-sm transition-all ${optionStyle}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-inherit text-xs font-bold">
-                            {String.fromCharCode(65 + idx)}
-                          </span>
-                          <span>{opt}</span>
-                        </div>
-                        {pyqSubmitted && isCorrect && (
-                          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
+              {pyqLoading ? (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading a real past-year question for this topic…</p>
+              ) : !pyqQuestion ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-400">
+                  No real past-year question exists for this topic yet, so this step is honestly skipped rather than faked.
                 </div>
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60 space-y-4">
+                  <p className="font-semibold text-neutral-900 dark:text-white text-base">
+                    {pyqQuestion.prompt}
+                  </p>
 
-                {pyqSubmitted && (
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-800/80">
-                    <p className="font-bold text-neutral-900 dark:text-white">Official Commission Key Explanation:</p>
-                    <p className="mt-1 text-neutral-600 dark:text-neutral-300">
-                      {currentPyq.explanation}
-                    </p>
+                  <div className="space-y-2.5">
+                    {(pyqQuestion.options || []).map((opt: string, idx: number) => {
+                      const isSelected = selectedPyqOption === idx;
+                      const isCorrect = pyqResult ? idx === pyqResult.correctIndex : false;
+
+                      let optionStyle =
+                        'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200';
+
+                      if (pyqResult) {
+                        if (isCorrect) {
+                          optionStyle = 'border-emerald-500 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200';
+                        } else if (isSelected && !isCorrect) {
+                          optionStyle = 'border-red-500 bg-red-50 text-red-950 dark:bg-red-950/40 dark:text-red-200';
+                        }
+                      } else if (isSelected) {
+                        optionStyle = 'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-700 dark:text-white';
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={Boolean(pyqResult)}
+                          onClick={() => setSelectedPyqOption(idx)}
+                          className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left text-sm transition-all ${optionStyle}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-inherit text-xs font-bold">
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span>{opt}</span>
+                          </div>
+                          {pyqResult && isCorrect && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+
+                  {pyqResult && (
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-800/80">
+                      <p className="font-bold text-neutral-900 dark:text-white">Explanation:</p>
+                      <p className="mt-1 text-neutral-600 dark:text-neutral-300">{pyqResult.explanation}</p>
+                      {!pyqResult.correct && (
+                        <p className="mt-2 font-semibold text-red-600 dark:text-red-400">Not quite -- the assessment step only clears on a correct answer.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Toast for completion reward */}
               {showRewardToast && (
@@ -527,15 +597,23 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                   ← Back to Practice
                 </button>
 
-                {!pyqSubmitted ? (
+                {!pyqQuestion ? (
                   <button
-                    disabled={selectedPyqOption === null}
-                    onClick={handleCheckAssessment}
+                    onClick={() => { onUpdateStep(lesson.id, 'assessmentCompleted', true); onClose(); }}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-xs"
+                  >
+                    <span>No PYQ Available · Mark Lesson Complete</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : !pyqResult ? (
+                  <button
+                    disabled={selectedPyqOption === null || pyqSubmitting}
+                    onClick={handleSubmitAssessment}
                     className="rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
                   >
-                    Submit Official Assessment
+                    {pyqSubmitting ? 'Submitting…' : 'Submit Official Assessment'}
                   </button>
-                ) : (
+                ) : pyqResult.correct ? (
                   <button
                     onClick={onClose}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-xs"
@@ -543,7 +621,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                     <span>Lesson Completed · Return to Courses</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           )}

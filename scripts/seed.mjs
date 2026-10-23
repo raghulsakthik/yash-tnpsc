@@ -176,10 +176,132 @@ try {
     }
   }
 
+  // Phase 22/25's real game_definition rows (db/migrations is schema-only;
+  // these depend on the real topic/chapter rows seeded above, which
+  // `npm run setup`'s migrate -> seed order means don't exist yet at
+  // migration time -- moved here rather than left to insert a NULL
+  // target_topic_ids into a NOT NULL column against a fresh database).
+  const gameDefinitions = [
+    {
+      id: 'speed-round-aptitude',
+      name: 'Aptitude Speed Round',
+      chapterId: 'apt.aptitude',
+      difficultyFloor: 0.1,
+      difficultyCeiling: 0.6,
+      questionCount: 10,
+      timeLimitSeconds: 90,
+    },
+    {
+      id: 'speed-round-reasoning',
+      name: 'Reasoning Speed Round',
+      chapterId: 'apt.reasoning',
+      difficultyFloor: 0,
+      difficultyCeiling: 0.5,
+      questionCount: 8,
+      timeLimitSeconds: 75,
+    },
+    {
+      id: 'constitution-match-polity',
+      name: 'Constitution Match',
+      chapterId: 'gs.indian-polity',
+      difficultyFloor: 0,
+      difficultyCeiling: 0.5,
+      questionCount: 10,
+      timeLimitSeconds: 120,
+    },
+  ];
+  const scoringConfig = JSON.stringify({ pointsPerCorrect: 10, speedBonusMax: 5, streakBonusPerStreak: 2, streakBonusCap: 10 });
+  let games = 0;
+  for (const g of gameDefinitions) {
+    const { rows: topicRows } = await client.query('SELECT array_agg(id) AS ids FROM topic WHERE chapter_id = $1', [g.chapterId]);
+    const targetTopicIds = topicRows[0]?.ids;
+    if (!targetTopicIds || targetTopicIds.length === 0) continue; // chapter not seeded (yet) -- never insert a fabricated target list
+    await client.query(
+      `INSERT INTO game_definition (id, name, target_topic_ids, difficulty_floor, difficulty_ceiling, question_count, time_limit_seconds, scoring_config, mechanics)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, 'SPEED_ROUND')
+       ON CONFLICT (id) DO UPDATE SET
+         target_topic_ids = EXCLUDED.target_topic_ids,
+         difficulty_floor = EXCLUDED.difficulty_floor,
+         difficulty_ceiling = EXCLUDED.difficulty_ceiling,
+         question_count = EXCLUDED.question_count,
+         time_limit_seconds = EXCLUDED.time_limit_seconds,
+         scoring_config = EXCLUDED.scoring_config`,
+      [g.id, g.name, targetTopicIds, g.difficultyFloor, g.difficultyCeiling, g.questionCount, g.timeLimitSeconds, scoringConfig]
+    );
+    games += 1;
+  }
+
+  // V49's curriculum_subject backfill depends on real subject rows, which
+  // don't exist at migration time against a fresh database -- same class
+  // of ordering bug as the game_definition and learning_week/day/unit
+  // seeding above.
+  await client.query(
+    `INSERT INTO curriculum_subject (curriculum_id, section_id, subject_id, sort_order)
+     SELECT 'tnpsc-group-2-v1',
+            CASE WHEN id = 'general-studies' THEN 'tnpsc2.general-studies'
+                 WHEN id = 'aptitude-mental-ability' THEN 'tnpsc2.aptitude'
+                 WHEN id IN ('language-en', 'language-ta') THEN 'tnpsc2.language'
+                 ELSE 'tnpsc2.current-affairs' END,
+            id, sort_order
+       FROM subject
+      WHERE id IN ('general-studies', 'aptitude-mental-ability', 'language-en', 'language-ta')
+     ON CONFLICT (curriculum_id, subject_id) DO UPDATE SET section_id = EXCLUDED.section_id, sort_order = EXCLUDED.sort_order`
+  );
+
+  // V35's real learning_week/learning_day/learning_unit rows (db/migrations
+  // is schema-only; the orientation+foundation week-1 units reference the
+  // real topic 'aptitude.whole-numbers' seeded above, which doesn't exist
+  // yet at migration time against a fresh database).
+  await client.query(
+    `INSERT INTO learning_week (id, phase_id, week_number, title, objective)
+     VALUES
+      ('tnpsc2.phase.orientation.week-1','tnpsc2.phase.orientation',1,'Orientation & Exam Readiness','Understand the exam journey, curriculum structure, weekly rhythm and how diagnostics, practice, PYQs and tests drive the adaptive path.'),
+      ('tnpsc2.phase.foundation.week-1','tnpsc2.phase.foundation',1,'Arithmetic Foundation','Build the first arithmetic foundations through concepts, guided practice, application, exam practice, PYQs, speed revision and a weekly test.')
+     ON CONFLICT (phase_id, week_number) DO NOTHING`
+  );
+  await client.query(
+    `INSERT INTO learning_day (id, week_id, day_number, title, purpose, target_minutes)
+     SELECT w.id||'.day-'||d.day_number, w.id, d.day_number, d.title, d.purpose, d.target_minutes
+     FROM learning_week w
+     CROSS JOIN (VALUES
+      (1,'Learn concepts','Build understanding of the week''s core concepts.',25),
+      (2,'Guided practice','Apply concepts with guided examples and supported practice.',25),
+      (3,'Application','Use the concepts in progressively independent problems.',25),
+      (4,'Exam-level practice','Work with exam-oriented questions and timing.',25),
+      (5,'PYQs','Practice relevant previous-year questions.',25),
+      (6,'Speed + revision','Revise weak areas and improve response speed.',25),
+      (7,'Weekly test','Measure the week''s learning and identify remediation.',30)
+     ) AS d(day_number,title,purpose,target_minutes)
+     WHERE w.id IN ('tnpsc2.phase.orientation.week-1','tnpsc2.phase.foundation.week-1')
+     ON CONFLICT (week_id, day_number) DO NOTHING`
+  );
+  const { rows: wholeNumbersTopicRows } = await client.query(`SELECT id FROM topic WHERE id = 'aptitude.whole-numbers'`);
+  if (wholeNumbersTopicRows.length > 0) {
+    await client.query(
+      `INSERT INTO learning_unit (id,day_id,topic_id,title,unit_type,sort_order,estimated_minutes,required)
+       VALUES
+        ('tnpsc2.phase.orientation.week-1.day-1.unit-1','tnpsc2.phase.orientation.week-1.day-1',NULL,'Exam journey and adaptive learning model','CONCEPT',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-2.unit-1','tnpsc2.phase.orientation.week-1.day-2',NULL,'How weekly learning, practice, PYQs and tests connect','GUIDED_PRACTICE',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-3.unit-1','tnpsc2.phase.orientation.week-1.day-3',NULL,'Build a personal study rhythm','APPLICATION',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-4.unit-1','tnpsc2.phase.orientation.week-1.day-4',NULL,'Exam-level time awareness','EXAM_PRACTICE',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-5.unit-1','tnpsc2.phase.orientation.week-1.day-5',NULL,'Introduction to PYQ practice','PYQ',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-6.unit-1','tnpsc2.phase.orientation.week-1.day-6',NULL,'Revision and speed routine','SPEED',1,25,true),
+        ('tnpsc2.phase.orientation.week-1.day-7.unit-1','tnpsc2.phase.orientation.week-1.day-7',NULL,'Orientation checkpoint','TEST',1,30,true),
+        ('tnpsc2.phase.foundation.week-1.day-1.unit-1','tnpsc2.phase.foundation.week-1.day-1','aptitude.whole-numbers','Whole numbers and place value','CONCEPT',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-2.unit-1','tnpsc2.phase.foundation.week-1.day-2','aptitude.whole-numbers','Whole numbers guided practice','GUIDED_PRACTICE',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-3.unit-1','tnpsc2.phase.foundation.week-1.day-3','aptitude.whole-numbers','Whole numbers application','APPLICATION',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-4.unit-1','tnpsc2.phase.foundation.week-1.day-4','aptitude.whole-numbers','Whole numbers exam practice','EXAM_PRACTICE',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-5.unit-1','tnpsc2.phase.foundation.week-1.day-5','aptitude.whole-numbers','Whole numbers PYQs','PYQ',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-6.unit-1','tnpsc2.phase.foundation.week-1.day-6','aptitude.whole-numbers','Whole numbers speed revision','SPEED',1,25,true),
+        ('tnpsc2.phase.foundation.week-1.day-7.unit-1','tnpsc2.phase.foundation.week-1.day-7','aptitude.whole-numbers','Foundation Week 1 test','TEST',1,30,true)
+       ON CONFLICT (id) DO NOTHING`
+    );
+  }
+
   await client.query('COMMIT');
   console.log(
     `seeded: ${subjects} subjects, ${chapters} chapters, ${topics} topics, ` +
-      `${edges} prerequisite edges, ${questions} questions (language: ${LANGUAGE})`
+      `${edges} prerequisite edges, ${questions} questions, ${games} game definitions (language: ${LANGUAGE})`
   );
 } catch (err) {
   await client.query('ROLLBACK');

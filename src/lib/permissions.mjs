@@ -126,8 +126,8 @@ export function isSubjectScoped(session, permission) {
 }
 
 /** The subject ids a subject_expert account may act on. Irrelevant (and not called) for any other role. */
-export async function getSubjectScope(accountId) {
-  const { rows } = await query('SELECT subject_id FROM admin_subject_scope WHERE account_id = $1', [accountId]);
+export async function getSubjectScope(userId) {
+  const { rows } = await query('SELECT subject_id FROM admin_subject_scope WHERE user_id = $1', [userId]);
   return rows.map((r) => r.subject_id);
 }
 

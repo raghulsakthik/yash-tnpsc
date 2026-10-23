@@ -1,5 +1,5 @@
 import type {
-  ActivityDay, AppNotification, Course, MistakeItem, PYQItem,
+  ActivityDay, AppNotification, Course, MistakeItem, PYQItem, ResourceItem,
   SubjectMastery, TestSession, TodayUnit, UserProfile, WeakArea,
 } from '../types';
 
@@ -24,6 +24,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const novaApi = {
   me: () => request<{ email: string; role: string }>('/api/auth/me'),
   profile: () => request<Json>('/api/profile'),
+  updateProfile: (payload: Json) => request<Json>('/api/profile', { method: 'PUT', body: JSON.stringify(payload) }),
   dashboard: () => request<Json>('/api/dashboard'),
   courses: () => request<Json>('/api/courses'),
   plan: () => request<Json>('/api/plan/today'),
@@ -48,6 +49,8 @@ export const novaApi = {
   logStudyTime: (minutes: number) => request<Json>('/api/progress/study-time', { method: 'POST', body: JSON.stringify({ minutes }) }),
   question: (topic = 'mixed') => request<Json>(`/api/questions/next?topic=${encodeURIComponent(topic)}`),
   pyq: () => request<Json>('/api/pyqs/next'),
+  pyqForTopic: (topic: string) => request<Json>(`/api/pyqs/next?topic=${encodeURIComponent(topic)}`),
+  lesson: (topic: string) => request<Json>(`/api/lesson/${encodeURIComponent(topic)}`),
   mistake: () => request<Json>('/api/mistakes/next'),
   logout: () => request<Json>('/api/auth/logout', { method: 'POST' }),
   login: (email: string, password: string) => request<Json>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -56,6 +59,7 @@ export const novaApi = {
   attempt: (payload: Json) => request<Json>('/api/attempts', { method: 'POST', body: JSON.stringify(payload) }),
   startIntervention: (payload: Json) => request<Json>('/api/learning/interventions/start', { method: 'POST', body: JSON.stringify(payload) }),
   completeCurriculumUnit: (unitId: string, score?: number) => request<Json>('/api/curriculum/complete', { method: 'POST', body: JSON.stringify({ unitId, ...(score == null ? {} : { score }) }) }),
+  resources: () => request<Json>('/api/resources'),
 };
 
 function phaseName(raw?: string): UserProfile['currentPhase'] {
@@ -174,6 +178,19 @@ export function mapMistake(payload: Json): MistakeItem[] {
   if (!payload?.questionId) return [];
   return [{ id: payload.questionId, questionTitle: payload.prompt || 'Open mistake', subject: payload.subjectName || 'TNPSC', topic: payload.topicName || 'Review', mistakeType: payload.mistakeType || 'CONCEPT_GAP', count: Number(payload.count || 1), lastAttemptedDate: payload.lastAttemptedAt ? new Date(payload.lastAttemptedAt).toLocaleDateString() : 'Recently', resolved: false }];
 }
+export function mapResources(payload: Json): ResourceItem[] {
+  return (payload?.resources || []).map((r: Json) => {
+    const kb = Number(r.sizeBytes || 0) / 1024;
+    const size = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+    const ext = String(r.contentType || '').includes('pdf') ? '.pdf' : '';
+    return {
+      id: r.id, title: r.title, type: 'Download' as const, category: r.category || 'General',
+      sizeOrDomain: `${size}${ext}`, url: `/api/resources/${encodeURIComponent(r.id)}/download`,
+      description: r.description || '',
+    };
+  });
+}
+
 export function mapPracticeQuestion(payload: Json) {
   if (!payload?.questionId) return null;
   return { id: payload.questionId, topic: payload.topicName || 'Adaptive Practice', question: payload.prompt, options: payload.options || [], correctIndex: Number(payload.correctIndex ?? -1), explanation: payload.explanation || 'Answer submitted to the adaptive engine.' };
@@ -190,7 +207,7 @@ export function mapStructuredCourses(payload: Json) {
         durationMinutes: Math.max(10, Number(lesson.totalUnits || 1) * 5),
         description: `${lesson.completedUnits || 0} of ${lesson.totalUnits || 0} units completed.`,
         keyConcepts: [],
-        summaryNote: 'Learning content is supplied by the NOVA curriculum backend.',
+        summaryNote: 'Learning content is supplied by the YASH curriculum backend.',
         steps: { learnCompleted: Number(lesson.completion || 0) >= 25, understandCompleted: Number(lesson.completion || 0) >= 50, practiceCompleted: Number(lesson.completion || 0) >= 75, assessmentCompleted: Number(lesson.completion || 0) >= 100 },
         isCompleted: Number(lesson.completion || 0) >= 100,
       }));

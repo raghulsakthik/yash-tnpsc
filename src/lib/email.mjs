@@ -49,3 +49,23 @@ export async function sendEmailToLearner(learnerId, message) {
 
   return { to };
 }
+
+/**
+ * Sends a password reset email directly to the account's login address --
+ * unlike sendEmailToLearner, this never reads notify_email (reset
+ * delivery can't depend on an opt-in preference that may be unset).
+ */
+export async function sendPasswordResetEmail(to, token) {
+  if (!emailConfigured) {
+    throw new Error('Email is not configured on the server (missing SMTP_* env vars)');
+  }
+  const resetUrl = `${process.env.APP_BASE_URL ?? ''}/reset-password?token=${encodeURIComponent(token)}`;
+  await getTransporter().sendMail({
+    from: process.env.SMTP_USER,
+    to,
+    subject: 'Reset your YASH password',
+    text: `Reset your password: ${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+    html: `<p>Reset your password by clicking <a href="${resetUrl}">this link</a>.</p><p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
+  });
+  return { to };
+}

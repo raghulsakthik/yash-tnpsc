@@ -20,18 +20,11 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
     return true;
   });
 
-  const handleDownload = (id: string, title: string) => {
+  const handleDownload = (id: string, url: string) => {
     setDownloadedIds((prev) => [...prev, id]);
-    // Create quick text blob for download
-    const blob = new Blob([`Resource: ${title}\nDownloaded from YASH Learning Hub.`], {
-      type: 'text/plain',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Navigates to the real, backend-served file (cookies travel with a
+    // same-origin top-level navigation) -- never a client-fabricated blob.
+    window.location.href = url;
   };
 
   return (
@@ -118,7 +111,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
               <div className="mt-5 border-t border-neutral-100 pt-3 dark:border-neutral-800">
                 {item.type === 'Download' ? (
                   <button
-                    onClick={() => handleDownload(item.id, item.title)}
+                    onClick={() => handleDownload(item.id, item.url)}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600 active:scale-98"
                   >
                     {isDownloaded ? (

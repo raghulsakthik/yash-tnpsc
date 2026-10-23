@@ -27,7 +27,7 @@ export default function Register() {
       router.replace('/');
       router.refresh();
     } catch {
-      setError('Unable to reach NOVA right now. Please try again.');
+      setError('Unable to reach YASH right now. Please try again.');
     } finally { setSubmitting(false); }
   }
 
@@ -37,12 +37,12 @@ export default function Register() {
       <section style={styles.shell}>
         <div style={styles.brandRow}>
           <div style={styles.logo}>Y</div>
-          <div><div style={styles.brand}>NOVA</div><div style={styles.brandSub}>Adaptive Learning</div></div>
+          <div><div style={styles.brand}>YASH</div><div style={styles.brandSub}>Adaptive Learning</div></div>
         </div>
         <div style={styles.card}>
           <div style={styles.eyebrow}>Start your journey</div>
           <h1 style={styles.title}>Build your learning path.</h1>
-          <p style={styles.subtitle}>Create your account. NOVA will use your progress and performance to shape what you learn next.</p>
+          <p style={styles.subtitle}>Create your account. YASH will use your progress and performance to shape what you learn next.</p>
           <form onSubmit={handleSubmit} style={styles.form}>
             <label style={styles.label}>Your name<input style={styles.input} value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoComplete="name" required /></label>
             <label style={styles.label}>Email address<input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></label>

@@ -18,6 +18,7 @@ const NAV = [
   { href: '/admin/support', label: 'Support Center', Icon: FlagIcon },
   { href: '/admin/users', label: 'Admin Users', Icon: UsersIcon },
   { href: '/admin/proctoring', label: 'Proctoring', Icon: CameraIcon },
+  { href: '/admin/resources', label: 'Resources', Icon: UploadIcon },
 ];
 
 function isActive(pathname, href) {

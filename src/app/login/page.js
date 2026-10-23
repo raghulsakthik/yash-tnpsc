@@ -30,7 +30,7 @@ export default function Login() {
       router.replace('/');
       router.refresh();
     } catch {
-      setError('Unable to reach NOVA right now. Please try again.');
+      setError('Unable to reach YASH right now. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -43,7 +43,7 @@ export default function Login() {
         <div style={styles.brandRow}>
           <div style={styles.logo}>Y</div>
           <div>
-            <div style={styles.brand}>NOVA</div>
+            <div style={styles.brand}>YASH</div>
             <div style={styles.brandSub}>Adaptive Learning</div>
           </div>
         </div>
@@ -59,7 +59,10 @@ export default function Login() {
               <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
             </label>
             <label style={styles.label}>
-              Password
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Password</span>
+                <Link href="/forgot-password" style={{ fontSize: 10.5, fontWeight: 700, color: '#ea580c', textDecoration: 'none' }}>Forgot?</Link>
+              </div>
               <div style={styles.passwordWrap}>
                 <input style={{ ...styles.input, paddingRight: 72 }} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" autoComplete="current-password" required />
                 <button type="button" onClick={() => setShowPassword(v => !v)} style={styles.showButton}>{showPassword ? 'Hide' : 'Show'}</button>
@@ -69,11 +72,11 @@ export default function Login() {
             {error && <div role="alert" style={styles.error}>{error}</div>}
 
             <button type="submit" disabled={submitting} style={{ ...styles.primaryButton, opacity: submitting ? 0.7 : 1 }}>
-              {submitting ? 'Signing in…' : 'Sign in to NOVA'}
+              {submitting ? 'Signing in…' : 'Sign in to YASH'}
             </button>
           </form>
 
-          <div style={styles.divider}><span /> <small>NEW TO NOVA?</small> <span /></div>
+          <div style={styles.divider}><span /> <small>NEW TO YASH?</small> <span /></div>
           <Link href="/register" style={styles.secondaryButton}>Create your learner account</Link>
         </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db.mjs';
+import { pool, query } from '../../../lib/db.mjs';
 import { getSession } from '../../../lib/auth.mjs';
 import { computeStreak, longestStreak } from '../../../domain/progress.mjs';
 
@@ -72,4 +72,74 @@ export async function GET(request) {
   } catch (err) {
     return NextResponse.json({ code: 'PROFILE_FAILED', message: err.message }, { status: 500 });
   }
+}
+
+/**
+ * PUT /api/profile
+ *
+ * Persists real identity/contact/notification preferences. Email stays
+ * read-only here -- it's the account's login identity (app_user.email),
+ * not a profile field, and changing it needs its own re-verification
+ * flow, not a silent profile save.
+ */
+export async function PUT(request) {
+  const session = await getSession(request);
+  if (!session) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+  if (!session.learnerId) {
+    return NextResponse.json({ code: 'NO_LEARNER_PROFILE', message: 'Admin accounts have no learner profile' }, { status: 400 });
+  }
+  const learnerId = session.learnerId;
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ code: 'BAD_JSON' }, { status: 400 });
+  }
+
+  const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : null;
+  const phoneProvided = typeof body.phone === 'string';
+  const phone = phoneProvided ? body.phone.trim() || null : null;
+  const dailyGoalMinutes = Number.isInteger(body.dailyGoalMinutes) ? Math.max(15, Math.min(body.dailyGoalMinutes, 720)) : null;
+  const emailNotificationsProvided = typeof body.emailNotifications === 'boolean';
+  const smsNotificationsProvided = typeof body.smsNotifications === 'boolean';
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    if (name) await client.query('UPDATE learner SET name = $2 WHERE id = $1', [learnerId, name]);
+    await client.query(
+      `UPDATE learner_profile SET
+         phone = CASE WHEN $2::boolean THEN $3 ELSE phone END,
+         daily_goal_minutes = COALESCE($4, daily_goal_minutes),
+         notify_email = CASE WHEN $5::boolean THEN (CASE WHEN $6::boolean THEN $7 ELSE NULL END) ELSE notify_email END,
+         notify_whatsapp = CASE WHEN $8::boolean THEN (CASE WHEN $9::boolean THEN $10 ELSE NULL END) ELSE notify_whatsapp END,
+         updated_at = now()
+       WHERE learner_id = $1`,
+      [
+        learnerId,
+        phoneProvided, phone,
+        dailyGoalMinutes,
+        emailNotificationsProvided, body.emailNotifications, session.email,
+        smsNotificationsProvided, body.smsNotifications, phoneProvided ? phone : null,
+      ]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    return NextResponse.json({ code: 'PROFILE_SAVE_FAILED', message: err.message }, { status: 500 });
+  }
+  client.release();
+
+  return NextResponse.json({
+    saved: true,
+    name: name ?? undefined,
+    phone: phoneProvided ? phone : undefined,
+    dailyGoalMinutes: dailyGoalMinutes ?? undefined,
+    emailNotifications: emailNotificationsProvided ? body.emailNotifications : undefined,
+    smsNotifications: smsNotificationsProvided ? body.smsNotifications : undefined,
+  });
 }

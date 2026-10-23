@@ -26,7 +26,7 @@ export async function GET(request) {
       { rows: topicCoverage },
       { rows: recentActivity },
     ] = await Promise.all([
-      query(`SELECT role, COUNT(*)::int AS n FROM account GROUP BY role`),
+      query(`SELECT role, COUNT(*)::int AS n FROM app_user GROUP BY role`),
       query(`SELECT
                (SELECT COUNT(*)::int FROM subject) AS subjects,
                (SELECT COUNT(*)::int FROM chapter) AS chapters,
@@ -52,9 +52,9 @@ export async function GET(request) {
 
     return NextResponse.json({
       accounts: {
-        learners: roleCounts.learner ?? 0,
-        test: roleCounts.test ?? 0,
-        admins: roleCounts.admin ?? 0,
+        learners: roleCounts.STUDENT ?? 0,
+        test: 0,
+        admins: (roleCounts.ADMIN ?? 0) + (roleCounts.SUPER_ADMIN ?? 0),
       },
       content: {
         subjects: contentCounts[0].subjects,

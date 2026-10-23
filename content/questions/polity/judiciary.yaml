@@ -1,0 +1,21 @@
+topic: polity.judiciary
+language: en
+source: authored
+questions:
+  - id: polity-judiciary-001
+    difficulty: 0.35
+    estimatedSeconds: 35
+    question: "The original jurisdiction of the Supreme Court of India in disputes between the Union and States is provided under which Article?"
+    options: ["Article 131", "Article 32", "Article 226", "Article 137"]
+    answer: 0
+    explanation: "Article 131 gives the Supreme Court exclusive original jurisdiction over disputes between the Government of India and one or more States, or between States."
+    trap: "Article 32 is the 'right to constitutional remedies' for enforcing Fundamental Rights — a famous, differently-purposed article often recalled instead."
+
+  - id: polity-judiciary-002
+    difficulty: 0.3
+    estimatedSeconds: 30
+    question: "Which writ is issued by a court to direct a public authority to perform a duty it has failed to perform?"
+    options: ["Mandamus", "Habeas Corpus", "Certiorari", "Quo Warranto"]
+    answer: 0
+    explanation: "'Mandamus' literally means 'we command' — it directs a public official or body to carry out a duty it is legally obligated to perform."
+    trap: "Habeas Corpus ('you may have the body') is for unlawful detention, a distinct writ commonly listed alongside Mandamus."

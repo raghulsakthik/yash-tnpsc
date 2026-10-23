@@ -1,0 +1,30 @@
+topic: polity.fundamental-rights
+language: en
+source: authored
+questions:
+  - id: polity-rights-001
+    difficulty: 0.3
+    estimatedSeconds: 35
+    question: "Fundamental Rights in the Indian Constitution are covered under which Part?"
+    options: ["Part III", "Part IV", "Part II", "Part V"]
+    answer: 0
+    explanation: "Fundamental Rights are enumerated in Part III, Articles 12 to 35."
+    trap: "Part IV holds the Directive Principles of State Policy — a different, non-justiciable set of provisions often confused with Fundamental Rights."
+
+  - id: polity-rights-002
+    difficulty: 0.35
+    estimatedSeconds: 40
+    question: "The Right to Equality is guaranteed under which Articles of the Constitution?"
+    options: ["Articles 14-18", "Articles 19-22", "Articles 23-24", "Articles 25-28"]
+    answer: 0
+    explanation: "Articles 14 to 18 together form the Right to Equality — Article 14 (equality before law), 15 (non-discrimination), 16 (equality of opportunity in public employment), 17 (abolition of untouchability), 18 (abolition of titles)."
+    trap: "Articles 19-22 cover the Right to Freedom instead — a commonly confused adjacent range."
+
+  - id: polity-rights-003
+    difficulty: 0.3
+    estimatedSeconds: 30
+    question: "Which Article abolished untouchability in India?"
+    options: ["Article 17", "Article 14", "Article 21", "Article 23"]
+    answer: 0
+    explanation: "Article 17 abolishes 'untouchability' and forbids its practice in any form."
+    trap: "Article 23 deals with prohibition of trafficking and forced labour — a different social-reform provision in the same cluster of rights."

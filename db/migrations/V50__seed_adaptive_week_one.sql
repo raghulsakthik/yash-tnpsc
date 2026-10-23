@@ -1,0 +1,6 @@
+-- The adaptive week-one curriculum rows this migration used to insert
+-- directly depend on real topic rows (e.g. 'aptitude.whole-numbers') that
+-- don't exist yet at migration time against a fresh database -- migrate
+-- runs before seed in `npm run setup`. Moved to scripts/seed.mjs, which
+-- runs after the real syllabus is seeded. This migration is kept as a
+-- no-op so its applied version number isn't reused.

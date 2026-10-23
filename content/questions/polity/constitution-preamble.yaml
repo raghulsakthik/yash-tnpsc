@@ -1,0 +1,24 @@
+topic: polity.constitution-preamble
+language: en
+source: authored
+# Phase 20 — proof-of-genericity content: real Indian Polity facts, authored
+# the same way aptitude content is, to show the existing content/question
+# pipeline needs no subject-specific code.
+questions:
+  - id: polity-preamble-001
+    difficulty: 0.25
+    estimatedSeconds: 30
+    question: "Which Constitutional Amendment added the words 'Socialist' and 'Secular' to the Preamble?"
+    options: ["42nd Amendment (1976)", "44th Amendment (1978)", "1st Amendment (1951)", "61st Amendment (1989)"]
+    answer: 0
+    explanation: "The 42nd Amendment Act, 1976, inserted 'Socialist', 'Secular' and 'Integrity' into the Preamble."
+    trap: "The 44th Amendment is often confused with the 42nd since both date from the same turbulent period, but it reversed some 42nd Amendment changes rather than adding these words."
+
+  - id: polity-preamble-002
+    difficulty: 0.2
+    estimatedSeconds: 25
+    question: "The Preamble to the Indian Constitution declares India to be a sovereign, socialist, secular, democratic what?"
+    options: ["Republic", "Union of States", "Federation", "Commonwealth"]
+    answer: 0
+    explanation: "The Preamble's exact phrase is 'Sovereign Socialist Secular Democratic Republic'."
+    trap: "'Union of States' is Article 1's description of India, not the Preamble's own phrase — the two are often mixed up."

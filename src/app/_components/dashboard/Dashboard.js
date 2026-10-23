@@ -64,7 +64,7 @@ export default function Dashboard() {
           <Link href="/notifications" className={styles.iconButton}>♢</Link><Link href="/profile" className={styles.avatar}>{name[0]}</Link>
         </div>
       </header>
-      {search && <div className={styles.searchPop}><b>Search NOVA</b><p>Find lessons, concepts, PYQs and practice questions.</p><Link href="/search" className={styles.primary}>Open Search →</Link></div>}
+      {search && <div className={styles.searchPop}><b>Search YASH</b><p>Find lessons, concepts, PYQs and practice questions.</p><Link href="/search" className={styles.primary}>Open Search →</Link></div>}
 
       <main className={styles.main}>
         <div className={styles.overview}>
@@ -91,7 +91,7 @@ export default function Dashboard() {
           <aside className={styles.rightStack}>
             <section className={styles.card}><div className={styles.rank}><div className={styles.rankRing}>{pct}%</div><div><b>{name}</b><small>{c?.phase?.name || 'Learner'} · Level {c?.phase?.level || 1}</small></div></div><div className={styles.rightMetrics}><div><strong>{data.activity.totalQuestions}</strong><small>Questions</small></div><div><strong>{data.activity.activeDays}</strong><small>Active days</small></div></div><div className={styles.progressRow}><span>Course completion</span><b>{pct}%</b></div><div className={styles.progress}><span style={{ width: `${pct}%` }}/></div></section>
             <section className={styles.card}><span className={styles.eyebrow}>EARNED BADGES</span><div className={styles.badges}>{data.badges.length ? data.badges.map(b => <div className={styles.badge} key={b.id}><div>{b.icon || '◆'}</div><b>{b.name}</b><small>Verified achievement</small></div>) : <p>No badges yet — complete learning actions to unlock one.</p>}</div><Link href="/achievements" className={styles.textLink}>View all →</Link></section>
-            <section className={styles.card}><span className={styles.eyebrow}>FOCUS AREAS</span><p className={styles.help}>NOVA uses measured mastery to focus your next practice.</p>{data.weakTopics.length ? data.weakTopics.map(w => <div className={styles.weak} key={w.topicId}><span><b>{w.topicName}</b><small>{w.subjectName} · {w.attempts} attempts</small></span><strong>{w.mastery}%</strong></div>) : <p>No weak-topic signal yet. Start practising to generate one.</p>}</section>
+            <section className={styles.card}><span className={styles.eyebrow}>FOCUS AREAS</span><p className={styles.help}>YASH uses measured mastery to focus your next practice.</p>{data.weakTopics.length ? data.weakTopics.map(w => <div className={styles.weak} key={w.topicId}><span><b>{w.topicName}</b><small>{w.subjectName} · {w.attempts} attempts</small></span><strong>{w.mastery}%</strong></div>) : <p>No weak-topic signal yet. Start practising to generate one.</p>}</section>
           </aside>
         </div>
       </main>

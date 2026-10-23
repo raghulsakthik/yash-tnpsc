@@ -218,7 +218,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'login' && (
                 <button
                   type="button"
-                  onClick={() => alert('Password reset link sent to registered email!')}
+                  onClick={() => {
+                    const target = '/forgot-password';
+                    if (window.top && window.top !== window.self) window.top.location.href = target;
+                    else window.location.href = target;
+                  }}
                   className="text-[11px] font-medium text-orange-600 hover:underline dark:text-orange-400"
                 >
                   Forgot?

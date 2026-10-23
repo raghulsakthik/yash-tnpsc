@@ -1,36 +1,25 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Clock, Brain, CheckCircle, RefreshCw, Sparkles, ArrowRight } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { MistakeItem } from '../types';
 
 interface MistakesViewProps {
   mistakes: MistakeItem[];
-  onAddXp: (amount: number) => void;
+  onPractice: () => void;
 }
 
-export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp }) => {
-  const [items, setItems] = useState<MistakeItem[]>(mistakes);
+export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onPractice }) => {
   const [selectedType, setSelectedType] = useState<string>('all');
 
   const countByType = {
-    CONCEPT_GAP: items.filter((m) => m.mistakeType === 'CONCEPT_GAP').length * 4,
-    CARELESS_ERROR: items.filter((m) => m.mistakeType === 'CARELESS_ERROR').length * 4,
-    TIME_PRESSURE: items.filter((m) => m.mistakeType === 'TIME_PRESSURE').length * 5,
+    CONCEPT_GAP: mistakes.filter((m) => m.mistakeType === 'CONCEPT_GAP').length * 4,
+    CARELESS_ERROR: mistakes.filter((m) => m.mistakeType === 'CARELESS_ERROR').length * 4,
+    TIME_PRESSURE: mistakes.filter((m) => m.mistakeType === 'TIME_PRESSURE').length * 5,
   };
 
-  const handleResolve = (id: string) => {
-    setItems((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, resolved: true } : m))
-    );
-    onAddXp(75);
-    confetti({
-      particleCount: 60,
-      spread: 60,
-      origin: { y: 0.6 },
-    });
-  };
-
-  const filtered = items.filter((m) => {
+  // A mistake only leaves this list once the learner actually answers it
+  // correctly again (server-derived, via /api/mistakes/next) -- there is
+  // no local "mark resolved" shortcut.
+  const filtered = mistakes.filter((m) => {
     if (selectedType === 'all') return true;
     return m.mistakeType === selectedType;
   });
@@ -129,11 +118,7 @@ export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp })
         {filtered.map((item) => (
           <div
             key={item.id}
-            className={`flex flex-col justify-between gap-4 rounded-3xl border p-5 transition-all sm:flex-row sm:items-center ${
-              item.resolved
-                ? 'border-emerald-200 bg-emerald-50/30 opacity-70 dark:border-emerald-950 dark:bg-emerald-950/20'
-                : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-800'
-            }`}
+            className="flex flex-col justify-between gap-4 rounded-3xl border border-neutral-200 bg-white p-5 transition-all dark:border-neutral-800 dark:bg-neutral-800 sm:flex-row sm:items-center"
           >
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -156,20 +141,13 @@ export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp })
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {item.resolved ? (
-                <span className="flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Remediated</span>
-                </span>
-              ) : (
-                <button
-                  onClick={() => handleResolve(item.id)}
-                  className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-orange-600 active:scale-95"
-                >
-                  <span>Practice & Clear</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <button
+                onClick={onPractice}
+                className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-orange-600 active:scale-95"
+              >
+                <span>Practice & Clear</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         ))}

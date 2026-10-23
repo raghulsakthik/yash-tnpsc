@@ -19,7 +19,9 @@
     "db:seed-accounts": "node scripts/seed-accounts.mjs",
     "engagement:start": "node scripts/engagement-scheduler.mjs",
     "activity:start": "node scripts/activity-notifications-scheduler.mjs",
-    "content-worker": "node scripts/content-worker.mjs"
+    "content-worker": "node scripts/content-worker.mjs",
+    "test:phase14": "node scripts/phase14-production-simulation.mjs",
+    "test:backup-restore": "node scripts/verify-backup-restore.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1156.0",

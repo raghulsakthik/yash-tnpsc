@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   LogIn,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { UserProfile } from '../types';
@@ -36,6 +37,7 @@ interface SidebarProps {
   isLoggedIn?: boolean;
   onOpenAuth?: (mode: 'login' | 'signup') => void;
   onLogout?: () => void;
+  isAdminSession?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -51,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isLoggedIn = true,
   onOpenAuth,
   onLogout,
+  isAdminSession = false,
 }) => {
   const handleNav = (view: string) => {
     onSelectView(view);
@@ -377,6 +380,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </button>
           </div>
+
+          {/* Admin Portal -- only ever shown for a real ADMIN/SUPER_ADMIN session */}
+          {isAdminSession && (
+            <button
+              onClick={() => handleNav('admin')}
+              className="flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="h-4.5 w-4.5 text-orange-500" />
+                <span>Admin Portal</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-neutral-400" />
+            </button>
+          )}
 
           {/* Settings -> Profile button */}
           <button

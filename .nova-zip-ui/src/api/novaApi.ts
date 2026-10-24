@@ -32,6 +32,9 @@ export const novaApi = {
   journey: () => request<Json>('/api/journey'),
   achievements: () => request<Json>('/api/achievements'),
   notifications: () => request<Json>('/api/notifications'),
+  markNotificationRead: (id: string) => request<Json>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request<Json>('/api/notifications/read-all', { method: 'POST' }),
+  clearNotifications: () => request<Json>('/api/notifications/clear', { method: 'POST' }),
   bookmarks: () => request<Json>('/api/bookmarks'),
   calendar: () => request<Json>('/api/progress/calendar'),
   notes: () => request<Json>('/api/notes'),
@@ -160,8 +163,8 @@ export function mapTests(payload: Json): TestSession[] {
     recommendation: test.status === 'IN_PROGRESS' ? 'Continue the assessment selected by your adaptive learning plan.' : undefined }));
 }
 export function mapNotifications(payload: Json): AppNotification[] {
-  return (payload?.items || []).map((item: Json, index: number) => ({ id: `${item.type}-${item.at}-${index}`, category: item.type === 'achievement' ? 'achievement' : 'general',
-    title: item.title || 'Learning update', message: item.body || '', timeAgo: item.at ? new Date(item.at).toLocaleString() : 'Recently', timestamp: item.at ? new Date(item.at).getTime() : Date.now(), unread: false }));
+  return (payload?.items || []).map((item: Json) => ({ id: item.id, category: item.type === 'achievement' ? 'achievement' : 'general',
+    title: item.title || 'Learning update', message: item.body || '', timeAgo: item.at ? new Date(item.at).toLocaleString() : 'Recently', timestamp: item.at ? new Date(item.at).getTime() : Date.now(), unread: Boolean(item.unread) }));
 }
 export function mapCalendar(payload: Json): ActivityDay[] {
   return (payload?.days || []).map((day: Json) => { const count = Number(day.count || 0); return { date: day.date, count, level: count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4 }; });

@@ -23,6 +23,7 @@ import { MistakesView } from './components/MistakesView';
 import { JourneyView } from './components/JourneyView';
 import { TestsView } from './components/TestsView';
 import { CoursesView } from './components/CoursesView';
+import { AdminPortal } from './components/admin/AdminPortal';
 import { resources } from './data/resources';
 import {
   generateYearActivityData,
@@ -104,6 +105,7 @@ export default function App() {
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [session, setSession] = useState<{ email: string; role: string } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -140,6 +142,7 @@ export default function App() {
         const me = await novaApi.me();
         if (cancelled) return;
         setIsLoggedIn(true);
+        setSession(me);
 
         const [profileData, dashboard, courseData, plan, analytics, notificationData, achievementData, calendar, notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
           novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.analytics(),
@@ -179,7 +182,6 @@ export default function App() {
         setNotes((notesData?.notes || []) as NoteItem[]);
         // The ZIP course UI is preserved; its data is now built from the real curriculum API.
         setStructuredCourses(mapStructuredCourses(courseData));
-        void me;
       } catch (error) {
         if (cancelled) return;
         const status = (error as { status?: number })?.status;
@@ -197,18 +199,33 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleMarkNotificationRead = (id: string) => {
+  const handleMarkNotificationRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
     );
+    try {
+      await novaApi.markNotificationRead(id);
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to mark notification read');
+    }
   };
 
-  const handleMarkAllNotificationsRead = () => {
+  const handleMarkAllNotificationsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    try {
+      await novaApi.markAllNotificationsRead();
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to mark all notifications read');
+    }
   };
 
-  const handleClearAllNotifications = () => {
+  const handleClearAllNotifications = async () => {
     setNotifications([]);
+    try {
+      await novaApi.clearNotifications();
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to clear notifications');
+    }
   };
 
   const handleUpdateStructuredLessonStep = (
@@ -511,6 +528,16 @@ export default function App() {
   };
 
   const totalBookmarks = courses.filter((c) => c.isBookmarked).length;
+  const isAdminSession = session?.role === 'ADMIN' || session?.role === 'SUPER_ADMIN';
+
+  if (currentView === 'admin' && isAdminSession) {
+    return (
+      <AdminPortal
+        onReturnToLearnerHub={() => setCurrentView('home')}
+        initialRole={session?.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN'}
+      />
+    );
+  }
 
   return (
     <div
@@ -533,6 +560,7 @@ export default function App() {
           isLoggedIn={isLoggedIn}
           onOpenAuth={handleOpenAuth}
           onLogout={handleLogout}
+          isAdminSession={isAdminSession}
         />
 
         {/* Main Content Area */}

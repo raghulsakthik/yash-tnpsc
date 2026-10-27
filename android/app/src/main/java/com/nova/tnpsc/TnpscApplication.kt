@@ -2,8 +2,8 @@ package com.nova.tnpsc
 
 import android.app.Application
 import com.nova.tnpsc.data.auth.AuthRepository
+import com.nova.tnpsc.data.courses.CoursesApi
 import com.nova.tnpsc.data.journey.JourneyApi
-import com.nova.tnpsc.data.learn.LearnApi
 import com.nova.tnpsc.data.lesson.LessonApi
 import com.nova.tnpsc.data.network.ApiClient
 import com.nova.tnpsc.data.plan.PlanApi
@@ -38,7 +38,7 @@ class TnpscApplication : Application() {
         private set
     lateinit var profileApi: ProfileApi
         private set
-    lateinit var learnApi: LearnApi
+    lateinit var coursesApi: CoursesApi
         private set
     lateinit var practiceApi: PracticeApi
         private set
@@ -69,7 +69,7 @@ class TnpscApplication : Application() {
 
         planApi = apiClient.create(PlanApi::class.java)
         profileApi = apiClient.create(ProfileApi::class.java)
-        learnApi = apiClient.create(LearnApi::class.java)
+        coursesApi = apiClient.create(CoursesApi::class.java)
         practiceApi = apiClient.create(PracticeApi::class.java)
         journeyApi = apiClient.create(JourneyApi::class.java)
         lessonApi = apiClient.create(LessonApi::class.java)

@@ -43,8 +43,8 @@ import com.nova.tnpsc.data.auth.AuthState
 import com.nova.tnpsc.ui.components.YashLoadingScreen
 import com.nova.tnpsc.ui.screens.home.HomeScreen
 import com.nova.tnpsc.ui.screens.journey.JourneyScreen
-import com.nova.tnpsc.ui.screens.learn.LearnScreen
-import com.nova.tnpsc.ui.screens.learn.SubjectScreen
+import com.nova.tnpsc.ui.screens.courses.CourseDetailScreen
+import com.nova.tnpsc.ui.screens.courses.CoursesScreen
 import com.nova.tnpsc.ui.screens.lesson.LessonScreen
 import com.nova.tnpsc.ui.screens.login.LoginScreen
 import com.nova.tnpsc.ui.screens.onboarding.OnboardingScreen
@@ -65,7 +65,7 @@ const val DEFAULT_PRACTICE_TOPIC = "aptitude.fractions"
 
 sealed class Destination(val route: String, val label: String, val outline: ImageVector, val filled: ImageVector) {
     data object Home : Destination("home", "Home", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome)
-    data object Learn : Destination("learn", "Learn", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Filled.MenuBook)
+    data object Learn : Destination("learn", "Courses", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Filled.MenuBook)
     data object Practice : Destination("practice", "Practice", Icons.Outlined.Bolt, Icons.Filled.Bolt)
     data object Journey : Destination("journey", "Journey", Icons.Outlined.Timeline, Icons.Filled.Timeline)
     data object Profile : Destination("profile", "Profile", Icons.Outlined.Person, Icons.Filled.Person)
@@ -142,10 +142,10 @@ private fun MainNavHost(authRepository: AuthRepository) {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Destination.Home.route) { HomeScreen(navController) }
-            composable(Destination.Learn.route) { LearnScreen(navController) }
-            composable("learn/{subject}") { backStackEntry ->
-                val subject = backStackEntry.arguments?.getString("subject") ?: "general-studies"
-                SubjectScreen(subject, navController)
+            composable(Destination.Learn.route) { CoursesScreen(navController) }
+            composable("course/{chapterId}") { backStackEntry ->
+                val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
+                CourseDetailScreen(chapterId, navController)
             }
             composable(
                 "practice?topic={topic}&mode={mode}",

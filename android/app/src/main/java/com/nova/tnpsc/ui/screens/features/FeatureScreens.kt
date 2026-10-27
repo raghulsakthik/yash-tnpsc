@@ -144,6 +144,23 @@ fun FeatureHub(nav: NavHostController) {
     }
 }
 
+// Real external links only -- no fabricated "Download" placeholders. Mirrors
+// .nova-zip-ui/src/data/resources.ts exactly (the one real curated link);
+// real downloadable resources come from the backend (featureApi.resources()),
+// same split as web's ResourcesView.tsx All/Links/Download tabs.
+private data class StaticLink(val title: String, val category: String, val domain: String, val description: String, val url: String)
+private val STATIC_LINKS = listOf(
+    StaticLink(
+        "TNPSC Official Portal & Notifications",
+        "Official Portal",
+        "tnpsc.gov.in",
+        "Official announcements, hall tickets, syllabus bulletins, and result portal.",
+        "https://www.tnpsc.gov.in/",
+    ),
+)
+
+private enum class ResourceTab(val label: String) { ALL("All Resources"), LINKS("Link's"), DOWNLOAD("Download") }
+
 @Composable fun ResourcesScreen() {
     val context = LocalContext.current
     val app = context.applicationContext as TnpscApplication
@@ -153,6 +170,7 @@ fun FeatureHub(nav: NavHostController) {
     var downloadingId by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
     var pendingDownload by remember { mutableStateOf<ResourceItem?>(null) }
+    var tab by remember { mutableStateOf(ResourceTab.ALL) }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -183,17 +201,45 @@ fun FeatureHub(nav: NavHostController) {
             .onFailure { error = it.message }
     }
 
-    FeaturePage("Resources", "Real files uploaded by an admin") {
+    val showLinks = tab == ResourceTab.ALL || tab == ResourceTab.LINKS
+    val showDownloads = tab == ResourceTab.ALL || tab == ResourceTab.DOWNLOAD
+
+    FeaturePage("Resources", "Curated links and real files uploaded by an admin") {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ResourceTab.entries.forEach { t ->
+                androidx.compose.material3.FilterChip(selected = tab == t, onClick = { tab = t }, label = { Text(t.label) })
+            }
+        }
         error?.let { Text(it, color = NovaWarmAccent) }
         status?.let { Text(it, color = NovaInkMuted, modifier = Modifier.padding(bottom = 4.dp)) }
-        if (resources.isEmpty() && error == null) Text("No resources have been uploaded yet.", color = NovaInkMuted)
-        resources.forEach { r ->
-            NovaCard {
-                Text(r.title, fontWeight = FontWeight.SemiBold)
-                r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
-                Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
-                Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
-                    Text(if (downloadingId == r.id) "Downloading…" else "Download")
+
+        if (showLinks) {
+            STATIC_LINKS.forEach { link ->
+                NovaCard {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(link.category, color = NovaWarmAccent, style = MaterialTheme.typography.labelSmall)
+                        Text(link.domain, color = NovaInkMuted, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Text(link.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+                    Text(link.description, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                    OutlinedButton(
+                        onClick = { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link.url))) },
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) { Text("Visit Reference") }
+                }
+            }
+        }
+
+        if (showDownloads) {
+            if (resources.isEmpty() && error == null) Text("No downloadable resources have been uploaded yet.", color = NovaInkMuted)
+            resources.forEach { r ->
+                NovaCard {
+                    Text(r.title, fontWeight = FontWeight.SemiBold)
+                    r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                    Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                    Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
+                        Text(if (downloadingId == r.id) "Downloading…" else "Download")
+                    }
                 }
             }
         }

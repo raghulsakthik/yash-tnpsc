@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileCheck, Clock, Award, CheckCircle, XCircle, ArrowRight, Play, RotateCcw, AlertTriangle, Sparkles } from 'lucide-react';
+import { FileCheck, Clock, Award, CheckCircle, XCircle, ArrowRight, Play, RotateCcw, AlertTriangle, Sparkles, Video, VideoOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { TestSession } from '../types';
+import { useProctoring } from '../hooks/useProctoring';
 
 interface TestsViewProps {
   tests: TestSession[];
@@ -28,6 +29,7 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
   const [submissionResult, setSubmissionResult] = useState<{ score: number; correctCount: number; questionCount: number } | null>(null);
   const [loadingTest, setLoadingTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { consent: proctoringConsent, requestConsent, startRecording, stopRecording } = useProctoring();
 
   // Timer countdown when test is running
   useEffect(() => {
@@ -52,6 +54,13 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
       setTimeLeft(test.durationMinutes * 60);
       setIsSubmitted(false);
       setSubmissionResult(null);
+
+      // Proctoring consent is asked right here -- this click is the real
+      // user gesture getUserMedia/getDisplayMedia require. Declining
+      // doesn't block the test; it's recorded honestly as DENIED instead
+      // of silently pretending the session was proctored.
+      const granted = await requestConsent();
+      if (granted) startRecording(test.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load test');
     } finally {
@@ -81,6 +90,7 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
       if (!response.ok) throw new Error(payload?.message || 'Unable to submit test');
       setSubmissionResult({ score: Number(payload.score || 0), correctCount: Number(payload.correctCount || 0), questionCount: Number(payload.questionCount || testQuestions.length) });
       setIsSubmitted(true);
+      stopRecording();
       onAddXp(Math.round(Number(payload.score || 0) * 2.5));
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     } catch (err) {
@@ -191,7 +201,7 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
           <div
             className="fixed inset-0 bg-neutral-950/70 backdrop-blur-xs"
-            onClick={() => setActiveTest(null)}
+            onClick={() => { stopRecording(); setActiveTest(null); }}
           />
 
           <div className="relative z-10 flex h-full max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
@@ -207,12 +217,25 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
               </div>
 
               <div className="flex items-center gap-4">
+                {!isSubmitted && (
+                  proctoringConsent === 'granted' ? (
+                    <div className="flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300" title="Camera and screen are being recorded for this test">
+                      <Video className="h-3.5 w-3.5" />
+                      <span>Proctored</span>
+                    </div>
+                  ) : proctoringConsent === 'denied' ? (
+                    <div className="flex items-center gap-1.5 rounded-xl bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400" title="Camera/screen access was declined -- this attempt is not proctored">
+                      <VideoOff className="h-3.5 w-3.5" />
+                      <span>Not proctored</span>
+                    </div>
+                  ) : null
+                )}
                 <div className="flex items-center gap-1.5 rounded-xl bg-orange-100 px-3 py-1 font-mono text-xs font-bold text-orange-800 dark:bg-orange-950 dark:text-orange-300">
                   <Clock className="h-4 w-4" />
                   <span>{formatTime(timeLeft)}</span>
                 </div>
                 <button
-                  onClick={() => setActiveTest(null)}
+                  onClick={() => { stopRecording(); setActiveTest(null); }}
                   className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   ✕
@@ -360,7 +383,7 @@ export const TestsView: React.FC<TestsViewProps> = ({ tests, onAddXp }) => {
 
                   <div className="flex justify-center gap-3 pt-2">
                     <button
-                      onClick={() => setActiveTest(null)}
+                      onClick={() => { stopRecording(); setActiveTest(null); }}
                       className="rounded-xl bg-orange-500 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-orange-600"
                     >
                       Return to Dashboard

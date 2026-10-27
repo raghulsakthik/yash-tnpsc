@@ -14,6 +14,7 @@ import {
   BellOff,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { PushNotifications } from './PushNotifications';
 
 interface ProfileModalProps {
   profile: UserProfile;
@@ -313,6 +314,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Real browser push notifications -- separate from the toggles
+              above, which are preferences; this is the actual device
+              subscription (src/lib/push.mjs on the backend). */}
+          <PushNotifications />
 
           {/* Proficiency Level */}
           <div>

@@ -17,6 +17,11 @@ sealed interface LoginResult {
     data class Failure(val message: String) : LoginResult
 }
 
+sealed interface MessageResult {
+    data class Success(val message: String) : MessageResult
+    data class Failure(val message: String) : MessageResult
+}
+
 /**
  * The single source of truth for "is she logged in, and as whom" --
  * mirrors the web app's three account roles (learner / test / admin, see
@@ -60,6 +65,35 @@ class AuthRepository(apiClient: ApiClient) {
             }
         } catch (e: Exception) {
             LoginResult.Failure(e.message ?: "Could not reach the server")
+        }
+    }
+
+    /** Always returns Success (the real backend hides whether the email exists, to avoid account enumeration), unless the request itself failed to reach the server. */
+    suspend fun requestPasswordReset(email: String): MessageResult {
+        return try {
+            val response = api.forgotPassword(ForgotPasswordRequest(email))
+            val body = response.body()
+            if (response.isSuccessful) {
+                MessageResult.Success(body?.message ?: "If an account exists for that email, a reset link has been sent.")
+            } else {
+                MessageResult.Failure(body?.message ?: "Could not send a reset link")
+            }
+        } catch (e: Exception) {
+            MessageResult.Failure(e.message ?: "Could not reach the server")
+        }
+    }
+
+    suspend fun confirmPasswordReset(token: String, password: String): MessageResult {
+        return try {
+            val response = api.resetPassword(ResetPasswordRequest(token, password))
+            val body = response.body()
+            if (response.isSuccessful) {
+                MessageResult.Success(body?.message ?: "Password updated.")
+            } else {
+                MessageResult.Failure(body?.message ?: "Could not reset your password")
+            }
+        } catch (e: Exception) {
+            MessageResult.Failure(e.message ?: "Could not reach the server")
         }
     }
 

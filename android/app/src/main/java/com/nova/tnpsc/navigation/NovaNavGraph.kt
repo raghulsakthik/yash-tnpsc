@@ -97,7 +97,21 @@ fun NovaApp(authRepository: AuthRepository, onLoggedIn: suspend () -> Unit) {
 
     when (authState) {
         is AuthState.Unknown -> YashLoadingScreen()
-        is AuthState.LoggedOut -> LoginScreen(authRepository)
+        is AuthState.LoggedOut -> {
+            var authScreen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("login") }
+            when (authScreen) {
+                "forgot" -> com.nova.tnpsc.ui.screens.login.ForgotPasswordScreen(
+                    authRepository = authRepository,
+                    onBackToLogin = { authScreen = "login" },
+                    onHaveToken = { authScreen = "reset" },
+                )
+                "reset" -> com.nova.tnpsc.ui.screens.login.ResetPasswordScreen(
+                    authRepository = authRepository,
+                    onBackToLogin = { authScreen = "login" },
+                )
+                else -> LoginScreen(authRepository, onForgotPassword = { authScreen = "forgot" })
+            }
+        }
         is AuthState.LoggedIn -> {
             var checked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
             var onboarded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
@@ -155,6 +169,7 @@ private fun MainNavHost(authRepository: AuthRepository) {
             composable("progress") { ProgressScreen() }
             composable("weekly-review") { WeeklyReviewScreen() }
             composable("milestones") { MilestonesScreen() }
+            composable("notes") { NotesScreen() }
             composable("lesson/{topic}") { backStackEntry ->
                 val topic = backStackEntry.arguments?.getString("topic") ?: DEFAULT_PRACTICE_TOPIC
                 LessonScreen(topic = topic, navController = navController)

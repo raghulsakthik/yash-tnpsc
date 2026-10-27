@@ -17,6 +17,7 @@ import com.nova.tnpsc.ui.components.*
 import com.nova.tnpsc.ui.theme.*
 import com.nova.tnpsc.navigation.practiceRoute
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @Composable
 fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Everything you can do on Web") {
@@ -29,6 +30,7 @@ fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Ev
     FeatureCard("◌", "Progress", "Activity calendar and topic status") { nav.navigate("progress") }
     FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
     FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
+    FeatureCard("📝", "Notes", "Your own written study notes") { nav.navigate("notes") }
 }
 
 @Composable private fun FeatureCard(icon: String, title: String, body: String, onClick: () -> Unit) {
@@ -84,5 +86,51 @@ fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Ev
 }
 
 @Composable fun MilestonesScreen() { val app=LocalContext.current.applicationContext as TnpscApplication; var p by remember { mutableStateOf<com.nova.tnpsc.data.profile.ProfileResponse?>(null) }; LaunchedEffect(Unit){ p=app.profileApi.get().body() }; FeaturePage("Milestones", "Streaks and meaningful progress") { NovaCard { NovaStat(p?.streak?.toString() ?: "—", "current streak", NovaWarmAccent); Spacer(Modifier.height(12.dp)); NovaStat(p?.longestStreak?.toString() ?: "—", "longest streak"); Text("Milestones are based on real sessions and learning evidence, not app opens.", color=NovaInkMuted, modifier=Modifier.padding(top=12.dp)) }; NovaCard { NovaStat(p?.questionsSolved?.toString() ?: "—", "questions solved"); Spacer(Modifier.height(12.dp)); NovaStat(p?.topicsMastered?.toString() ?: "—", "topics mastered"); Spacer(Modifier.height(12.dp)); NovaStat(p?.testsCompleted?.toString() ?: "—", "tests completed") } } }
+
+@Composable fun NotesScreen() {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    val scope = rememberCoroutineScope()
+    var notes by remember { mutableStateOf<List<NoteItem>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+
+    fun reload() { scope.launch { runCatching { app.featureApi.notes() }.onSuccess { if (it.isSuccessful) notes = it.body()?.notes ?: emptyList() else error = "Could not load notes" }.onFailure { error = it.message } } }
+    LaunchedEffect(Unit) { reload() }
+
+    FeaturePage("Your notes", "Real notes, saved against your account") {
+        error?.let { Text(it, color = NovaWarmAccent) }
+        NovaCard {
+            Eyebrow("New note")
+            OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text("Content") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            Button(
+                onClick = {
+                    if (title.isBlank() || content.isBlank() || saving) return@Button
+                    saving = true
+                    scope.launch {
+                        runCatching { app.featureApi.createNote(CreateNoteRequest(title = title.trim(), content = content.trim())) }
+                            .onSuccess { if (it.isSuccessful) { title = ""; content = ""; reload() } else error = it.body()?.message ?: "Could not save note" }
+                            .onFailure { error = it.message }
+                        saving = false
+                    }
+                },
+                modifier = Modifier.padding(top = 12.dp),
+            ) { Text(if (saving) "Saving…" else "Save note") }
+        }
+        if (notes.isEmpty() && error == null) Text("No notes yet. Write your first one above.", color = NovaInkMuted)
+        notes.forEach { n ->
+            NovaCard {
+                Text(n.title, fontWeight = FontWeight.SemiBold)
+                Text(n.content, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Text(n.date, color = NovaInkMuted, style = MaterialTheme.typography.labelSmall)
+                    TextButton(onClick = { scope.launch { runCatching { app.featureApi.deleteNote(n.id) }.onSuccess { reload() } } }) { Text("Delete") }
+                }
+            }
+        }
+    }
+}
 
 @Composable private fun FeaturePage(eyebrow: String, title: String, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) { Eyebrow(eyebrow); Text(title, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(top=8.dp)); content() } }

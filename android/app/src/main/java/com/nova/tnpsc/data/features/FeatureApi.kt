@@ -26,6 +26,11 @@ import retrofit2.http.*
 @Serializable data class ActiveCurriculumCurrent(val status: String = "ACTIVE", val phaseName: String? = null, val phaseLevel: Int = 0, val weekNumber: Int = 0, val weekTitle: String? = null, val weekObjective: String? = null, val dayNumber: Int = 0, val dayTitle: String? = null, val dayPurpose: String? = null, val targetMinutes: Int? = null)
 @Serializable data class CurriculumUnit(val id: String = "", val topicId: String? = null, val title: String = "", val unitType: String = "", val estimatedMinutes: Int? = null, val required: Boolean = true, val progressStatus: String = "NOT_STARTED", val score: Double? = null, val attempts: Int = 0, val topicName: String? = null)
 @Serializable data class ActiveCurriculumResponse(val curriculumId: String = "", val current: ActiveCurriculumCurrent? = null, val units: List<CurriculumUnit> = emptyList())
+@Serializable data class NoteItem(val id: String = "", val courseTitle: String? = null, val title: String = "", val content: String = "", val tags: List<String> = emptyList(), val date: String = "")
+@Serializable data class NotesResponse(val notes: List<NoteItem> = emptyList())
+@Serializable data class CreateNoteRequest(val title: String, val content: String, val courseTitle: String? = null, val tags: List<String> = emptyList())
+@Serializable data class CreateNoteResponse(val note: NoteItem? = null, val code: String? = null, val message: String? = null)
+@Serializable data class DeleteNoteResponse(val deleted: Boolean = false, val code: String? = null)
 
 interface FeatureApi {
     @GET("api/bookmarks") suspend fun bookmarks(): Response<BookmarksResponse>
@@ -40,4 +45,7 @@ interface FeatureApi {
     @GET("api/search") suspend fun search(@Query("q") query: String): Response<SearchResponse>
     @POST("api/questions/{id}/report") suspend fun report(@Path("id") questionId: String, @Body body: ReportRequest): Response<ReportResponse>
     @GET("api/curriculum/active") suspend fun activeCurriculum(): Response<ActiveCurriculumResponse>
+    @GET("api/notes") suspend fun notes(): Response<NotesResponse>
+    @POST("api/notes") suspend fun createNote(@Body body: CreateNoteRequest): Response<CreateNoteResponse>
+    @DELETE("api/notes/{id}") suspend fun deleteNote(@Path("id") id: String): Response<DeleteNoteResponse>
 }

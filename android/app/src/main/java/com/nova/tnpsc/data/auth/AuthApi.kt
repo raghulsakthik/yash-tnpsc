@@ -15,4 +15,10 @@ interface AuthApi {
 
     @GET("api/auth/me")
     suspend fun me(): Response<MeResponse>
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<MessageResponse>
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body body: ResetPasswordRequest): Response<MessageResponse>
 }

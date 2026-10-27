@@ -7,6 +7,9 @@ import retrofit2.http.POST
 
 /** Mirrors src/app/api/auth/{login,logout,me}/route.js exactly. */
 interface AuthApi {
+    @POST("api/auth/register")
+    suspend fun register(@Body body: RegisterRequest): Response<RegisterResponse>
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): Response<LoginResponse>
 

@@ -53,6 +53,23 @@ class AuthRepository(apiClient: ApiClient) {
         }
     }
 
+    /** Mirrors AuthModal.tsx's signup path -- POST /api/auth/register, same session cookie mechanism as login. */
+    suspend fun register(name: String, email: String, password: String): LoginResult {
+        return try {
+            val response = api.register(RegisterRequest(name, email, password))
+            val body = response.body()
+            if (response.isSuccessful && body?.user != null) {
+                val role = body.user.role ?: "STUDENT"
+                _state.value = AuthState.LoggedIn(body.user.email ?: email, role)
+                LoginResult.Success(role)
+            } else {
+                LoginResult.Failure(body?.message ?: "Could not create your account")
+            }
+        } catch (e: Exception) {
+            LoginResult.Failure(e.message ?: "Could not reach the server")
+        }
+    }
+
     suspend fun login(email: String, password: String): LoginResult {
         return try {
             val response = api.login(LoginRequest(email, password))

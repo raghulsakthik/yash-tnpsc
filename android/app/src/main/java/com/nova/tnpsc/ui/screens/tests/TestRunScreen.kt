@@ -1,5 +1,9 @@
 package com.nova.tnpsc.ui.screens.tests
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,12 +14,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,9 +36,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import com.nova.tnpsc.TnpscApplication
+import com.nova.tnpsc.data.proctoring.ProctoringRecorder
 import com.nova.tnpsc.data.tests.AnswerRequest
 import com.nova.tnpsc.data.tests.TestQuestion
 import com.nova.tnpsc.ui.components.Base64Image
@@ -48,15 +60,28 @@ private data class LocalAnswer(val selectedIndex: Int? = null, val markedForRevi
 /** Free navigation, mark-for-review, nothing revealed until submit -- mirrors src/app/_components/LiveTest.js. */
 @Composable
 fun TestRunScreen(testId: String, navController: NavHostController) {
-    val app = LocalContext.current.applicationContext as TnpscApplication
+    val context = LocalContext.current
+    val app = context.applicationContext as TnpscApplication
     val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val proctor = remember { ProctoringRecorder(context, lifecycleOwner) }
 
     var questions by remember { mutableStateOf<List<TestQuestion>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var current by remember { mutableIntStateOf(0) }
     var submitting by remember { mutableStateOf(false) }
+    var proctored by remember { mutableStateOf(false) }
     val answers = remember { mutableStateMapOf<String, LocalAnswer>() }
     var shownAt by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            proctor.start(testId, scope)
+            proctored = true
+        } else {
+            proctor.logEvent("CONSENT_DENIED", scope)
+        }
+    }
 
     LaunchedEffect(testId) {
         try {
@@ -68,12 +93,23 @@ fun TestRunScreen(testId: String, navController: NavHostController) {
                     answers[q.questionId] = LocalAnswer(q.selectedIndex, q.markedForReview)
                 }
                 shownAt = System.currentTimeMillis()
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    proctor.start(testId, scope)
+                    proctored = true
+                } else {
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }
             } else {
                 error = body?.message ?: "Could not load this test"
             }
         } catch (e: Exception) {
             error = e.message ?: "Could not reach the server"
         }
+    }
+
+    // Best-effort cleanup if the screen is left without an explicit submit (back button, process death aside).
+    DisposableEffect(Unit) {
+        onDispose { proctor.stop(scope) }
     }
 
     fun saveAnswer(questionId: String, patch: LocalAnswer) {
@@ -113,6 +149,13 @@ fun TestRunScreen(testId: String, navController: NavHostController) {
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        item {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(if (proctored) Icons.Filled.Videocam else Icons.Filled.VideocamOff, contentDescription = null, tint = NovaInkMuted)
+                Text(if (proctored) "Proctored" else "Not proctored", color = NovaInkMuted)
+            }
+        }
+
         item {
             Text("Question ${current + 1} of ${qs.size} · $answered answered", color = NovaInkMuted)
         }
@@ -159,6 +202,7 @@ fun TestRunScreen(testId: String, navController: NavHostController) {
                         try {
                             val res = app.testsApi.submit(testId)
                             if (res.isSuccessful) {
+                                proctor.stop(scope)
                                 navController.navigate("tests/$testId/result") {
                                     popUpTo("tests") { inclusive = false }
                                 }

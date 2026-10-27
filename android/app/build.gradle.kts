@@ -122,4 +122,13 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Camera-only proctoring during a test attempt (see
+    // data/proctoring/ProctoringRecorder.kt) -- records short local segment
+    // files and uploads each one, same contract as the web client's
+    // MediaRecorder + /api/proctoring/chunk.
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-video:1.3.4")
 }

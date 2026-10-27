@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  * this screen out for the main bottom-nav graph.
  */
 @Composable
-fun LoginScreen(authRepository: AuthRepository) {
+fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var submitting by remember { mutableStateOf(false) }
@@ -115,6 +115,13 @@ fun LoginScreen(authRepository: AuthRepository) {
             } else {
                 Text("Log in")
             }
+        }
+
+        androidx.compose.material3.TextButton(
+            onClick = onForgotPassword,
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text("Forgot password?")
         }
     }
 }

@@ -17,18 +17,31 @@ import com.nova.tnpsc.ui.components.*
 import com.nova.tnpsc.ui.theme.*
 import com.nova.tnpsc.navigation.practiceRoute
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @Composable
-fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Everything you can do on Web") {
-    Text("The Android app uses the same backend and exposes the same learner capabilities.", color = NovaInkMuted)
-    FeatureCard("🔖", "Bookmarks", "Saved questions and answers") { nav.navigate("bookmarks") }
-    FeatureCard("🔔", "Notifications", "Achievements and learning nudges") { nav.navigate("notifications") }
-    FeatureCard("✦", "Achievements", "Unlocked and upcoming milestones") { nav.navigate("achievements") }
-    FeatureCard("↻", "Mistakes", "Review unresolved mistakes") { nav.navigate("mistakes") }
-    FeatureCard("⌕", "Search", "Find topics, lessons and questions") { nav.navigate("search") }
-    FeatureCard("◌", "Progress", "Activity calendar and topic status") { nav.navigate("progress") }
-    FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
-    FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
+fun FeatureHub(nav: NavHostController) {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    val authState by app.authRepository.state.collectAsState()
+    val role = (authState as? com.nova.tnpsc.data.auth.AuthState.LoggedIn)?.role
+    val isAdmin = role == "ADMIN" || role == "SUPER_ADMIN"
+
+    FeaturePage("NOVA feature library", "Everything you can do on Web") {
+        Text("The Android app uses the same backend and exposes the same learner capabilities.", color = NovaInkMuted)
+        FeatureCard("🔖", "Bookmarks", "Saved questions and answers") { nav.navigate("bookmarks") }
+        FeatureCard("🔔", "Notifications", "Achievements and learning nudges") { nav.navigate("notifications") }
+        FeatureCard("✦", "Achievements", "Unlocked and upcoming milestones") { nav.navigate("achievements") }
+        FeatureCard("↻", "Mistakes", "Review unresolved mistakes") { nav.navigate("mistakes") }
+        FeatureCard("⌕", "Search", "Find topics, lessons and questions") { nav.navigate("search") }
+        FeatureCard("◌", "Progress", "Activity calendar and topic status") { nav.navigate("progress") }
+        FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
+        FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
+        FeatureCard("📝", "Notes", "Your own written study notes") { nav.navigate("notes") }
+        FeatureCard("⭳", "Resources", "Real admin-uploaded downloadable files") { nav.navigate("resources") }
+        if (isAdmin) {
+            FeatureCard("🛠️", "Admin Portal", "Dashboard, learners, content and more") { nav.navigate("admin") }
+        }
+    }
 }
 
 @Composable private fun FeatureCard(icon: String, title: String, body: String, onClick: () -> Unit) {
@@ -84,5 +97,125 @@ fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Ev
 }
 
 @Composable fun MilestonesScreen() { val app=LocalContext.current.applicationContext as TnpscApplication; var p by remember { mutableStateOf<com.nova.tnpsc.data.profile.ProfileResponse?>(null) }; LaunchedEffect(Unit){ p=app.profileApi.get().body() }; FeaturePage("Milestones", "Streaks and meaningful progress") { NovaCard { NovaStat(p?.streak?.toString() ?: "—", "current streak", NovaWarmAccent); Spacer(Modifier.height(12.dp)); NovaStat(p?.longestStreak?.toString() ?: "—", "longest streak"); Text("Milestones are based on real sessions and learning evidence, not app opens.", color=NovaInkMuted, modifier=Modifier.padding(top=12.dp)) }; NovaCard { NovaStat(p?.questionsSolved?.toString() ?: "—", "questions solved"); Spacer(Modifier.height(12.dp)); NovaStat(p?.topicsMastered?.toString() ?: "—", "topics mastered"); Spacer(Modifier.height(12.dp)); NovaStat(p?.testsCompleted?.toString() ?: "—", "tests completed") } } }
+
+@Composable fun NotesScreen() {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    val scope = rememberCoroutineScope()
+    var notes by remember { mutableStateOf<List<NoteItem>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+
+    fun reload() { scope.launch { runCatching { app.featureApi.notes() }.onSuccess { if (it.isSuccessful) notes = it.body()?.notes ?: emptyList() else error = "Could not load notes" }.onFailure { error = it.message } } }
+    LaunchedEffect(Unit) { reload() }
+
+    FeaturePage("Your notes", "Real notes, saved against your account") {
+        error?.let { Text(it, color = NovaWarmAccent) }
+        NovaCard {
+            Eyebrow("New note")
+            OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text("Content") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            Button(
+                onClick = {
+                    if (title.isBlank() || content.isBlank() || saving) return@Button
+                    saving = true
+                    scope.launch {
+                        runCatching { app.featureApi.createNote(CreateNoteRequest(title = title.trim(), content = content.trim())) }
+                            .onSuccess { if (it.isSuccessful) { title = ""; content = ""; reload() } else error = it.body()?.message ?: "Could not save note" }
+                            .onFailure { error = it.message }
+                        saving = false
+                    }
+                },
+                modifier = Modifier.padding(top = 12.dp),
+            ) { Text(if (saving) "Saving…" else "Save note") }
+        }
+        if (notes.isEmpty() && error == null) Text("No notes yet. Write your first one above.", color = NovaInkMuted)
+        notes.forEach { n ->
+            NovaCard {
+                Text(n.title, fontWeight = FontWeight.SemiBold)
+                Text(n.content, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Text(n.date, color = NovaInkMuted, style = MaterialTheme.typography.labelSmall)
+                    TextButton(onClick = { scope.launch { runCatching { app.featureApi.deleteNote(n.id) }.onSuccess { reload() } } }) { Text("Delete") }
+                }
+            }
+        }
+    }
+}
+
+@Composable fun ResourcesScreen() {
+    val context = LocalContext.current
+    val app = context.applicationContext as TnpscApplication
+    val scope = rememberCoroutineScope()
+    var resources by remember { mutableStateOf<List<ResourceItem>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var downloadingId by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var pendingDownload by remember { mutableStateOf<ResourceItem?>(null) }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val r = pendingDownload
+        pendingDownload = null
+        if (granted && r != null) {
+            scope.launch { downloadResource(app, context, r) { downloadingId = it }.let { status = it } }
+        } else if (r != null) {
+            status = "Storage permission is needed to save the file."
+        }
+    }
+
+    fun beginDownload(r: ResourceItem) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingDownload = r
+            permissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return
+        }
+        scope.launch { status = downloadResource(app, context, r) { downloadingId = it } }
+    }
+
+    LaunchedEffect(Unit) {
+        runCatching { app.featureApi.resources() }
+            .onSuccess { if (it.isSuccessful) resources = it.body()?.resources ?: emptyList() else error = "Could not load resources" }
+            .onFailure { error = it.message }
+    }
+
+    FeaturePage("Resources", "Real files uploaded by an admin") {
+        error?.let { Text(it, color = NovaWarmAccent) }
+        status?.let { Text(it, color = NovaInkMuted, modifier = Modifier.padding(bottom = 4.dp)) }
+        if (resources.isEmpty() && error == null) Text("No resources have been uploaded yet.", color = NovaInkMuted)
+        resources.forEach { r ->
+            NovaCard {
+                Text(r.title, fontWeight = FontWeight.SemiBold)
+                r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(if (downloadingId == r.id) "Downloading…" else "Download")
+                }
+            }
+        }
+    }
+}
+
+private suspend fun downloadResource(app: TnpscApplication, context: android.content.Context, r: ResourceItem, setDownloading: (String?) -> Unit): String {
+    setDownloading(r.id)
+    return try {
+        val response = app.featureApi.downloadResource(r.id)
+        val body = response.body()
+        if (!response.isSuccessful || body == null) {
+            "Download failed."
+        } else {
+            val saved = com.nova.tnpsc.data.features.ResourceDownloader.save(context, body, r.title, r.contentType.ifBlank { "application/octet-stream" })
+            if (saved) "Saved \"${r.title}\" to Downloads." else "Could not save the file."
+        }
+    } catch (e: Exception) {
+        e.message ?: "Download failed."
+    } finally {
+        setDownloading(null)
+    }
+}
 
 @Composable private fun FeaturePage(eyebrow: String, title: String, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) { Eyebrow(eyebrow); Text(title, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(top=8.dp)); content() } }

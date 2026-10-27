@@ -31,6 +31,7 @@ fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Ev
     FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
     FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
     FeatureCard("📝", "Notes", "Your own written study notes") { nav.navigate("notes") }
+    FeatureCard("⭳", "Resources", "Real admin-uploaded downloadable files") { nav.navigate("resources") }
 }
 
 @Composable private fun FeatureCard(icon: String, title: String, body: String, onClick: () -> Unit) {
@@ -130,6 +131,80 @@ fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Ev
                 }
             }
         }
+    }
+}
+
+@Composable fun ResourcesScreen() {
+    val context = LocalContext.current
+    val app = context.applicationContext as TnpscApplication
+    val scope = rememberCoroutineScope()
+    var resources by remember { mutableStateOf<List<ResourceItem>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var downloadingId by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var pendingDownload by remember { mutableStateOf<ResourceItem?>(null) }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val r = pendingDownload
+        pendingDownload = null
+        if (granted && r != null) {
+            scope.launch { downloadResource(app, context, r) { downloadingId = it }.let { status = it } }
+        } else if (r != null) {
+            status = "Storage permission is needed to save the file."
+        }
+    }
+
+    fun beginDownload(r: ResourceItem) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingDownload = r
+            permissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return
+        }
+        scope.launch { status = downloadResource(app, context, r) { downloadingId = it } }
+    }
+
+    LaunchedEffect(Unit) {
+        runCatching { app.featureApi.resources() }
+            .onSuccess { if (it.isSuccessful) resources = it.body()?.resources ?: emptyList() else error = "Could not load resources" }
+            .onFailure { error = it.message }
+    }
+
+    FeaturePage("Resources", "Real files uploaded by an admin") {
+        error?.let { Text(it, color = NovaWarmAccent) }
+        status?.let { Text(it, color = NovaInkMuted, modifier = Modifier.padding(bottom = 4.dp)) }
+        if (resources.isEmpty() && error == null) Text("No resources have been uploaded yet.", color = NovaInkMuted)
+        resources.forEach { r ->
+            NovaCard {
+                Text(r.title, fontWeight = FontWeight.SemiBold)
+                r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(if (downloadingId == r.id) "Downloading…" else "Download")
+                }
+            }
+        }
+    }
+}
+
+private suspend fun downloadResource(app: TnpscApplication, context: android.content.Context, r: ResourceItem, setDownloading: (String?) -> Unit): String {
+    setDownloading(r.id)
+    return try {
+        val response = app.featureApi.downloadResource(r.id)
+        val body = response.body()
+        if (!response.isSuccessful || body == null) {
+            "Download failed."
+        } else {
+            val saved = com.nova.tnpsc.data.features.ResourceDownloader.save(context, body, r.title, r.contentType.ifBlank { "application/octet-stream" })
+            if (saved) "Saved \"${r.title}\" to Downloads." else "Could not save the file."
+        }
+    } catch (e: Exception) {
+        e.message ?: "Download failed."
+    } finally {
+        setDownloading(null)
     }
 }
 

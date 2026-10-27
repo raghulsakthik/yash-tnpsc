@@ -31,6 +31,8 @@ import retrofit2.http.*
 @Serializable data class CreateNoteRequest(val title: String, val content: String, val courseTitle: String? = null, val tags: List<String> = emptyList())
 @Serializable data class CreateNoteResponse(val note: NoteItem? = null, val code: String? = null, val message: String? = null)
 @Serializable data class DeleteNoteResponse(val deleted: Boolean = false, val code: String? = null)
+@Serializable data class ResourceItem(val id: String = "", val title: String = "", val description: String? = null, val category: String = "", val contentType: String = "", val sizeBytes: Long = 0)
+@Serializable data class ResourcesResponse(val resources: List<ResourceItem> = emptyList())
 
 interface FeatureApi {
     @GET("api/bookmarks") suspend fun bookmarks(): Response<BookmarksResponse>
@@ -48,4 +50,6 @@ interface FeatureApi {
     @GET("api/notes") suspend fun notes(): Response<NotesResponse>
     @POST("api/notes") suspend fun createNote(@Body body: CreateNoteRequest): Response<CreateNoteResponse>
     @DELETE("api/notes/{id}") suspend fun deleteNote(@Path("id") id: String): Response<DeleteNoteResponse>
+    @GET("api/resources") suspend fun resources(): Response<ResourcesResponse>
+    @Streaming @GET("api/resources/{id}/download") suspend fun downloadResource(@Path("id") id: String): Response<okhttp3.ResponseBody>
 }

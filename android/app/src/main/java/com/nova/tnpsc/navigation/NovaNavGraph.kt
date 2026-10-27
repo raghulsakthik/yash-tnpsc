@@ -170,6 +170,7 @@ private fun MainNavHost(authRepository: AuthRepository) {
             composable("weekly-review") { WeeklyReviewScreen() }
             composable("milestones") { MilestonesScreen() }
             composable("notes") { NotesScreen() }
+            composable("resources") { ResourcesScreen() }
             composable("lesson/{topic}") { backStackEntry ->
                 val topic = backStackEntry.arguments?.getString("topic") ?: DEFAULT_PRACTICE_TOPIC
                 LessonScreen(topic = topic, navController = navController)

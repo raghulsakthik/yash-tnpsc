@@ -5,6 +5,10 @@
     <!-- Required to actually show a notification on Android 13+ (API 33).
          The user must grant this at runtime too, requested in MainActivity. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Only needed to save resource downloads on API 26-28; scoped storage
+         (MediaStore, no permission) handles it on API 29+, see
+         data/features/ResourceDownloader.kt. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
         android:name=".TnpscApplication"

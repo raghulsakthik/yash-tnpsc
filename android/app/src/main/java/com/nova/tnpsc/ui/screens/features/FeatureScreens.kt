@@ -20,18 +20,28 @@ import java.time.LocalDate
 import kotlinx.coroutines.launch
 
 @Composable
-fun FeatureHub(nav: NavHostController) = FeaturePage("NOVA feature library", "Everything you can do on Web") {
-    Text("The Android app uses the same backend and exposes the same learner capabilities.", color = NovaInkMuted)
-    FeatureCard("🔖", "Bookmarks", "Saved questions and answers") { nav.navigate("bookmarks") }
-    FeatureCard("🔔", "Notifications", "Achievements and learning nudges") { nav.navigate("notifications") }
-    FeatureCard("✦", "Achievements", "Unlocked and upcoming milestones") { nav.navigate("achievements") }
-    FeatureCard("↻", "Mistakes", "Review unresolved mistakes") { nav.navigate("mistakes") }
-    FeatureCard("⌕", "Search", "Find topics, lessons and questions") { nav.navigate("search") }
-    FeatureCard("◌", "Progress", "Activity calendar and topic status") { nav.navigate("progress") }
-    FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
-    FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
-    FeatureCard("📝", "Notes", "Your own written study notes") { nav.navigate("notes") }
-    FeatureCard("⭳", "Resources", "Real admin-uploaded downloadable files") { nav.navigate("resources") }
+fun FeatureHub(nav: NavHostController) {
+    val app = LocalContext.current.applicationContext as TnpscApplication
+    val authState by app.authRepository.state.collectAsState()
+    val role = (authState as? com.nova.tnpsc.data.auth.AuthState.LoggedIn)?.role
+    val isAdmin = role == "ADMIN" || role == "SUPER_ADMIN"
+
+    FeaturePage("NOVA feature library", "Everything you can do on Web") {
+        Text("The Android app uses the same backend and exposes the same learner capabilities.", color = NovaInkMuted)
+        FeatureCard("🔖", "Bookmarks", "Saved questions and answers") { nav.navigate("bookmarks") }
+        FeatureCard("🔔", "Notifications", "Achievements and learning nudges") { nav.navigate("notifications") }
+        FeatureCard("✦", "Achievements", "Unlocked and upcoming milestones") { nav.navigate("achievements") }
+        FeatureCard("↻", "Mistakes", "Review unresolved mistakes") { nav.navigate("mistakes") }
+        FeatureCard("⌕", "Search", "Find topics, lessons and questions") { nav.navigate("search") }
+        FeatureCard("◌", "Progress", "Activity calendar and topic status") { nav.navigate("progress") }
+        FeatureCard("▣", "Weekly review", "Review the week's evidence") { nav.navigate("weekly-review") }
+        FeatureCard("◆", "Milestones", "Streak and learning milestones") { nav.navigate("milestones") }
+        FeatureCard("📝", "Notes", "Your own written study notes") { nav.navigate("notes") }
+        FeatureCard("⭳", "Resources", "Real admin-uploaded downloadable files") { nav.navigate("resources") }
+        if (isAdmin) {
+            FeatureCard("🛠️", "Admin Portal", "Dashboard, learners, content and more") { nav.navigate("admin") }
+        }
+    }
 }
 
 @Composable private fun FeatureCard(icon: String, title: String, body: String, onClick: () -> Unit) {

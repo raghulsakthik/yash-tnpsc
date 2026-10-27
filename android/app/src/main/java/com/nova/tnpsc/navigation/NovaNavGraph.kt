@@ -171,6 +171,13 @@ private fun MainNavHost(authRepository: AuthRepository) {
             composable("milestones") { MilestonesScreen() }
             composable("notes") { NotesScreen() }
             composable("resources") { ResourcesScreen() }
+            composable("admin") {
+                val role = (authRepository.state.value as? AuthState.LoggedIn)?.role ?: "ADMIN"
+                com.nova.tnpsc.ui.screens.admin.AdminPortalScreen(
+                    sessionRole = role,
+                    onReturnToLearnerHub = { navController.popBackStack() },
+                )
+            }
             composable("lesson/{topic}") { backStackEntry ->
                 val topic = backStackEntry.arguments?.getString("topic") ?: DEFAULT_PRACTICE_TOPIC
                 LessonScreen(topic = topic, navController = navController)

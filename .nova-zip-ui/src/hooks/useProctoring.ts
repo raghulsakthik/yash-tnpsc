@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiUrl } from '../api/novaApi';
 
 const CHUNK_MS = 5000; // upload roughly every 5s, so a crash loses seconds, not the whole session
 
@@ -31,7 +32,7 @@ export function useProctoring() {
 
   const logEvent = useCallback((eventType: string, metadata?: Record<string, unknown>) => {
     if (!testIdRef.current) return;
-    fetch('/api/proctoring/event', {
+    fetch(apiUrl('/api/proctoring/event'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -44,7 +45,7 @@ export function useProctoring() {
     blob
       .arrayBuffer()
       .then((buf) =>
-        fetch(`/api/proctoring/chunk?testId=${testIdRef.current}&stream=${stream}`, {
+        fetch(apiUrl(`/api/proctoring/chunk?testId=${testIdRef.current}&stream=${stream}`), {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/octet-stream' },
@@ -54,20 +55,26 @@ export function useProctoring() {
       .catch(() => {});
   }, []);
 
-  /** Asks the browser for camera + screen access. Must be called from a user gesture. */
+  /**
+   * Asks for camera + (where available) screen access. Must be called from
+   * a user gesture. getDisplayMedia has no mobile WebView equivalent -- on
+   * Android this just isn't offered by the platform, not declined by the
+   * learner, so its absence doesn't block camera-only proctoring the way
+   * an explicit decline (desktop) does.
+   */
   const requestConsent = useCallback(async () => {
     try {
       const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      let screen: MediaStream;
-      try {
-        screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      } catch {
-        cam.getTracks().forEach((t) => t.stop());
-        setConsent('denied');
-        return false;
-      }
       camStreamRef.current = cam;
-      screenStreamRef.current = screen;
+
+      if (navigator.mediaDevices.getDisplayMedia) {
+        try {
+          screenStreamRef.current = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        } catch {
+          // Declined on a platform where it was actually offered -- camera-only proctoring still proceeds.
+        }
+      }
+
       setConsent('granted');
       return true;
     } catch {
@@ -80,7 +87,7 @@ export function useProctoring() {
   const startRecording = useCallback(
     (testId: string) => {
       testIdRef.current = testId;
-      fetch('/api/proctoring/start', {
+      fetch(apiUrl('/api/proctoring/start'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +130,7 @@ export function useProctoring() {
     screenStreamRef.current?.getTracks().forEach((t) => t.stop());
 
     if (testIdRef.current) {
-      fetch('/api/proctoring/stop', {
+      fetch(apiUrl('/api/proctoring/stop'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

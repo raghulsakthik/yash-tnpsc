@@ -61,9 +61,9 @@ fun PyqScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Eyebrow("Previous year questions")
+            Eyebrow("Previous Year Questions (PYQs)")
             Spacer(Modifier.height(10.dp))
-            Text("What they have actually asked", style = MaterialTheme.typography.displayLarge)
+            Text("Authentic TNPSC Group 2 question bank", style = MaterialTheme.typography.displayLarge)
             Spacer(Modifier.height(10.dp))
             Text(
                 "Real transcribed questions from real papers, tagged to the same topics as your lessons. " +

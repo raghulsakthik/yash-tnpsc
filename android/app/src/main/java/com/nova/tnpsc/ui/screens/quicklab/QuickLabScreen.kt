@@ -59,7 +59,7 @@ fun QuickLabScreen(navController: NavHostController) {
         item {
             Eyebrow("Quick Lab")
             Spacer(Modifier.height(10.dp))
-            Text("Two minutes, sharper arithmetic", style = MaterialTheme.typography.displayLarge)
+            Text("Speed & Precision Drills", style = MaterialTheme.typography.displayLarge)
             Spacer(Modifier.height(10.dp))
             Text(
                 "Every round generates fresh questions -- 10 questions, timed, scored.",

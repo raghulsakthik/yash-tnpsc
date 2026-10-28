@@ -50,18 +50,18 @@ import com.nova.tnpsc.ui.theme.NovaPrimary
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
 import kotlinx.coroutines.launch
 
-private enum class AuthMode { SIGN_UP, SIGN_IN }
+private enum class AuthMode { SIGN_IN, SIGN_UP }
 
 /**
- * Real login/signup against POST /api/auth/{login,register} -- mirrors
- * AuthModal.tsx, the web app's actual auth entry point (not the orphaned
- * /login page). Previously this screen only offered login, with no way
- * to create an account on Android at all -- a real feature gap, not a
- * styling one.
+ * Real login/signup against POST /api/auth/{login,register} -- copy,
+ * field order and tab order match the Android design package's
+ * AuthModal.tsx (.nova-zip-ui/src/android-app/components/AuthModal.tsx)
+ * exactly: "Sign In" / "New Enrollment" tabs, "Aspirant Name" / "Security
+ * Key / Password" labels, Sign In as the default tab.
  */
 @Composable
 fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
-    var mode by remember { mutableStateOf(AuthMode.SIGN_UP) } // signup is the default tab on web too
+    var mode by remember { mutableStateOf(AuthMode.SIGN_IN) } // Sign In is the default tab in this design
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -116,15 +116,15 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
     ) {
         Text("YASH", color = NovaInkMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            if (mode == AuthMode.SIGN_UP) "New aspirant registration" else "Good to see you.",
+            if (mode == AuthMode.SIGN_UP) "New Aspirant Admission" else "Aspirant Authentication",
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
         )
 
         TabRow(selectedTabIndex = mode.ordinal) {
-            Tab(selected = mode == AuthMode.SIGN_UP, onClick = { mode = AuthMode.SIGN_UP; error = null }, text = { Text("Create Account") })
             Tab(selected = mode == AuthMode.SIGN_IN, onClick = { mode = AuthMode.SIGN_IN; error = null }, text = { Text("Sign In") })
+            Tab(selected = mode == AuthMode.SIGN_UP, onClick = { mode = AuthMode.SIGN_UP; error = null }, text = { Text("New Enrollment") })
         }
 
         Spacer(Modifier.height(20.dp))
@@ -133,7 +133,7 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it; error = null },
-                label = { Text("Full name") },
+                label = { Text("Aspirant Name") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -143,7 +143,7 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; error = null },
-            label = { Text("Email") },
+            label = { Text("Email Address") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth(),
@@ -153,7 +153,7 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; error = null },
-            label = { Text("Password") },
+            label = { Text("Security Key / Password") },
             singleLine = true,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -171,7 +171,7 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
                 modifier = Modifier.padding(top = 8.dp),
             ) {
                 Checkbox(checked = agreeTerms, onCheckedChange = { agreeTerms = it })
-                Text("I agree to the Examination Preparation Honour Code and adaptive syllabus tracking.", color = NovaInkMuted, fontSize = 12.sp)
+                Text("I pledge adherence to the Academy Honor Code, exam integrity, and proctoring norms.", color = NovaInkMuted, fontSize = 12.sp)
             }
         } else {
             TextButton(onClick = onForgotPassword, modifier = Modifier.padding(top = 4.dp)) {
@@ -193,7 +193,7 @@ fun LoginScreen(authRepository: AuthRepository, onForgotPassword: () -> Unit) {
             if (submitting) {
                 CircularProgressIndicator(modifier = Modifier.padding(2.dp), strokeWidth = 2.dp)
             } else {
-                Text(if (mode == AuthMode.SIGN_UP) "Create account & continue" else "Sign in to dashboard")
+                Text(if (mode == AuthMode.SIGN_UP) "Enroll & Initiate Diagnostic" else "Sign In to Academy")
             }
         }
     }

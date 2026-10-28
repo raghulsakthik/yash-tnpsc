@@ -63,8 +63,8 @@ fun CoursesScreen(nav: NavHostController) {
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(Modifier.fillMaxWidth().padding(20.dp, 20.dp, 20.dp, 8.dp)) {
-            Eyebrow("Courses")
-            Text("Your TNPSC curriculum", style = MaterialTheme.typography.displaySmall)
+            Eyebrow("YASH Syllabus · TNPSC Group 2")
+            Text("Structured Subject Courses & Completion", style = MaterialTheme.typography.displaySmall)
 
             data?.let { d ->
                 Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {

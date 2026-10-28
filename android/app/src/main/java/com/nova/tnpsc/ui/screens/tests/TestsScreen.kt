@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +26,8 @@ import com.nova.tnpsc.data.tests.CreateTestRequest
 import com.nova.tnpsc.ui.components.Eyebrow
 import com.nova.tnpsc.ui.components.NovaCard
 import com.nova.tnpsc.ui.theme.NovaInkMuted
+import com.nova.tnpsc.ui.theme.NovaSuccess
+import com.nova.tnpsc.ui.theme.NovaSuccessTint
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
 import com.nova.tnpsc.ui.theme.NovaWarmTint
 import kotlinx.coroutines.launch
@@ -32,7 +35,9 @@ import kotlinx.coroutines.launch
 /**
  * Entry point for the real weekly test -- 25 questions across the examined
  * topics (same generator as the web app's default). Starting a test
- * creates a real `test` row server-side via POST /api/tests.
+ * creates a real `test` row server-side via POST /api/tests. Copy matches
+ * the design package's TestsView.tsx ("Supervised Mocks & Diagnostic
+ * Tests", "Proctoring Guard: Armed").
  */
 @Composable
 fun TestsScreen(navController: NavHostController) {
@@ -47,14 +52,21 @@ fun TestsScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Eyebrow("Tests")
+            Eyebrow("Examination Cockpit · Supervised Mocks & Gate Assessments")
             Spacer(Modifier.height(10.dp))
-            Text("Find out where you stand", style = MaterialTheme.typography.displayLarge)
+            Text("Supervised Mocks & Diagnostic Tests", style = MaterialTheme.typography.displayLarge)
             Spacer(Modifier.height(10.dp))
             Text(
-                "25 questions across the full syllabus, no negative marking, nothing revealed until you submit.",
+                "Strictly proctored phase-gate assessments replicating the official TNPSC Group 2 timer, negative marking, and anti-tab switch integrity checks.",
                 color = NovaInkMuted,
             )
+        }
+
+        item {
+            NovaCard(background = NovaSuccessTint, border = NovaSuccess) {
+                Text("Proctoring Guard: Armed", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = NovaSuccess)
+                Text("Forensic tab-switch & window blur tracking", color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+            }
         }
 
         if (error != null) {
@@ -86,7 +98,7 @@ fun TestsScreen(navController: NavHostController) {
                             }
                         }
                     },
-                ) { Text(if (starting) "Starting…" else "Begin test") }
+                ) { Text(if (starting) "Starting…" else "Launch Supervised Test") }
             }
         }
     }

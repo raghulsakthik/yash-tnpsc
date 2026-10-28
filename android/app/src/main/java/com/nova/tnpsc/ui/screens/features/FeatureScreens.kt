@@ -51,7 +51,7 @@ fun FeatureHub(nav: NavHostController) {
 @Composable fun BookmarksScreen(nav: NavHostController) {
     val app = LocalContext.current.applicationContext as TnpscApplication; var data by remember { mutableStateOf<BookmarksResponse?>(null) }; var error by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { runCatching { app.featureApi.bookmarks() }.onSuccess { if (it.isSuccessful) data = it.body() else error = "Could not load bookmarks" }.onFailure { error = it.message } }
-    FeaturePage("Saved for later", "Bookmarked questions") { error?.let { Text(it, color = NovaWarmAccent) }; if (data == null && error == null) Text("Loading…", color = NovaInkMuted); if (data?.bookmarks?.isEmpty() == true) Text("Nothing saved yet. Star a question during practice.", color = NovaInkMuted); data?.bookmarks?.forEach { b -> var revealed by remember(b.questionId) { mutableStateOf(false) }; NovaCard { Eyebrow(b.topicName); Text(b.prompt, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)); if (revealed) { b.options.forEachIndexed { i, o -> Text("${('A'.code + i).toChar()}. $o", fontWeight = if (i == b.correctIndex) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp)) }; b.explanation?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) } } else TextButton(onClick = { revealed = true }) { Text("Show answer") }; Button(onClick = { nav.navigate(practiceRoute(b.topicId)) }) { Text("Practise this topic") } } } }
+    FeaturePage("Saved Bookmarks", "Courses, masterclasses, and exercises saved for quick review") { error?.let { Text(it, color = NovaWarmAccent) }; if (data == null && error == null) Text("Loading…", color = NovaInkMuted); if (data?.bookmarks?.isEmpty() == true) Text("Nothing saved yet. Star a question during practice.", color = NovaInkMuted); data?.bookmarks?.forEach { b -> var revealed by remember(b.questionId) { mutableStateOf(false) }; NovaCard { Eyebrow(b.topicName); Text(b.prompt, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)); if (revealed) { b.options.forEachIndexed { i, o -> Text("${('A'.code + i).toChar()}. $o", fontWeight = if (i == b.correctIndex) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp)) }; b.explanation?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) } } else TextButton(onClick = { revealed = true }) { Text("Show answer") }; Button(onClick = { nav.navigate(practiceRoute(b.topicId)) }) { Text("Practise this topic") } } } }
 }
 
 @Composable fun NotificationsScreen() {
@@ -69,7 +69,7 @@ fun FeatureHub(nav: NavHostController) {
 @Composable fun MistakesScreen(nav: NavHostController) {
     val app = LocalContext.current.applicationContext as TnpscApplication; var q by remember { mutableStateOf<MistakeResponse?>(null) }; var error by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { runCatching { app.featureApi.nextMistake() }.onSuccess { if (it.isSuccessful) q = it.body() else error = it.body()?.message ?: "No open mistakes right now" }.onFailure { error = it.message } }
-    FeaturePage("Mistakes", "Fix the thing that went wrong") { error?.let { NovaCard { Text(it, color = NovaInkMuted) } }; q?.let { m -> NovaCard { Eyebrow(m.topicName ?: "Mistake review"); Text(m.prompt, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 12.dp)); m.options.forEachIndexed { i, o -> OptionRow(('A'.code + i).toChar().toString(), o, OptionState.Default) {}; }; Button(onClick = { nav.navigate(practiceRoute(m.topicId, "MISTAKES")) }, modifier = Modifier.padding(top = 12.dp)) { Text("Open full review") } } } }
+    FeaturePage("Personalized Mistake Engine", "Intelligent mistake classification and targeted remedial drill generator") { error?.let { NovaCard { Text(it, color = NovaInkMuted) } }; q?.let { m -> NovaCard { Eyebrow(m.topicName ?: "Mistake review"); Text(m.prompt, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 12.dp)); m.options.forEachIndexed { i, o -> OptionRow(('A'.code + i).toChar().toString(), o, OptionState.Default) {}; }; Button(onClick = { nav.navigate(practiceRoute(m.topicId, "MISTAKES")) }, modifier = Modifier.padding(top = 12.dp)) { Text("Open full review") } } } }
 }
 
 @Composable fun SearchScreen(nav: NavHostController) {
@@ -110,7 +110,7 @@ fun FeatureHub(nav: NavHostController) {
     fun reload() { scope.launch { runCatching { app.featureApi.notes() }.onSuccess { if (it.isSuccessful) notes = it.body()?.notes ?: emptyList() else error = "Could not load notes" }.onFailure { error = it.message } } }
     LaunchedEffect(Unit) { reload() }
 
-    FeaturePage("Your notes", "Real notes, saved against your account") {
+    FeaturePage("Study Notes", "Personal study notebook & key conceptual summaries") {
         error?.let { Text(it, color = NovaWarmAccent) }
         NovaCard {
             Eyebrow("New note")

@@ -15,6 +15,7 @@ import com.nova.tnpsc.data.pyq.PyqApi
 import com.nova.tnpsc.data.quicklab.QuickLabApi
 import com.nova.tnpsc.data.tests.TestsApi
 import com.nova.tnpsc.data.features.FeatureApi
+import com.nova.tnpsc.data.admin.AdminNotificationsApi
 import com.nova.tnpsc.data.proctoring.ProctoringApi
 import com.nova.tnpsc.push.FcmTokenRegistrar
 
@@ -60,6 +61,8 @@ class TnpscApplication : Application() {
         private set
     lateinit var proctoringApi: ProctoringApi
         private set
+    lateinit var adminNotificationsApi: AdminNotificationsApi
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -80,5 +83,6 @@ class TnpscApplication : Application() {
         platformApi = apiClient.create(PlatformApi::class.java)
         curriculumApi = apiClient.create(CurriculumApi::class.java)
         proctoringApi = apiClient.create(ProctoringApi::class.java)
+        adminNotificationsApi = apiClient.create(AdminNotificationsApi::class.java)
     }
 }

@@ -8,6 +8,7 @@ export const NUDGE_EVENTS = {
   NOTIFY_INACTIVITY: true,
   NOTIFY_TEST_REMINDER: true,
   NOTIFY_MOTIVATION: true,
+  ADMIN_BROADCAST: true,
 };
 
 const LIMIT = 40;

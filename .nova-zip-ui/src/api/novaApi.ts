@@ -35,6 +35,9 @@ export const novaApi = {
   markNotificationRead: (id: string) => request<Json>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request<Json>('/api/notifications/read-all', { method: 'POST' }),
   clearNotifications: () => request<Json>('/api/notifications/clear', { method: 'POST' }),
+  adminBroadcasts: () => request<Json>('/api/admin/notifications'),
+  adminBroadcastNotification: (title: string, message: string) =>
+    request<Json>('/api/admin/notifications/broadcast', { method: 'POST', body: JSON.stringify({ title, message, targetAudience: 'ALL_LEARNERS' }) }),
   bookmarks: () => request<Json>('/api/bookmarks'),
   calendar: () => request<Json>('/api/progress/calendar'),
   notes: () => request<Json>('/api/notes'),

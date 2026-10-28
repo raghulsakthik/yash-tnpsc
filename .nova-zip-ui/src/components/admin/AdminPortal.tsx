@@ -59,7 +59,6 @@ import {
   initialProctoringReviews,
   initialAdaptiveRules,
   initialAdminMilestones,
-  initialAdminNotifications,
   initialAuditLogs,
   initialAIContentProposals,
 } from '../../data/mockAdminData';
@@ -69,6 +68,7 @@ import {
   ALL_ADMIN_NAV_SECTIONS,
 } from '../../utils/adminPermissions';
 import { BrandLogo } from '../BrandLogo';
+import { novaApi } from '../../api/novaApi';
 
 // Section Views
 import { DashboardView } from './DashboardView';
@@ -158,10 +158,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     return saved ? JSON.parse(saved) : initialAdaptiveRules;
   });
 
-  const [notifications, setNotifications] = useState<AdminNotificationItem[]>(() => {
-    const saved = localStorage.getItem('nova_admin_notifications');
-    return saved ? JSON.parse(saved) : initialAdminNotifications;
-  });
+  // Real broadcast history (POST /api/admin/notifications/broadcast) -- this
+  // is the one admin section with a real "send" action that reaches actual
+  // learners, so unlike the rest of this file it isn't seeded from
+  // mockAdminData/localStorage.
+  const [notifications, setNotifications] = useState<AdminNotificationItem[]>([]);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+
+  const refreshBroadcasts = React.useCallback(() => {
+    novaApi
+      .adminBroadcasts()
+      .then((res) => {
+        const mapped: AdminNotificationItem[] = (res.broadcasts || []).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          message: b.message,
+          category: 'system_announcement',
+          channels: ['in_app', 'push'],
+          targetAudience: b.targetAudience,
+          deliveryStatus: 'SENT',
+          recipientCount: b.recipientCount,
+          openRatePercent: 0,
+          sentAt: b.createdAt,
+          createdAt: b.createdAt,
+        }));
+        setNotifications(mapped);
+        setNotificationsError(null);
+      })
+      .catch((err) => setNotificationsError(err instanceof Error ? err.message : 'Could not load broadcast history'));
+  }, []);
+
+  useEffect(() => {
+    refreshBroadcasts();
+  }, [refreshBroadcasts]);
 
   // Sync state to localStorage
   useEffect(() => {
@@ -420,10 +449,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     recordAudit('ADAPTIVE_RULE_TOGGLED', 'AdaptiveRule', ruleId, 'Toggled rule status');
   };
 
-  // Notifications
+  // Notifications -- the only admin section with a real "send": fans out to
+  // every learner account as a real /api/notifications feed entry plus a
+  // best-effort push, instead of only updating local React state.
   const handleBroadcastNotification = (item: Partial<AdminNotificationItem>) => {
-    setNotifications((prev) => [item as AdminNotificationItem, ...prev]);
-    recordAudit('NOTIFICATION_DISPATCHED', 'Notification', item.id || '', item.title || '');
+    const title = item.title || '';
+    const message = item.message || '';
+    novaApi
+      .adminBroadcastNotification(title, message)
+      .then((res) => {
+        recordAudit('NOTIFICATION_DISPATCHED', 'Notification', res.broadcast?.id || '', `${title} -> ${res.broadcast?.recipientCount ?? 0} learner(s)`);
+        refreshBroadcasts();
+      })
+      .catch((err) => setNotificationsError(err instanceof Error ? err.message : 'Could not send this notification'));
   };
 
   // Visible sections filtered for active simulated role
@@ -623,10 +661,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               proctoring, audit logs, AI proposals) is tracked follow-up
               work, see docs/NEXT_PHASE_ROADMAP.md. Shown here so nobody
               mistakes what's on screen for real production data. */}
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
-          </div>
+          {currentSectionSlug !== 'notifications' && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
+            </div>
+          )}
           {/* SECTION ROUTING */}
           {currentSectionSlug === 'dashboard' && (
             <DashboardView
@@ -742,10 +782,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
           {/* Notifications */}
           {currentSectionSlug === 'notifications' && (
-            <NotificationsAdminView
-              notifications={notifications}
-              onBroadcastNotification={handleBroadcastNotification}
-            />
+            <>
+              {notificationsError && (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                  {notificationsError}
+                </div>
+              )}
+              <NotificationsAdminView
+                notifications={notifications}
+                onBroadcastNotification={handleBroadcastNotification}
+              />
+            </>
           )}
 
           {/* Admins & Roles */}

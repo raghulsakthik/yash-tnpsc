@@ -2,21 +2,25 @@ package com.nova.tnpsc.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Exact NOVA design-system tokens (the same board the web prototype uses).
-val NovaGround = Color(0xFFFAF7F2)
-val NovaPaperRaised = Color(0xFFFFFDF9)
-val NovaPaperSunk = Color(0xFFF2EDE4)
-val NovaBorder = Color(0xFFE8E2D8)
-val NovaInk = Color(0xFF1E1B16)
-val NovaInkMuted = Color(0xFF6B6459)
+// Real tokens from the Android design package (stone neutrals + amber/orange
+// accent -- Tailwind's stone-*/orange-*/amber-* scale), not an approximation.
+// Replaces the earlier indigo-based guess once the actual design package
+// (android-app/components/*.tsx, Tailwind classes like bg-orange-500,
+// text-stone-900, border-stone-200) was available to read exact values from.
+val NovaGround = Color(0xFFFAFAF9) // stone-50
+val NovaPaperRaised = Color(0xFFFFFFFF)
+val NovaPaperSunk = Color(0xFFF5F5F4) // stone-100
+val NovaBorder = Color(0xFFE7E5E4) // stone-200
+val NovaInk = Color(0xFF1C1917) // stone-900
+val NovaInkMuted = Color(0xFF78716C) // stone-500
 
-val NovaPrimary = Color(0xFF2F3192)
-val NovaPrimaryTint = Color(0xFFEDEDF9)
-val NovaSecondary = Color(0xFF7A5AF0)
-val NovaSecondaryTint = Color(0xFFEDE9FE)
-val NovaWarmAccent = Color(0xFFB5612F)
-val NovaWarmTint = Color(0xFFFAEADF)
-val NovaSuccess = Color(0xFF15704F)
-val NovaSuccessTint = Color(0xFFE2F3EC)
-val NovaWarning = Color(0xFF8A5A06)
-val NovaWarningTint = Color(0xFFFAF0DC)
+val NovaPrimary = Color(0xFFF97316) // orange-500 -- the design's one real accent color
+val NovaPrimaryTint = Color(0xFFFFF7ED) // orange-50
+val NovaSecondary = Color(0xFFF59E0B) // amber-500
+val NovaSecondaryTint = Color(0xFFFFFBEB) // amber-50
+val NovaWarmAccent = Color(0xFFB45309) // amber-700
+val NovaWarmTint = Color(0xFFFEF3C7) // amber-100
+val NovaSuccess = Color(0xFF059669) // emerald-600
+val NovaSuccessTint = Color(0xFFECFDF5) // emerald-50
+val NovaWarning = Color(0xFF92400E) // amber-800
+val NovaWarningTint = Color(0xFFFEF3C7) // amber-100

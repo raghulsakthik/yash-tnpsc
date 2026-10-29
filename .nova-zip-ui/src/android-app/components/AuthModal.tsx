@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { BrandLogo } from './BrandLogo';
+import { novaApi } from '../../api/novaApi';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -48,7 +49,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  // The design package's own handleSubmit here never called the backend at
+  // all -- both branches just called onLoginSuccess directly with whatever
+  // was typed, same as the one-click "Demo" shortcut already removed from
+  // this file. That's why sign-in silently never worked: no real session
+  // cookie was ever requested, so the next novaApi.me() check (right after
+  // the reload handleLoginSuccess triggers) always came back 401 and
+  // bounced straight back to this screen. Wired to the same real
+  // /api/auth/{register,login} calls the desktop AuthModal already uses.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -67,25 +78,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (mode === 'signup') {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 },
-      });
-      onLoginSuccess({
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim() !== '+91 ' ? phone.trim() : undefined,
-        isNewUser: true,
-      });
-    } else {
-      onLoginSuccess({
-        name: name.trim() || 'Yashika',
-        email: email.trim(),
-        phone: phone.trim() !== '+91 ' ? phone.trim() : undefined,
-        isNewUser: false,
-      });
+    setSubmitting(true);
+    try {
+      if (mode === 'signup') {
+        const result = await novaApi.register(
+          name.trim(),
+          email.trim(),
+          password,
+          phone.trim() !== '+91 ' ? phone.trim() : undefined
+        );
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+        });
+        onLoginSuccess({
+          name: result?.user?.name || name.trim(),
+          email: result?.user?.email || email.trim(),
+          phone: phone.trim() !== '+91 ' ? phone.trim() : undefined,
+          isNewUser: true,
+        });
+      } else {
+        await novaApi.login(email.trim(), password);
+        onLoginSuccess({
+          name: name.trim() || 'Aspirant',
+          email: email.trim(),
+          phone: phone.trim() !== '+91 ' ? phone.trim() : undefined,
+          isNewUser: false,
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -280,10 +305,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Primary Action Button */}
           <button
             type="submit"
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-98 transition-all cursor-pointer"
+            disabled={submitting}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-98 transition-all cursor-pointer disabled:opacity-60"
           >
             <span>
-              {mode === 'signup'
+              {submitting
+                ? 'Please wait…'
+                : mode === 'signup'
                 ? 'Enroll & Initiate Diagnostic'
                 : 'Sign In to Academy'}
             </span>

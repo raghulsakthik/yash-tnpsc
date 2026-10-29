@@ -94,15 +94,32 @@ private val bottomDestinations = listOf(Destination.Home, Destination.Learn, Des
 @Composable
 fun NovaApp(authRepository: AuthRepository, onLoggedIn: suspend () -> Unit) {
     val authState by authRepository.state.collectAsState()
+    val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as com.nova.tnpsc.TnpscApplication
+    var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.nova.tnpsc.data.update.AndroidVersionInfo?>(null) }
+    var updateDismissed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         authRepository.restoreSession()
+    }
+
+    // No auth required -- has to work before we know the session is valid.
+    // A real version bump on the backend (src/app/api/app/version/route.js)
+    // is the only thing that makes this fire; nothing here guesses.
+    LaunchedEffect(Unit) {
+        runCatching { app.appVersionApi.latest() }
+            .onSuccess { response ->
+                val android = response.body()?.android
+                if (android != null && android.versionCode > com.nova.tnpsc.BuildConfig.VERSION_CODE) {
+                    updateInfo = android
+                }
+            }
     }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.LoggedIn) onLoggedIn()
     }
 
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
     when (authState) {
         is AuthState.Unknown -> YashLoadingScreen()
         is AuthState.LoggedOut -> {
@@ -127,6 +144,15 @@ fun NovaApp(authRepository: AuthRepository, onLoggedIn: suspend () -> Unit) {
             LaunchedEffect(Unit) { onboarded = app.profileApi.get().body()?.onboarded ?: true; checked = true }
             if (!checked) YashLoadingScreen() else if (!onboarded) OnboardingScreen(onComplete = { onboarded = true }) else MainNavHost(authRepository)
         }
+    }
+
+    val info = updateInfo
+    if (info != null && !updateDismissed) {
+        com.nova.tnpsc.ui.components.UpdateAvailableBanner(
+            info = info,
+            onDismiss = { updateDismissed = true },
+        )
+    }
     }
 }
 

@@ -50,6 +50,8 @@ export const novaApi = {
   markNotificationRead: (id: string) => request<Json>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request<Json>('/api/notifications/read-all', { method: 'POST' }),
   clearNotifications: () => request<Json>('/api/notifications/clear', { method: 'POST' }),
+  adminProctoringSessions: () => request<Json>('/api/admin/proctoring/sessions'),
+  adminProctoringSession: (testId: string) => request<Json>(`/api/admin/proctoring/sessions/${encodeURIComponent(testId)}`),
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
   adminBroadcastNotification: (title: string, message: string) =>
     request<Json>('/api/admin/notifications/broadcast', { method: 'POST', body: JSON.stringify({ title, message, targetAudience: 'ALL_LEARNERS' }) }),

@@ -76,6 +76,7 @@ import { LearnersView } from './LearnersView';
 import { LessonsView } from './LessonsView';
 import { QuestionsView } from './QuestionsView';
 import { ProctoringHubView } from './ProctoringHubView';
+import { ProctoringRecordingsPanel } from './ProctoringRecordingsPanel';
 import { TestBuilderView } from './TestBuilderView';
 import { ContentUploadAIView } from './ContentUploadAIView';
 import { AuditLogsView } from './AuditLogsView';
@@ -661,7 +662,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               proctoring, audit logs, AI proposals) is tracked follow-up
               work, see docs/NEXT_PHASE_ROADMAP.md. Shown here so nobody
               mistakes what's on screen for real production data. */}
-          {currentSectionSlug !== 'notifications' && (
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
@@ -742,6 +743,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               onPublishTest={handlePublishTest}
             />
           )}
+
+          {currentSectionSlug === 'proctoring-reports' && <ProctoringRecordingsPanel />}
 
           {(currentSectionSlug === 'proctoring' ||
             currentSectionSlug === 'proctoring-events' ||

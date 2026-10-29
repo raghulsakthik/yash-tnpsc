@@ -53,6 +53,8 @@ export const novaApi = {
   adminProctoringSessions: () => request<Json>('/api/admin/proctoring/sessions'),
   adminProctoringSession: (testId: string) => request<Json>(`/api/admin/proctoring/sessions/${encodeURIComponent(testId)}`),
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
+  registerFcmToken: (token: string, deviceInfo?: string) =>
+    request<Json>('/api/push/fcm/register', { method: 'POST', body: JSON.stringify({ token, deviceInfo }) }),
   adminBroadcastNotification: (title: string, message: string) =>
     request<Json>('/api/admin/notifications/broadcast', { method: 'POST', body: JSON.stringify({ title, message, targetAudience: 'ALL_LEARNERS' }) }),
   bookmarks: () => request<Json>('/api/bookmarks'),

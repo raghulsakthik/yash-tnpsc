@@ -7,6 +7,7 @@ import { NotificationDrawer } from './components/NotificationDrawer';
 import { AdminPortal } from '../components/admin/AdminPortal';
 import { OnboardingModal } from '../components/OnboardingModal';
 import { useAppData } from '../hooks/useAppData';
+import { useFcmPush } from './useFcmPush';
 
 /**
  * Entry point for the native Android build (wrapped via Capacitor --
@@ -35,6 +36,7 @@ export default function AndroidApp() {
   } = useAppData();
 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = React.useState(false);
+  useFcmPush(isLoggedIn, () => setIsNotificationDrawerOpen(true));
 
   if (currentView === 'admin' && isAdminSession) {
     return (

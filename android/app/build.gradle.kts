@@ -4,6 +4,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    // Reads google-services.json (below) into generated resources for FCM push.
+    id("com.google.gms.google-services")
 }
 
 // local.properties is already gitignored by the Android Studio template
@@ -20,7 +22,13 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.nova.tnpsc"
+        // Firebase's google-services.json registers only one Android client,
+        // under com.yash.yash (not this project's Kotlin namespace below) --
+        // applicationId must match it exactly or the google-services plugin
+        // fails the build with "No matching client found". The namespace
+        // (and every file's `package com.nova.tnpsc`) is untouched; AGP
+        // allows applicationId and namespace to differ.
+        applicationId = "com.yash.yash"
         minSdk = 26
         targetSdk = 34
         versionCode = 2
@@ -145,11 +153,15 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Android push. Compiles and links without google-services.json; at
-    // runtime FirebaseApp simply never initializes until that file (from a
-    // real Firebase project) is dropped into app/ -- see push/FcmTokenRegistrar.kt.
+    // Android push -- real google-services.json (project yash-278de) now
+    // in app/, read by the google-services plugin above. See
+    // push/FcmTokenRegistrar.kt for the registration call.
+    // Pinned below the version that pulls in a kotlin-stdlib this project's
+    // Kotlin plugin (1.9.24) can't read the metadata of -- 35.1.0 broke
+    // compileDebugKotlin project-wide with "compiled with an incompatible
+    // version of Kotlin" on every file, not just this one.
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-messaging")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

@@ -9,7 +9,10 @@ import { NextResponse } from 'next/server';
 // Meta's App Settings (WhatsApp Cloud API requires one to go Live), and
 // Meta's own reviewer/crawler never logs in to fetch it.
 const PUBLIC_PATHS = ['/login', '/register', '/privacy'];
-const PUBLIC_API_PATHS = ['/api/health', '/api/ready'];
+// /api/app/version is public on purpose -- the Android app checks it on
+// every launch to show an "update available" banner, which has to work
+// before the app knows whether its own session is still valid.
+const PUBLIC_API_PATHS = ['/api/health', '/api/ready', '/api/app/version'];
 // /api/cron/* authenticates itself via an Authorization: Bearer CRON_SECRET
 // header (see src/app/api/cron/*/route.js) -- a cron job has no session
 // cookie to present, so without this it was being blocked here with 401

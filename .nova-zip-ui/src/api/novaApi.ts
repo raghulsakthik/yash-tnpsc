@@ -5,8 +5,23 @@ import type {
 
 type Json = Record<string, any>;
 
+// Relative paths resolve against the current origin -- correct for the
+// desktop/browser build, where this app is iframed into the Next.js site
+// that also serves /api/*. The Android build (android.html, served from
+// Capacitor's local WebView origin, not the API's origin) sets
+// VITE_API_BASE_URL at build time so the same relative-path calls below
+// still reach the real backend. Cross-origin auth is handled by
+// Capacitor's native HTTP bridge (see capacitor.config.ts), not by
+// loosening the session cookie's SameSite=Lax on the server.
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+
+/** Prefixes a /api/... path with the real API origin on the Android build; a no-op on the desktop build. Use this for any fetch() outside novaApi itself (useProctoring, push, direct downloads). */
+export function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
@@ -35,6 +50,9 @@ export const novaApi = {
   markNotificationRead: (id: string) => request<Json>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request<Json>('/api/notifications/read-all', { method: 'POST' }),
   clearNotifications: () => request<Json>('/api/notifications/clear', { method: 'POST' }),
+  adminBroadcasts: () => request<Json>('/api/admin/notifications'),
+  adminBroadcastNotification: (title: string, message: string) =>
+    request<Json>('/api/admin/notifications/broadcast', { method: 'POST', body: JSON.stringify({ title, message, targetAudience: 'ALL_LEARNERS' }) }),
   bookmarks: () => request<Json>('/api/bookmarks'),
   calendar: () => request<Json>('/api/progress/calendar'),
   notes: () => request<Json>('/api/notes'),

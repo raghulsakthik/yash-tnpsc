@@ -8,11 +8,13 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,8 +45,8 @@ import com.nova.tnpsc.data.auth.AuthState
 import com.nova.tnpsc.ui.components.YashLoadingScreen
 import com.nova.tnpsc.ui.screens.home.HomeScreen
 import com.nova.tnpsc.ui.screens.journey.JourneyScreen
-import com.nova.tnpsc.ui.screens.learn.LearnScreen
-import com.nova.tnpsc.ui.screens.learn.SubjectScreen
+import com.nova.tnpsc.ui.screens.courses.CourseDetailScreen
+import com.nova.tnpsc.ui.screens.courses.CoursesScreen
 import com.nova.tnpsc.ui.screens.lesson.LessonScreen
 import com.nova.tnpsc.ui.screens.login.LoginScreen
 import com.nova.tnpsc.ui.screens.onboarding.OnboardingScreen
@@ -63,12 +65,18 @@ import com.nova.tnpsc.ui.screens.features.*
 // DEFAULT_PRACTICE_TOPIC in the web app's AppShell.
 const val DEFAULT_PRACTICE_TOPIC = "aptitude.fractions"
 
+// Labels and the 5-tab set match the Android design package's
+// AndroidBottomNav.tsx exactly (Today / Syllabus / Practice / Mocks /
+// Progress). Journey and the feature hub ("More") aren't bottom tabs in
+// that design either -- they're reached from the Profile tab instead,
+// same as the design's drawer puts them under Profile-adjacent links.
 sealed class Destination(val route: String, val label: String, val outline: ImageVector, val filled: ImageVector) {
-    data object Home : Destination("home", "Home", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome)
-    data object Learn : Destination("learn", "Learn", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Filled.MenuBook)
+    data object Home : Destination("home", "Today", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome)
+    data object Learn : Destination("learn", "Syllabus", Icons.AutoMirrored.Outlined.MenuBook, Icons.AutoMirrored.Filled.MenuBook)
     data object Practice : Destination("practice", "Practice", Icons.Outlined.Bolt, Icons.Filled.Bolt)
+    data object Tests : Destination("tests", "Mocks", Icons.Outlined.Shield, Icons.Filled.Shield)
+    data object Profile : Destination("profile", "Progress", Icons.Outlined.Person, Icons.Filled.Person)
     data object Journey : Destination("journey", "Journey", Icons.Outlined.Timeline, Icons.Filled.Timeline)
-    data object Profile : Destination("profile", "Profile", Icons.Outlined.Person, Icons.Filled.Person)
     data object More : Destination("more", "More", Icons.Outlined.MoreHoriz, Icons.Filled.MoreHoriz)
 }
 
@@ -76,7 +84,7 @@ sealed class Destination(val route: String, val label: String, val outline: Imag
 fun practiceRoute(topic: String = DEFAULT_PRACTICE_TOPIC, mode: String = "PRACTICE"): String =
     "practice?topic=$topic&mode=$mode"
 
-private val bottomDestinations = listOf(Destination.Home, Destination.Learn, Destination.Practice, Destination.Journey, Destination.Profile, Destination.More)
+private val bottomDestinations = listOf(Destination.Home, Destination.Learn, Destination.Practice, Destination.Tests, Destination.Profile)
 
 /**
  * The app's top-level gate: shows a loading spinner while a saved session
@@ -142,10 +150,10 @@ private fun MainNavHost(authRepository: AuthRepository) {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Destination.Home.route) { HomeScreen(navController) }
-            composable(Destination.Learn.route) { LearnScreen(navController) }
-            composable("learn/{subject}") { backStackEntry ->
-                val subject = backStackEntry.arguments?.getString("subject") ?: "general-studies"
-                SubjectScreen(subject, navController)
+            composable(Destination.Learn.route) { CoursesScreen(navController) }
+            composable("course/{chapterId}") { backStackEntry ->
+                val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
+                CourseDetailScreen(chapterId, navController)
             }
             composable(
                 "practice?topic={topic}&mode={mode}",
@@ -159,7 +167,7 @@ private fun MainNavHost(authRepository: AuthRepository) {
                 PracticeScreen(topic = topic, mode = mode)
             }
             composable(Destination.Journey.route) { JourneyScreen() }
-            composable(Destination.Profile.route) { ProfileScreen(authRepository) }
+            composable(Destination.Profile.route) { ProfileScreen(authRepository, navController) }
             composable(Destination.More.route) { FeatureHub(navController) }
             composable("bookmarks") { BookmarksScreen(navController) }
             composable("notifications") { NotificationsScreen() }

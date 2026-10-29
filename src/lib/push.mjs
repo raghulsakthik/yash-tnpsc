@@ -1,15 +1,27 @@
 import webpush from 'web-push';
 import { query } from './db.mjs';
 
-const configured = Boolean(process.env.VAPID_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) &&
+// A malformed VAPID_SUBJECT (missing "mailto:"/"https:", a stray
+// placeholder value, etc) makes web-push throw synchronously here --
+// uncaught, that crashes this module's import, which crashes every route
+// that imports it (including ones that don't even send push). Caught and
+// downgraded to "not configured" instead, same as a missing key: push
+// just silently doesn't fire rather than taking the rest of the app down
+// with it.
+let configured = Boolean(process.env.VAPID_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) &&
   Boolean(process.env.VAPID_PRIVATE_KEY);
 
 if (configured) {
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  } catch (err) {
+    configured = false;
+    console.error('[push] VAPID configuration invalid, push notifications disabled:', err.message);
+  }
 }
 
 /**

@@ -2,8 +2,8 @@ package com.nova.tnpsc
 
 import android.app.Application
 import com.nova.tnpsc.data.auth.AuthRepository
+import com.nova.tnpsc.data.courses.CoursesApi
 import com.nova.tnpsc.data.journey.JourneyApi
-import com.nova.tnpsc.data.learn.LearnApi
 import com.nova.tnpsc.data.lesson.LessonApi
 import com.nova.tnpsc.data.network.ApiClient
 import com.nova.tnpsc.data.plan.PlanApi
@@ -15,6 +15,7 @@ import com.nova.tnpsc.data.pyq.PyqApi
 import com.nova.tnpsc.data.quicklab.QuickLabApi
 import com.nova.tnpsc.data.tests.TestsApi
 import com.nova.tnpsc.data.features.FeatureApi
+import com.nova.tnpsc.data.admin.AdminNotificationsApi
 import com.nova.tnpsc.data.proctoring.ProctoringApi
 import com.nova.tnpsc.push.FcmTokenRegistrar
 
@@ -38,7 +39,7 @@ class TnpscApplication : Application() {
         private set
     lateinit var profileApi: ProfileApi
         private set
-    lateinit var learnApi: LearnApi
+    lateinit var coursesApi: CoursesApi
         private set
     lateinit var practiceApi: PracticeApi
         private set
@@ -60,6 +61,8 @@ class TnpscApplication : Application() {
         private set
     lateinit var proctoringApi: ProctoringApi
         private set
+    lateinit var adminNotificationsApi: AdminNotificationsApi
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -69,7 +72,7 @@ class TnpscApplication : Application() {
 
         planApi = apiClient.create(PlanApi::class.java)
         profileApi = apiClient.create(ProfileApi::class.java)
-        learnApi = apiClient.create(LearnApi::class.java)
+        coursesApi = apiClient.create(CoursesApi::class.java)
         practiceApi = apiClient.create(PracticeApi::class.java)
         journeyApi = apiClient.create(JourneyApi::class.java)
         lessonApi = apiClient.create(LessonApi::class.java)
@@ -80,5 +83,6 @@ class TnpscApplication : Application() {
         platformApi = apiClient.create(PlatformApi::class.java)
         curriculumApi = apiClient.create(CurriculumApi::class.java)
         proctoringApi = apiClient.create(ProctoringApi::class.java)
+        adminNotificationsApi = apiClient.create(AdminNotificationsApi::class.java)
     }
 }

@@ -30,6 +30,7 @@ import com.nova.tnpsc.ui.theme.NovaInkMuted
 import com.nova.tnpsc.ui.theme.NovaPrimary
 import com.nova.tnpsc.ui.theme.NovaWarmAccent
 import com.nova.tnpsc.ui.theme.NovaWarmTint
+import kotlinx.coroutines.launch
 
 /**
  * Mirrors .nova-zip-ui/src/components/admin/AdminPortal.tsx: same nav
@@ -92,19 +93,22 @@ fun AdminPortalScreen(sessionRole: String, onReturnToLearnerHub: () -> Unit) {
                 }
             }
 
-            item {
-                NovaCard(background = NovaWarmTint, border = NovaWarmAccent) {
-                    Text(
-                        "Design preview: ${activeSection.title}'s data is local/mock, not yet wired to the real backend -- same disclosure the web admin portal shows for most sections.",
-                        color = NovaWarmAccent,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+            if (activeSlug != "notifications") {
+                item {
+                    NovaCard(background = NovaWarmTint, border = NovaWarmAccent) {
+                        Text(
+                            "Design preview: ${activeSection.title}'s data is local/mock, not yet wired to the real backend -- same disclosure the web admin portal shows for most sections.",
+                            color = NovaWarmAccent,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
 
             when (activeSlug) {
                 "dashboard" -> item { DashboardBody() }
                 "learners" -> items(MOCK_LEARNERS) { LearnerRowCard(it) }
+                "notifications" -> item { NotificationsAdminBody() }
                 else -> {
                     val rows = MOCK_SECTION_ROWS[activeSlug] ?: emptyList()
                     if (rows.isEmpty()) {
@@ -145,6 +149,75 @@ private fun DashboardBody() {
             Text("Recent activity", fontWeight = FontWeight.SemiBold)
             Text("Yashika completed Weekly Mock #5 -- score 68/100.", color = NovaInkMuted, modifier = Modifier.padding(top = 8.dp))
             Text("Content Admin published \"The Preamble\" lesson.", color = NovaInkMuted, modifier = Modifier.padding(top = 4.dp))
+        }
+    }
+}
+
+/**
+ * Mirrors NotificationsAdminView in GenericAdminViews.tsx -- the one admin
+ * section with a real "send": POST /api/admin/notifications/broadcast fans
+ * the message out to every real learner account as a real
+ * /api/notifications feed entry plus a best-effort push, instead of only
+ * updating local state.
+ */
+@Composable
+private fun NotificationsAdminBody() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val app = context.applicationContext as com.nova.tnpsc.TnpscApplication
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    var title by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var history by remember { mutableStateOf<List<com.nova.tnpsc.data.admin.AdminBroadcastItem>>(emptyList()) }
+
+    fun refresh() {
+        scope.launch {
+            runCatching { app.adminNotificationsApi.broadcasts() }
+                .onSuccess { if (it.isSuccessful) history = it.body()?.broadcasts ?: emptyList() }
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) { refresh() }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        NovaCard {
+            Text("Dispatch announcement", fontWeight = FontWeight.SemiBold)
+            Text("Reaches every real learner account -- a real feed entry plus a best-effort push.", color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp, bottom = 10.dp))
+            androidx.compose.material3.OutlinedTextField(value = title, onValueChange = { title = it; error = null }, label = { Text("Notification title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(top = 10.dp))
+            androidx.compose.material3.OutlinedTextField(value = message, onValueChange = { message = it; error = null }, label = { Text("Message body") }, modifier = Modifier.fillMaxWidth())
+            error?.let { Text(it, color = NovaWarmAccent, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) }
+            androidx.compose.material3.Button(
+                enabled = !sending,
+                onClick = {
+                    if (title.isBlank() || message.isBlank()) { error = "Title and message are required."; return@Button }
+                    sending = true
+                    scope.launch {
+                        runCatching { app.adminNotificationsApi.sendBroadcast(com.nova.tnpsc.data.admin.AdminBroadcastRequest(title.trim(), message.trim())) }
+                            .onSuccess {
+                                if (it.isSuccessful) { title = ""; message = ""; refresh() }
+                                else error = it.body()?.message ?: "Could not send this notification"
+                            }
+                            .onFailure { error = it.message }
+                        sending = false
+                    }
+                },
+                modifier = Modifier.padding(top = 12.dp),
+            ) { Text(if (sending) "Sending…" else "Dispatch broadcast") }
+        }
+
+        Text("Broadcast history (${history.size})", fontWeight = FontWeight.SemiBold)
+        if (history.isEmpty()) {
+            Text("Nothing sent yet.", color = NovaInkMuted)
+        }
+        history.forEach { b ->
+            NovaCard {
+                Text(b.title, fontWeight = FontWeight.SemiBold)
+                Text(b.message, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                Text("${b.recipientCount} recipient(s) · ${b.targetAudience}", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+            }
         }
     }
 }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">YASH</string>
+    <string name="title_activity_main">YASH</string>
+    <string name="package_name">com.nova.tnpsc</string>
+    <string name="custom_url_scheme">com.nova.tnpsc</string>
+</resources>

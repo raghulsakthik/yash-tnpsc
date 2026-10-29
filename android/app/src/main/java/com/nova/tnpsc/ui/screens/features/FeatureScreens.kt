@@ -51,7 +51,7 @@ fun FeatureHub(nav: NavHostController) {
 @Composable fun BookmarksScreen(nav: NavHostController) {
     val app = LocalContext.current.applicationContext as TnpscApplication; var data by remember { mutableStateOf<BookmarksResponse?>(null) }; var error by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { runCatching { app.featureApi.bookmarks() }.onSuccess { if (it.isSuccessful) data = it.body() else error = "Could not load bookmarks" }.onFailure { error = it.message } }
-    FeaturePage("Saved for later", "Bookmarked questions") { error?.let { Text(it, color = NovaWarmAccent) }; if (data == null && error == null) Text("Loading…", color = NovaInkMuted); if (data?.bookmarks?.isEmpty() == true) Text("Nothing saved yet. Star a question during practice.", color = NovaInkMuted); data?.bookmarks?.forEach { b -> var revealed by remember(b.questionId) { mutableStateOf(false) }; NovaCard { Eyebrow(b.topicName); Text(b.prompt, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)); if (revealed) { b.options.forEachIndexed { i, o -> Text("${('A'.code + i).toChar()}. $o", fontWeight = if (i == b.correctIndex) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp)) }; b.explanation?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) } } else TextButton(onClick = { revealed = true }) { Text("Show answer") }; Button(onClick = { nav.navigate(practiceRoute(b.topicId)) }) { Text("Practise this topic") } } } }
+    FeaturePage("Saved Bookmarks", "Courses, masterclasses, and exercises saved for quick review") { error?.let { Text(it, color = NovaWarmAccent) }; if (data == null && error == null) Text("Loading…", color = NovaInkMuted); if (data?.bookmarks?.isEmpty() == true) Text("Nothing saved yet. Star a question during practice.", color = NovaInkMuted); data?.bookmarks?.forEach { b -> var revealed by remember(b.questionId) { mutableStateOf(false) }; NovaCard { Eyebrow(b.topicName); Text(b.prompt, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)); if (revealed) { b.options.forEachIndexed { i, o -> Text("${('A'.code + i).toChar()}. $o", fontWeight = if (i == b.correctIndex) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp)) }; b.explanation?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) } } else TextButton(onClick = { revealed = true }) { Text("Show answer") }; Button(onClick = { nav.navigate(practiceRoute(b.topicId)) }) { Text("Practise this topic") } } } }
 }
 
 @Composable fun NotificationsScreen() {
@@ -69,7 +69,7 @@ fun FeatureHub(nav: NavHostController) {
 @Composable fun MistakesScreen(nav: NavHostController) {
     val app = LocalContext.current.applicationContext as TnpscApplication; var q by remember { mutableStateOf<MistakeResponse?>(null) }; var error by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { runCatching { app.featureApi.nextMistake() }.onSuccess { if (it.isSuccessful) q = it.body() else error = it.body()?.message ?: "No open mistakes right now" }.onFailure { error = it.message } }
-    FeaturePage("Mistakes", "Fix the thing that went wrong") { error?.let { NovaCard { Text(it, color = NovaInkMuted) } }; q?.let { m -> NovaCard { Eyebrow(m.topicName ?: "Mistake review"); Text(m.prompt, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 12.dp)); m.options.forEachIndexed { i, o -> OptionRow(('A'.code + i).toChar().toString(), o, OptionState.Default) {}; }; Button(onClick = { nav.navigate(practiceRoute(m.topicId, "MISTAKES")) }, modifier = Modifier.padding(top = 12.dp)) { Text("Open full review") } } } }
+    FeaturePage("Personalized Mistake Engine", "Intelligent mistake classification and targeted remedial drill generator") { error?.let { NovaCard { Text(it, color = NovaInkMuted) } }; q?.let { m -> NovaCard { Eyebrow(m.topicName ?: "Mistake review"); Text(m.prompt, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 12.dp)); m.options.forEachIndexed { i, o -> OptionRow(('A'.code + i).toChar().toString(), o, OptionState.Default) {}; }; Button(onClick = { nav.navigate(practiceRoute(m.topicId, "MISTAKES")) }, modifier = Modifier.padding(top = 12.dp)) { Text("Open full review") } } } }
 }
 
 @Composable fun SearchScreen(nav: NavHostController) {
@@ -110,7 +110,7 @@ fun FeatureHub(nav: NavHostController) {
     fun reload() { scope.launch { runCatching { app.featureApi.notes() }.onSuccess { if (it.isSuccessful) notes = it.body()?.notes ?: emptyList() else error = "Could not load notes" }.onFailure { error = it.message } } }
     LaunchedEffect(Unit) { reload() }
 
-    FeaturePage("Your notes", "Real notes, saved against your account") {
+    FeaturePage("Study Notes", "Personal study notebook & key conceptual summaries") {
         error?.let { Text(it, color = NovaWarmAccent) }
         NovaCard {
             Eyebrow("New note")
@@ -144,6 +144,23 @@ fun FeatureHub(nav: NavHostController) {
     }
 }
 
+// Real external links only -- no fabricated "Download" placeholders. Mirrors
+// .nova-zip-ui/src/data/resources.ts exactly (the one real curated link);
+// real downloadable resources come from the backend (featureApi.resources()),
+// same split as web's ResourcesView.tsx All/Links/Download tabs.
+private data class StaticLink(val title: String, val category: String, val domain: String, val description: String, val url: String)
+private val STATIC_LINKS = listOf(
+    StaticLink(
+        "TNPSC Official Portal & Notifications",
+        "Official Portal",
+        "tnpsc.gov.in",
+        "Official announcements, hall tickets, syllabus bulletins, and result portal.",
+        "https://www.tnpsc.gov.in/",
+    ),
+)
+
+private enum class ResourceTab(val label: String) { ALL("All Resources"), LINKS("Link's"), DOWNLOAD("Download") }
+
 @Composable fun ResourcesScreen() {
     val context = LocalContext.current
     val app = context.applicationContext as TnpscApplication
@@ -153,6 +170,7 @@ fun FeatureHub(nav: NavHostController) {
     var downloadingId by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
     var pendingDownload by remember { mutableStateOf<ResourceItem?>(null) }
+    var tab by remember { mutableStateOf(ResourceTab.ALL) }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -183,17 +201,45 @@ fun FeatureHub(nav: NavHostController) {
             .onFailure { error = it.message }
     }
 
-    FeaturePage("Resources", "Real files uploaded by an admin") {
+    val showLinks = tab == ResourceTab.ALL || tab == ResourceTab.LINKS
+    val showDownloads = tab == ResourceTab.ALL || tab == ResourceTab.DOWNLOAD
+
+    FeaturePage("Resources", "Curated links and real files uploaded by an admin") {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ResourceTab.entries.forEach { t ->
+                androidx.compose.material3.FilterChip(selected = tab == t, onClick = { tab = t }, label = { Text(t.label) })
+            }
+        }
         error?.let { Text(it, color = NovaWarmAccent) }
         status?.let { Text(it, color = NovaInkMuted, modifier = Modifier.padding(bottom = 4.dp)) }
-        if (resources.isEmpty() && error == null) Text("No resources have been uploaded yet.", color = NovaInkMuted)
-        resources.forEach { r ->
-            NovaCard {
-                Text(r.title, fontWeight = FontWeight.SemiBold)
-                r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
-                Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
-                Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
-                    Text(if (downloadingId == r.id) "Downloading…" else "Download")
+
+        if (showLinks) {
+            STATIC_LINKS.forEach { link ->
+                NovaCard {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(link.category, color = NovaWarmAccent, style = MaterialTheme.typography.labelSmall)
+                        Text(link.domain, color = NovaInkMuted, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Text(link.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+                    Text(link.description, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                    OutlinedButton(
+                        onClick = { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link.url))) },
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) { Text("Visit Reference") }
+                }
+            }
+        }
+
+        if (showDownloads) {
+            if (resources.isEmpty() && error == null) Text("No downloadable resources have been uploaded yet.", color = NovaInkMuted)
+            resources.forEach { r ->
+                NovaCard {
+                    Text(r.title, fontWeight = FontWeight.SemiBold)
+                    r.description?.let { Text(it, color = NovaInkMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                    Text("${r.category} · ${r.sizeBytes / 1024} KB", color = NovaInkMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                    Button(onClick = { beginDownload(r) }, enabled = downloadingId != r.id, modifier = Modifier.padding(top = 8.dp)) {
+                        Text(if (downloadingId == r.id) "Downloading…" else "Download")
+                    }
                 }
             }
         }

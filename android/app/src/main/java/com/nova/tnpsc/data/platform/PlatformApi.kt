@@ -10,7 +10,7 @@ import retrofit2.http.*
 @Serializable data class NoteItem(val id:String="",val courseTitle:String="",val title:String="",val content:String="",val tags:List<String> = emptyList(),val createdAt:String?=null,val updatedAt:String?=null)
 @Serializable data class NotesResponse(val notes:List<NoteItem> = emptyList())
 @Serializable data class NoteRequest(val courseTitle:String,val title:String,val content:String,val tags:List<String> = emptyList())
-@Serializable data class OnboardingPreferencesRequest(val exam:String?=null,val language:String?=null,val dailyGoalMinutes:Int?=null)
+@Serializable data class OnboardingPreferencesRequest(val name:String?=null,val phone:String?=null,val language:String?=null,val dailyGoalMinutes:Int?=null)
 @Serializable data class InterventionStartRequest(val topicId:String,val action:String,val baselineMastery:Double?=null)
 @Serializable data class InterventionResponse(val id:String="",val status:String="ACTIVE",val message:String?=null)
 @Serializable data class CompleteUnitRequest(val unitId:String,val score:Double?=null)

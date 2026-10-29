@@ -15,6 +15,10 @@ const NUDGE_EVENTS = {
   NOTIFY_INACTIVITY: { icon: '👋', title: "It's been a few days" },
   NOTIFY_TEST_REMINDER: { icon: '📝', title: 'Test reminder' },
   NOTIFY_MOTIVATION: { icon: '✦', title: 'A nudge' },
+  // Sent from Admin Portal's "Dispatch Announcement" form
+  // (POST /api/admin/notifications/broadcast) -- title/body come from the
+  // admin's own text, not a fixed label like the other nudge types.
+  ADMIN_BROADCAST: { icon: '📣', title: null },
 };
 
 const LIMIT = 40;
@@ -65,10 +69,10 @@ export async function GET(request) {
       })),
       ...events.map((e) => ({
         id: `nudge:${e.event}:${new Date(e.created_at).toISOString()}`,
-        type: 'nudge',
+        type: e.event === 'ADMIN_BROADCAST' ? 'broadcast' : 'nudge',
         icon: NUDGE_EVENTS[e.event]?.icon ?? '🔔',
-        title: NUDGE_EVENTS[e.event]?.title ?? e.event,
-        body: e.metadata?.title ?? e.metadata?.whatsappText ?? null,
+        title: NUDGE_EVENTS[e.event]?.title ?? e.metadata?.title ?? e.event,
+        body: e.metadata?.message ?? e.metadata?.title ?? e.metadata?.whatsappText ?? null,
         at: e.created_at,
       })),
     ]

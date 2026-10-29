@@ -32,6 +32,33 @@ android {
         buildConfig = true
     }
 
+    // Release signing credentials -- RELEASE_STORE_FILE/PASSWORD/KEY_ALIAS/KEY_PASSWORD
+    // in local.properties (gitignored, per-machine, same pattern as API_BASE_URL
+    // above). A fresh clone has none of this: generate a keystore with keytool
+    // and add those four keys before running assembleRelease/bundleRelease.
+    val isBuildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = false) }
+    val releaseStoreFile = localProperty("RELEASE_STORE_FILE")
+    val releaseStorePassword = localProperty("RELEASE_STORE_PASSWORD")
+    val releaseKeyAlias = localProperty("RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = localProperty("RELEASE_KEY_PASSWORD")
+    if (isBuildingRelease && (releaseStoreFile == null || releaseStorePassword == null || releaseKeyAlias == null || releaseKeyPassword == null)) {
+        throw GradleException(
+            "Missing release signing config. Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, " +
+                "RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD to android/local.properties."
+        )
+    }
+
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             // 10.0.2.2 is the Android emulator's alias for the host
@@ -41,6 +68,9 @@ android {
         }
         release {
             isMinifyEnabled = false
+            if (releaseStoreFile != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             // Must be passed at build time: `./gradlew assembleRelease -PapiBaseUrl=https://your-app.vercel.app/`
             // (or set API_BASE_URL in local.properties for a repeatable local
             // release build). No baked-in default here on purpose -- a release

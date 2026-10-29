@@ -11,7 +11,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // loosening the cookie's SameSite on the server (which would weaken CSRF
 // protection for the real web app too, not just this build).
 const config: CapacitorConfig = {
-  appId: 'com.nova.tnpsc',
+  appId: 'com.yash.yash',
   appName: 'YASH',
   webDir: 'dist-android',
   server: {

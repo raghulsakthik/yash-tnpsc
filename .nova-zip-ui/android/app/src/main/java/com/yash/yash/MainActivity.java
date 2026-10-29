@@ -1,4 +1,4 @@
-package com.nova.tnpsc;
+package com.yash.yash;
 
 import com.getcapacitor.BridgeActivity;
 

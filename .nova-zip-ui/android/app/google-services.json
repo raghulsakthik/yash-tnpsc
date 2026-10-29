@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "757663618590",
+    "project_id": "yash-278de",
+    "storage_bucket": "yash-278de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757663618590:android:87d161c318e3e963e9000f",
+        "android_client_info": {
+          "package_name": "com.yash.yash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdVahDy74yg7I7x7pib64Mr_sV1iyqfoI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

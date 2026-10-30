@@ -48,7 +48,6 @@ import {
   QuestionStatus,
 } from '../../types/admin';
 import {
-  initialAdminUsers,
   initialLearnersList,
   initialAdminLessons,
   initialAdminResources,
@@ -192,6 +191,38 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   useEffect(() => {
     refreshBroadcasts();
   }, [refreshBroadcasts]);
+
+  // Real admin accounts (GET /api/admin/users -- the same endpoint the
+  // standalone /admin/users Next.js page uses), replacing initialAdminUsers
+  // below. No suspend/reactivate concept exists for admin accounts in the
+  // schema, so status is always ACTIVE and lastActive is left blank rather
+  // than fabricated -- this view is read-only (see AdminsRolesView), so
+  // there's no local write path to keep in sync either.
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [adminsError, setAdminsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    novaApi
+      .adminUsers()
+      .then((res) => {
+        const mapped: AdminUser[] = (res.accounts || []).map((a: any) => ({
+          id: a.id,
+          name: a.email.split('@')[0],
+          email: a.email,
+          role: (a.adminRoleLabel || a.adminRole) as AdminRole,
+          assignedSubjects: Array.isArray(a.subjectIds) && a.subjectIds.length ? a.subjectIds : undefined,
+          status: 'ACTIVE',
+          // No last-login/last-active tracking exists for admin accounts --
+          // showing the account's creation date here instead would be a
+          // different kind of fake data (misrepresenting creation as
+          // activity), so this is honestly blank rather than invented.
+          lastActive: '—',
+        }));
+        setAdmins(mapped);
+        setAdminsError(null);
+      })
+      .catch((err) => setAdminsError(err instanceof Error ? err.message : 'Could not load admin accounts'));
+  }, []);
 
   // Sync state to localStorage
   useEffect(() => {
@@ -656,13 +687,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
         {/* MAIN VIEW CONTENT AREA */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {/* Every section below reads/writes local mock data (seeded once,
-              then persisted to this browser's localStorage) -- real backend
-              wiring per section (learners, lessons, questions, tests,
-              proctoring, audit logs, AI proposals) is tracked follow-up
-              work, see docs/NEXT_PHASE_ROADMAP.md. Shown here so nobody
-              mistakes what's on screen for real production data. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && (
+          {/* Most sections below still read/write local mock data (seeded
+              once, then persisted to this browser's localStorage) -- real
+              backend wiring per section (learners, lessons, questions,
+              tests, proctoring policies, audit logs, AI proposals) is
+              tracked as follow-up work. notifications, proctoring-reports,
+              and admins-roles are real (GET/POST against actual API
+              routes) and excluded from the warning banner below. */}
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
@@ -800,7 +832,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
           {/* Admins & Roles */}
           {currentSectionSlug === 'admins-roles' && (
-            <AdminsRolesView currentRole={activeRole} admins={initialAdminUsers} />
+            <AdminsRolesView currentRole={activeRole} admins={admins} />
           )}
 
           {/* Default fallback for remaining sections like system settings, search, etc */}

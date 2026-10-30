@@ -66,7 +66,16 @@ export async function POST(request) {
         questionIds.push(id);
       }
       const batch=await client.query(`INSERT INTO content_review_batch(topic_id,generation_source,question_ids,resource_ids,lesson_ids,status) VALUES($1,'ai',$2::jsonb,'[]'::jsonb,$3::jsonb,'PENDING') RETURNING id`,[topicId,JSON.stringify(questionIds),JSON.stringify(lessonIds)]);
-      batchIds.push(batch.rows[0].id);
+      const batchId = batch.rows[0].id;
+      batchIds.push(batchId);
+      for (const item of group.lessons) {
+        const p=item.payload;
+        await client.query(`INSERT INTO content_engine_lineage(publication_id,content_id,content_kind,platform_id,topic_id,source_ids,engine_version,review_batch_id,status) VALUES($1,$2,'lesson',NULL,$3,$4::jsonb,$5,$6,'IMPORTED')`, [publicationId,String(item.content_id),topicId,JSON.stringify(Array.isArray(p.sourceIds)?p.sourceIds:[]),Number.isInteger(p.version)?p.version:1,batchId]);
+      }
+      for (const item of group.questions) {
+        const p=item.payload;
+        await client.query(`INSERT INTO content_engine_lineage(publication_id,content_id,content_kind,platform_id,topic_id,source_ids,engine_version,review_batch_id,status) VALUES($1,$2,'mcq',NULL,$3,$4::jsonb,$5,$6,'IMPORTED')`, [publicationId,String(item.content_id),topicId,JSON.stringify(Array.isArray(p.sourceIds)?p.sourceIds:[]),Number.isInteger(p.version)?p.version:null,batchId]);
+      }
     }
     await client.query('COMMIT');
     return NextResponse.json({ ok:true, publicationId, manifestHash:expectedHash, importedItems:items.length, reviewBatchIds:batchIds, status:'IMPORTED_PENDING_REVIEW' },{status:201});

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon, FlagIcon, UsersIcon } from '../../_components/Icon';
+import { DiamondIcon, BookOpenIcon, PencilIcon, QuestionIcon, GridIcon, BoltIcon, UploadIcon, CameraIcon, CheckSquareIcon, FlagIcon, UsersIcon, SearchIcon } from '../../_components/Icon';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', Icon: DiamondIcon },
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/tests', label: 'Tests', Icon: GridIcon },
   { href: '/admin/quicklab', label: 'Quick Lab', Icon: BoltIcon },
   { href: '/admin/upload', label: 'Bulk Upload', Icon: UploadIcon },
+  { href: '/admin/retrieval', label: 'Retrieval Engine', Icon: SearchIcon },
   { href: '/admin/content-engine', label: 'Content Engine', Icon: BoltIcon },
   { href: '/admin/review', label: 'Review Queue', Icon: CheckSquareIcon },
   { href: '/admin/support', label: 'Support Center', Icon: FlagIcon },
@@ -43,7 +44,7 @@ export default function AdminGuard({ children }) {
     fetch('/api/auth/me', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((me) => {
-        if (me?.role === 'admin') setState('allowed');
+        if (me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN') setState('allowed');
         else {
           setState('denied');
           router.replace('/');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import AdminGuard from '../_components/AdminGuard';
 
 const TYPES=['CONCEPT','GUIDED_PRACTICE','APPLICATION','EXAM_PRACTICE','PYQ','SPEED','REVISION','TEST','REMEDIATION'];
@@ -23,7 +24,14 @@ export default function CurriculumBuilder(){
   async function addDay(){const id=await create({type:'day',weekId,dayNumber:Number(form.dayNumber),title:form.dayTitle,purpose:form.dayPurpose,targetMinutes:Number(form.dayMinutes)});if(id)setDayId(id);}
   async function addUnit(){await create({type:'unit',dayId,title:form.unitTitle,unitType:form.unitType,estimatedMinutes:Number(form.unitMinutes),topicId:form.topicId||null});}
   async function remove(type,id){if(!confirm('Delete this curriculum item? Children may also be deleted by database cascade.'))return;const r=await fetch('/api/admin/curriculum',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,id})});if(!r.ok){const d=await r.json();setError(d.message);return;}await load();}
-  return <AdminGuard><h1>Curriculum Builder</h1><p className="muted" style={{marginTop:8,marginBottom:20}}>Build the canonical Phase → Week → Day → Learning Unit structure shared by Web and Android.</p>{error&&<div className="card" style={{background:'var(--warm-tint)',marginBottom:16}}>{error}</div>}
+  return <AdminGuard><h1>Curriculum Builder</h1><p className="muted" style={{marginTop:8,marginBottom:12}}>Build the canonical Phase → Week → Day → Learning Unit structure shared by Web and Android.</p>
+    <div className="card-sunk" style={{marginBottom:16,display:'flex',gap:10,flexWrap:'wrap'}}>
+      <span className="muted" style={{fontSize:'0.78rem'}}>Where this curriculum&apos;s content comes from:</span>
+      <Link href="/admin/retrieval" style={{fontSize:'0.78rem',fontWeight:700}}>Retrieval Engine →</Link>
+      <Link href="/admin/content-engine" style={{fontSize:'0.78rem',fontWeight:700}}>Content Engine (labelling) →</Link>
+      <Link href="/admin/review" style={{fontSize:'0.78rem',fontWeight:700}}>Review Queue →</Link>
+    </div>
+    {error&&<div className="card" style={{background:'var(--warm-tint)',marginBottom:16}}>{error}</div>}
     <div className="card" style={{marginBottom:16}}><span className="eyebrow">Phase</span><select value={phaseId} onChange={e=>setPhaseId(e.target.value)} style={{...box,marginTop:8}}>{phases.map(p=><option key={p.id} value={p.id}>{p.level}. {p.name} · {p.duration_weeks||'?'} weeks</option>)}</select></div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
       <section className="card"><span className="eyebrow">Weeks</span><div style={{display:'flex',gap:8,margin:'10px 0'}}><input type="number" min="1" value={form.weekNumber} onChange={e=>setForm(f=>({...f,weekNumber:e.target.value}))} style={{...box,width:80}}/><input placeholder="Week title" value={form.weekTitle} onChange={e=>setForm(f=>({...f,weekTitle:e.target.value}))} style={box}/></div><input placeholder="Objective" value={form.weekObjective} onChange={e=>setForm(f=>({...f,weekObjective:e.target.value}))} style={box}/><button className="btn btn-primary" disabled={saving} onClick={addWeek} style={{marginTop:8}}>+ Add week</button><div style={{marginTop:14}}>{phaseWeeks.map(w=><div key={w.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid var(--border)'}}><button onClick={()=>setWeekId(w.id)} style={{border:0,background:'none',textAlign:'left',cursor:'pointer',fontWeight:weekId===w.id?700:400}}>Week {w.week_number}: {w.title}</button><button onClick={()=>remove('week',w.id)} style={{border:0,background:'none',color:'var(--warm-accent)'}}>×</button></div>)}</div></section>

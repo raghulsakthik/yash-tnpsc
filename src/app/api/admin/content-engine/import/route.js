@@ -3,14 +3,11 @@ import { NextResponse } from 'next/server';
 import { pool } from '../../../../../../lib/db.mjs';
 import { requirePermission } from '../../../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../../../lib/permissions.mjs';
+import { contentEngineManifestHash } from '../../../../../../lib/contentEngineManifest.mjs';
 
 export const dynamic = 'force-dynamic';
 const DIFFICULTY = Object.freeze({ easy: 0.25, medium: 0.55, hard: 0.80 });
 
-function manifestHash(publicationId, items) {
-  const stable = JSON.stringify({ publication_id: publicationId, items: items.map((x) => ({ kind: x.kind, content_id: x.content_id, topic_id: x.topic_id, payload: x.payload })) });
-  return crypto.createHash('sha256').update(stable).digest('hex');
-}
 function normalizedHash(text) {
   return crypto.createHash('sha256').update(String(text).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim()).digest('hex');
 }
@@ -29,7 +26,7 @@ export async function POST(request) {
   const suppliedHash = typeof body.manifestHash === 'string' ? body.manifestHash : '';
   if (!publicationId || !items.length || !suppliedHash) return NextResponse.json({ code: 'INVALID_MANIFEST', message: 'publicationId, manifestHash and items are required' }, { status: 400 });
   if (items.length > 5000) return NextResponse.json({ code: 'MANIFEST_TOO_LARGE', message: 'Maximum 5000 items per publication' }, { status: 400 });
-  const expectedHash = manifestHash(publicationId, items);
+  const expectedHash = contentEngineManifestHash(publicationId, items);
   if (!safeEqualHex(suppliedHash, expectedHash)) return NextResponse.json({ code: 'MANIFEST_HASH_MISMATCH', message: 'Manifest hash does not match payload' }, { status: 409 });
 
   const client = await pool.connect();

@@ -1,0 +1,21 @@
+name: Content Engine Integration Contract
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  platform-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run content-engine contract smoke tests
+        run: node --test tests/content-engine-runtime.smoke.mjs
+      - name: Run complete platform test suite
+        run: npm test

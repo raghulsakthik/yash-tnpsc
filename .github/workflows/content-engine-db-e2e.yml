@@ -1,0 +1,49 @@
+name: Content Engine Database E2E
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  database-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tnpsc
+          POSTGRES_PASSWORD: tnpsc
+          POSTGRES_DB: tnpsc_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tnpsc -d tnpsc_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://tnpsc:tnpsc@localhost:5432/tnpsc_e2e
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npm run db:migrate
+
+      - name: Seed baseline database
+        run: npm run db:seed
+
+      - name: Run isolated content-engine database E2E
+        run: node scripts/content-engine-db-e2e.mjs
+
+      - name: Verify migration state is idempotent
+        run: npm run db:migrate

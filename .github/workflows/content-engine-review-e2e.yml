@@ -1,0 +1,51 @@
+name: Content Engine Review E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  review-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: yash
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d yash"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/yash
+      APP_LEARNER_ID: 00000000-0000-0000-0000-000000000001
+      APP_LEARNER_NAME: CI
+      APP_LANGUAGE: en
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Migrate database
+        run: npm run db:migrate
+      - name: Validate content
+        run: npm run validate:content
+      - name: Seed database
+        run: npm run db:seed
+      - name: Run authenticated review E2E
+        run: node scripts/content-engine-review-e2e.mjs

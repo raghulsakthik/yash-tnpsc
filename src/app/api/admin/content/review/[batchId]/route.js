@@ -9,11 +9,6 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/admin/content/review/[batchId]
  * body: { decision: 'approve' | 'reject' }
- *
- * A batch can be question-sourced (template/pdf/ai) or material-sourced,
- * so this checks review.question OR review.content rather than requiring
- * one specific permission -- a Question Reviewer and a Content Reviewer
- * are both legitimately allowed here, just for different batch kinds.
  */
 export async function POST(request, { params }) {
   const admin = await requireAdmin(request);
@@ -40,12 +35,12 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const result = body.decision === 'approve' ? await approveBatch(batchId, admin.id) : await rejectBatch(batchId, admin.id);
+    const result = body.decision === 'approve'
+      ? await approveBatch(batchId, admin.accountId)
+      : await rejectBatch(batchId, admin.accountId);
     return NextResponse.json({ decision: body.decision, ...result });
   } catch (err) {
-    if (err instanceof ContentReviewError) {
-      return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
-    }
+    if (err instanceof ContentReviewError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'REVIEW_FAILED', message: err.message }, { status: 500 });
   }
 }

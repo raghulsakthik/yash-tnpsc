@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../../lib/db.mjs';
-import { requirePermission } from '../../../../../../lib/auth.mjs';
-import { PERMISSIONS, canActOnTopic } from '../../../../../../lib/permissions.mjs';
-import { contentEngineManifestHash } from '../../../../../../lib/contentEngineManifest.mjs';
+import { pool } from '../../../../../lib/db.mjs';
+import { requirePermission } from '../../../../../lib/auth.mjs';
+import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
+import { contentEngineManifestHash } from '../../../../../lib/contentEngineManifest.mjs';
 
 export const dynamic = 'force-dynamic';
 const DIFFICULTY = Object.freeze({ easy: 0.25, medium: 0.55, hard: 0.80 });

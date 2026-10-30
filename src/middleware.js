@@ -8,7 +8,12 @@ import { NextResponse } from 'next/server';
 // /privacy must be reachable with no session -- it's the URL handed to
 // Meta's App Settings (WhatsApp Cloud API requires one to go Live), and
 // Meta's own reviewer/crawler never logs in to fetch it.
-const PUBLIC_PATHS = ['/login', '/register', '/privacy'];
+// / must be public too: it renders the real nova-ui app (src/app/page.js),
+// which has its own AuthModal and isLoggedIn state (see .nova-zip-ui/src/App.tsx)
+// -- the same pattern the Android app uses. Gating it here meant every
+// unauthenticated visitor got redirected to the separate, differently-styled
+// /login page and never saw the real app's own sign-in experience at all.
+const PUBLIC_PATHS = ['/', '/login', '/register', '/privacy'];
 // /api/app/version is public on purpose -- the Android app checks it on
 // every launch to show an "update available" banner, which has to work
 // before the app knows whether its own session is still valid.

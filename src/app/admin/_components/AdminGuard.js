@@ -16,6 +16,7 @@ const NAV = [
   { href: '/admin/upload', label: 'Bulk Upload', Icon: UploadIcon },
   { href: '/admin/retrieval', label: 'Retrieval Engine', Icon: SearchIcon },
   { href: '/admin/content-engine', label: 'Content Engine', Icon: BoltIcon },
+  { href: '/admin/retrieval', label: 'Retrieval Library', Icon: UploadIcon },
   { href: '/admin/review', label: 'Review Queue', Icon: CheckSquareIcon },
   { href: '/admin/support', label: 'Support Center', Icon: FlagIcon },
   { href: '/admin/users', label: 'Admin Users', Icon: UsersIcon },

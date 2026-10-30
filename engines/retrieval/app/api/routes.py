@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from app.config.settings import BASE_URL, DB_PATH
 from app.db.database import Database
 
@@ -22,3 +23,16 @@ def resources(status:str|None=None, limit:int=50):
         else:
             rows=c.execute('SELECT * FROM resources ORDER BY id DESC LIMIT ?', (limit,)).fetchall()
     return [dict(r) for r in rows]
+
+
+@router.get('/resources/{resource_id}/file')
+def resource_file(resource_id: int):
+    with db().connection() as c:
+        row = c.execute('SELECT id,title,local_path,status,mime_type FROM resources WHERE id=?', (resource_id,)).fetchone()
+    if not row or row['status'] != 'complete' or not row['local_path']:
+        raise HTTPException(status_code=404, detail='Resource is not available for analysis')
+    from pathlib import Path
+    path = Path(row['local_path'])
+    if not path.is_absolute(): path = (Path(DB_PATH).parent / path).resolve()
+    if not path.exists() or not path.is_file(): raise HTTPException(status_code=404, detail='Downloaded resource file is missing')
+    return FileResponse(path, media_type=row['mime_type'] or 'application/octet-stream', filename=path.name)

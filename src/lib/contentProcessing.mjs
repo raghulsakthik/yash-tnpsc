@@ -60,14 +60,23 @@ export async function createProcessingBatch({ adminId, files }) {
     );
     const batchId = batches[0].id;
     for (const file of files) {
-      if (!isObjectStorageConfigured()) throw new ContentProcessingError('OBJECT_STORAGE_UNAVAILABLE', 'Object storage is not configured.');
-      const objectKey = contentObjectKey(batchId, file.fileName);
-      const stored = await putObject(objectKey, file.data, file.mimeType ?? 'application/octet-stream');
+      let stored = null;
+      let sourceObjectKey = null;
+      let sourceData = null;
+      if (isObjectStorageConfigured()) {
+        const objectKey = contentObjectKey(batchId, file.fileName);
+        stored = await putObject(objectKey, file.data, file.mimeType ?? 'application/octet-stream');
+        sourceObjectKey = stored.key;
+      } else {
+        // Local/self-hosted mode keeps the immutable upload in PostgreSQL until processing finishes.
+        sourceData = file.data;
+        stored = { size: file.data.length, sha256: crypto.createHash('sha256').update(file.data).digest('hex') };
+      }
       await client.query(
         `INSERT INTO content_processing_job
-          (batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_object_key, source_size_bytes, source_sha256, created_by, status, stage, progress)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'QUEUED', 'QUEUED', 0)`,
-        [batchId, file.fileName, file.sourceYear ?? null, file.examCode ?? null, file.examGroup ?? null, file.paper ?? null, file.mimeType ?? null, stored.key, stored.size, stored.sha256, adminId]
+          (batch_id, file_name, source_year, exam_code, exam_group, paper, mime_type, source_data, source_object_key, source_size_bytes, source_sha256, created_by, status, stage, progress)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'QUEUED', 'QUEUED', 0)`,
+        [batchId, file.fileName, file.sourceYear ?? null, file.examCode ?? null, file.examGroup ?? null, file.paper ?? null, file.mimeType ?? null, sourceData, sourceObjectKey, stored.size, stored.sha256, adminId]
       );
     }
     await client.query('COMMIT');

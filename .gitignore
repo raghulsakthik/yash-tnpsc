@@ -23,3 +23,15 @@ coverage/
 /storage/proctoring/
 .vercel
 .env*
+
+# Local engine/runtime state
+engines/**/.venv/
+engines/**/.env
+engines/**/*.sqlite3
+engines/**/logs/
+
+# Android/Gradle build output
+.nova-zip-ui/android/.gradle/
+.nova-zip-ui/android/app/build/
+.nova-zip-ui/android/build/
+.nova-zip-ui/android/capacitor-cordova-android-plugins/build/

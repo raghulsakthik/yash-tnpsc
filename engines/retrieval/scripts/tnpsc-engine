@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /home/yash/tnpsc-material-engine
+PYTHONPATH=. exec .venv/bin/python -m app.cli.main "$@"

@@ -1,4 +1,6 @@
-# Yash
+# TNPSC Ecosystem
+
+A unified TNPSC learning, content, retrieval and intelligence platform.
 
 A private, personalised practice system for the TNPSC Combined Civil Services
 (Preliminary) Examination – II, Code 495. Built for one learner.

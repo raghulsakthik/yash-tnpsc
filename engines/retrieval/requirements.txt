@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+playwright
+aiohttp
+aiosqlite
+pydantic-settings
+python-dotenv
+beautifulsoup4

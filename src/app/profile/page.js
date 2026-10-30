@@ -83,7 +83,7 @@ export default function Profile() {
     );
   }
 
-  if (profile.role === 'admin') {
+  if (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') {
     return (
       <AppShell>
         <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>

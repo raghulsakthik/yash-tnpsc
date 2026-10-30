@@ -41,7 +41,7 @@ export default function AppShell({ children }) {
         if (!data) return;
         setStreak(data.streak);
         setInitial(data.name?.[0]?.toUpperCase() ?? 'Y');
-        setIsAdmin(data.role === 'admin');
+        setIsAdmin(data.role === 'ADMIN' || data.role === 'SUPER_ADMIN');
       })
       .catch(() => {});
   }, []);

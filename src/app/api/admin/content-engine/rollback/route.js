@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { requirePermission } from '../../../../../../lib/auth.mjs';
-import { PERMISSIONS, canActOnTopic } from '../../../../../../lib/permissions.mjs';
-import { ContentReviewError, rollbackLessonVersion } from '../../../../../../lib/contentReview.mjs';
-import { query } from '../../../../../../lib/db.mjs';
+import { requirePermission } from '../../../../../lib/auth.mjs';
+import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
+import { ContentReviewError, rollbackLessonVersion } from '../../../../../lib/contentReview.mjs';
+import { query } from '../../../../../lib/db.mjs';
 
 export const dynamic = 'force-dynamic';
 

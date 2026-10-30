@@ -249,7 +249,20 @@ export function useAppData() {
   // The ZIP UI expects one active course object; the backend adapter supplies it.
   const masterclassCourse = courses[0] || EMPTY_COURSE;
 
+  // courses[0] is a synthetic "your current active course" card built fresh
+  // from /api/dashboard + /api/plan/today on every load (see
+  // buildCourseFromBackend) -- it isn't a row anywhere, so bookmarking it
+  // has no backend meaning and stays a local-only toggle. Every other entry
+  // (category 'Saved question', from mapBookmarks) is a real row in
+  // question_bookmark -- toggling those off has to actually delete it, or
+  // it comes right back on the next full reload from /api/bookmarks.
   const handleToggleBookmark = (courseId: string) => {
+    const target = courses.find((c) => c.id === courseId);
+    if (target?.category === 'Saved question') {
+      novaApi.unbookmark(courseId).catch(() => {});
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      return;
+    }
     setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, isBookmarked: !c.isBookmarked } : c)));
   };
 

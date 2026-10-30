@@ -81,6 +81,7 @@ export const novaApi = {
   login: (email: string, password: string) => request<Json>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string, phone?: string) => request<Json>('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, phone }) }),
   bookmark: (questionId: string) => request<Json>('/api/bookmarks', { method: 'POST', body: JSON.stringify({ questionId }) }),
+  unbookmark: (questionId: string) => request<Json>('/api/bookmarks', { method: 'DELETE', body: JSON.stringify({ questionId }) }),
   attempt: (payload: Json) => request<Json>('/api/attempts', { method: 'POST', body: JSON.stringify(payload) }),
   startIntervention: (payload: Json) => request<Json>('/api/learning/interventions/start', { method: 'POST', body: JSON.stringify(payload) }),
   completeCurriculumUnit: (unitId: string, score?: number) => request<Json>('/api/curriculum/complete', { method: 'POST', body: JSON.stringify({ unitId, ...(score == null ? {} : { score }) }) }),

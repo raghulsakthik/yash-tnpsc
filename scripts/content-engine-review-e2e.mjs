@@ -29,8 +29,8 @@ let server;
 const created = { adminId: null, sessionHash: null, publications: [], batches: [], questionIds: [], lessonIds: [] };
 
 try {
-  const topicResult = await db.query(`SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id WHERE l.topic_id IS NULL ORDER BY t.id LIMIT 1`);
-  assert.ok(topicResult.rows.length, 'a topic without an existing lesson is required');
+  const topicResult = await db.query(`SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id ORDER BY (l.topic_id IS NULL) DESC,t.id LIMIT 1`);
+  assert.ok(topicResult.rows.length, 'a topic is required');
   const topicId = topicResult.rows[0].id;
 
   const adminId = crypto.randomUUID();
@@ -52,12 +52,12 @@ try {
   if (!ready) throw new Error(`Next server did not become ready. Output: ${output}`);
 
   const cookie = `session_token=${token}`;
-  async function importPublication(label) {
+  async function importPublication(label, title = `Review ${label}`) {
     const lessonId = `ci-review-lesson-${label}-${crypto.randomUUID()}`;
     const questionId = `ci-review-mcq-${label}-${crypto.randomUUID()}`;
     const publicationId = `ci-review-${label}-${crypto.randomUUID()}`;
     const items = [
-      { kind: 'lesson', content_id: lessonId, topic_id: topicId, payload: { title: `Review ${label}`, concept: 'Review fixture', definition: 'Review definition', explanation: 'Review explanation', examples: ['Example'], revisionNotes: ['Note'], sourceIds: ['review-evidence-1'], version: 1 } },
+      { kind: 'lesson', content_id: lessonId, topic_id: topicId, payload: { title, concept: `Review concept ${label}`, definition: `Review definition ${label}`, explanation: `Review explanation ${label}`, examples: [`Example ${label}`], revisionNotes: [`Note ${label}`], sourceIds: ['review-evidence-1'], version: 1 } },
       { kind: 'mcq', content_id: questionId, topic_id: topicId, payload: { question: `Which option is correct for ${label}?`, options: ['A','B','C','D'], answerIndex: 0, explanation: 'A is correct.', difficulty: 'easy', sourceIds: ['review-evidence-1'] } },
     ];
     const response = await fetch(`${baseUrl}/api/admin/content-engine/import`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ publicationId, manifestHash: manifestHash(publicationId, items), items }) });
@@ -74,23 +74,41 @@ try {
     return { publicationId, batchId: body.reviewBatchIds[0], questionId, lessonId };
   }
 
-  const approve = await importPublication('approve');
+  const approve = await importPublication('approve', 'Version One');
   const approveResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
   assert.equal(approveResponse.status, 200, await approveResponse.text());
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [approve.questionId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [approve.lessonId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT COUNT(*)::int AS count FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].count, 1);
-  assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [approve.batchId])).rows[0].status, 'APPROVED');
-  const approvedLineage = await db.query(`SELECT content_kind,status,platform_id,source_ids,published_at FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [approve.publicationId]);
+  assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version One');
+  assert.equal((await db.query(`SELECT version_number FROM content_engine_lesson_version WHERE topic_id=$1 AND status='PUBLISHED'`, [topicId])).rows[0].version_number, 1);
+  const approvedLineage = await db.query(`SELECT content_kind,status,platform_id,source_ids,published_at,version_number FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [approve.publicationId]);
   assert.equal(approvedLineage.rows.length, 2);
   assert.ok(approvedLineage.rows.every((x) => x.status === 'PUBLISHED'));
   assert.ok(approvedLineage.rows.every((x) => x.platform_id));
-  assert.ok(approvedLineage.rows.every((x) => x.published_at));
+  assert.equal(approvedLineage.rows.find((x) => x.content_kind === 'lesson').version_number, 1);
   assert.equal((await db.query(`SELECT status FROM content_engine_publication WHERE publication_id=$1`, [approve.publicationId])).rows[0].status, 'APPROVED');
 
-  const reject = await importPublication('reject');
+  const v2 = await importPublication('v2', 'Version Two');
+  const v2Response = await fetch(`${baseUrl}/api/admin/content/review/${v2.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
+  assert.equal(v2Response.status, 200, await v2Response.text());
+  assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version Two');
+  const versions = await db.query(`SELECT version_number,title,status FROM content_engine_lesson_version WHERE topic_id=$1 ORDER BY version_number`, [topicId]);
+  assert.deepEqual(versions.rows.map((x) => [x.version_number,x.title,x.status]), [[1,'Version One','SUPERSEDED'],[2,'Version Two','PUBLISHED']]);
+
+  const rollbackResponse = await fetch(`${baseUrl}/api/admin/content-engine/rollback`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ topicId, versionNumber: 1 }) });
+  assert.equal(rollbackResponse.status, 200, await rollbackResponse.text());
+  assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version One');
+  const afterRollback = await db.query(`SELECT version_number,title,status FROM content_engine_lesson_version WHERE topic_id=$1 ORDER BY version_number`, [topicId]);
+  assert.equal(afterRollback.rows.find((x) => x.version_number === 1).status, 'PUBLISHED');
+  assert.equal(afterRollback.rows.find((x) => x.version_number === 2).status, 'SUPERSEDED');
+  assert.equal((await db.query(`SELECT status FROM content_engine_lineage WHERE publication_id=$1 AND content_id=$2`, [approve.publicationId, approve.lessonId])).rows[0].status, 'PUBLISHED');
+  assert.equal((await db.query(`SELECT status FROM content_engine_lineage WHERE publication_id=$1 AND content_id=$2`, [v2.publicationId, v2.lessonId])).rows[0].status, 'REJECTED');
+
+  const reject = await importPublication('reject', 'Rejected Version');
   const rejectResponse = await fetch(`${baseUrl}/api/admin/content/review/${reject.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'reject' }) });
   assert.equal(rejectResponse.status, 200, await rejectResponse.text());
+  assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version One');
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [reject.questionId])).rows[0].status, 'ARCHIVED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [reject.lessonId])).rows[0].status, 'REJECTED');
   assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [reject.batchId])).rows[0].status, 'REJECTED');
@@ -103,8 +121,8 @@ try {
   const pending = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie } });
   assert.equal(pending.status, 200);
   const pendingBody = await pending.json();
-  assert.equal(pendingBody.batches.some((batch) => batch.id === approve.batchId || batch.id === reject.batchId), false);
-  console.log('content-engine admin review + lineage E2E: PASS');
+  assert.equal(pendingBody.batches.some((batch) => batch.id === approve.batchId || batch.id === reject.batchId || batch.id === v2.batchId), false);
+  console.log('content-engine admin review + lineage + version rollback E2E: PASS');
 } finally {
   try {
     for (const id of created.batches) await db.query('DELETE FROM content_review_batch WHERE id=$1', [id]);

@@ -89,8 +89,8 @@ async function publishLessonVersion(client, lesson, batchId, reviewerId) {
     [lesson.topic_id,lesson.title,lesson.concept,lesson.explanation || '',JSON.stringify(lesson.examples || []),'',(lesson.revision_notes || [])[0] || '',lesson.definition || '']
   );
 
-  const live = await client.query(`SELECT id FROM lesson WHERE topic_id=$1`, [lesson.topic_id]);
-  const platformId = live.rows[0]?.id || null;
+  const live = await client.query(`SELECT topic_id FROM lesson WHERE topic_id=$1`, [lesson.topic_id]);
+  const platformId = live.rows[0]?.topic_id || null;
   await client.query(`UPDATE content_engine_lesson_staging SET status='PUBLISHED',reviewed_at=now(),reviewed_by=$2 WHERE id=$1`,[lesson.id,reviewerId]);
   await recordLineage(client,{publicationId:lesson.publication_id,contentId:lesson.id,contentKind:'lesson',platformId,topicId:lesson.topic_id,sourceIds:lesson.source_ids,engineVersion:lesson.engine_version,reviewBatchId:batchId,status:'PUBLISHED',versionNumber});
   return { versionNumber, platformId };
@@ -111,7 +111,7 @@ export async function approveBatch(batchId, reviewerId=null) {
         SELECT publication_id FROM content_engine_lineage
          WHERE content_id IN (SELECT value FROM jsonb_array_elements_text(b.lesson_ids)) AND content_kind='lesson' LIMIT 1
       ) lp ON true
-      WHERE b.id=$1 FOR UPDATE`,[batchId]);
+      WHERE b.id=$1 FOR UPDATE OF b`,[batchId]);
     if(!rows.length) throw new ContentReviewError('BATCH_NOT_FOUND',`No review batch ${batchId}`);
     if(rows[0].status!=='PENDING') throw new ContentReviewError('ALREADY_DECIDED',`Batch already ${rows[0].status}`);
     const batch=rows[0];
@@ -168,7 +168,7 @@ export async function rollbackLessonVersion({ topicId, versionNumber, reviewerId
     );
 
     await client.query(`UPDATE content_engine_lineage SET status='REJECTED',platform_id=NULL WHERE topic_id=$1 AND content_kind='lesson' AND status='PUBLISHED' AND version_number<>$2`,[topicId,versionNumber]);
-    await client.query(`UPDATE content_engine_lineage SET status='PUBLISHED',platform_id=(SELECT id::text FROM lesson WHERE topic_id=$1),published_at=now(),version_number=$2 WHERE publication_id=$3 AND content_id=$4 AND content_kind='lesson'`,[topicId,versionNumber,target.publication_id,target.content_id]);
+    await client.query(`UPDATE content_engine_lineage SET status='PUBLISHED',platform_id=(SELECT topic_id FROM lesson WHERE topic_id=$1),published_at=now(),version_number=$2 WHERE publication_id=$3 AND content_id=$4 AND content_kind='lesson'`,[topicId,versionNumber,target.publication_id,target.content_id]);
 
     await client.query('COMMIT');
     return { topicId, versionNumber, rolledBack: true };

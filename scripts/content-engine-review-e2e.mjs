@@ -38,7 +38,7 @@ try {
       {kind:'mcq',content_id:questionId,topic_id:topicId,payload:{question:`Which option is correct for ${label}?`,options:['A','B','C','D'],answerIndex:0,explanation:'A is correct.',difficulty:'easy',sourceIds:['review-evidence-1']}}
     ];
     const r=await fetch(`${baseUrl}/api/admin/content-engine/import`,{method:'POST',headers:{'content-type':'application/json',cookie},body:JSON.stringify({publicationId,manifestHash:manifestHash(publicationId,items),items})});
-    assert.equal(r.status,201,await r.text()); const body=await r.json(); assert.equal(body.reviewBatchIds.length,1);
+    const importBodyText=await r.text(); assert.equal(r.status,201,importBodyText); const body=JSON.parse(importBodyText); assert.equal(body.reviewBatchIds.length,1);
     created.publications.push(publicationId);created.batches.push(body.reviewBatchIds[0]);created.questions.push(questionId);created.lessons.push(lessonId);
     const lineage=await db.query(`SELECT content_kind,status,source_ids FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`,[publicationId]);
     assert.equal(lineage.rows.length,2); assert.deepEqual(lineage.rows.map(x=>x.status),['IMPORTED','IMPORTED']); assert.ok(lineage.rows.every(x=>x.source_ids.includes('review-evidence-1')));

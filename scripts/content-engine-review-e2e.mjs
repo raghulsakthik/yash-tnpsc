@@ -65,6 +65,10 @@ try {
     const body = await response.json();
     assert.equal(body.reviewBatchIds.length, 1);
     created.publications.push(publicationId); created.batches.push(body.reviewBatchIds[0]); created.questionIds.push(questionId); created.lessonIds.push(lessonId);
+    const importedLineage = await db.query(`SELECT content_id,content_kind,status,publication_id,source_ids FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [publicationId]);
+    assert.equal(importedLineage.rows.length, 2);
+    assert.deepEqual(importedLineage.rows.map((x) => x.status), ['IMPORTED', 'IMPORTED']);
+    assert.ok(importedLineage.rows.every((x) => x.source_ids.includes('review-evidence-1')));
     assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [questionId])).rows[0].status, 'DRAFT');
     assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [lessonId])).rows[0].status, 'PENDING');
     return { publicationId, batchId: body.reviewBatchIds[0], questionId, lessonId };
@@ -77,6 +81,12 @@ try {
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [approve.lessonId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT COUNT(*)::int AS count FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].count, 1);
   assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [approve.batchId])).rows[0].status, 'APPROVED');
+  const approvedLineage = await db.query(`SELECT content_kind,status,platform_id,source_ids,published_at FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [approve.publicationId]);
+  assert.equal(approvedLineage.rows.length, 2);
+  assert.ok(approvedLineage.rows.every((x) => x.status === 'PUBLISHED'));
+  assert.ok(approvedLineage.rows.every((x) => x.platform_id));
+  assert.ok(approvedLineage.rows.every((x) => x.published_at));
+  assert.equal((await db.query(`SELECT status FROM content_engine_publication WHERE publication_id=$1`, [approve.publicationId])).rows[0].status, 'APPROVED');
 
   const reject = await importPublication('reject');
   const rejectResponse = await fetch(`${baseUrl}/api/admin/content/review/${reject.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'reject' }) });
@@ -84,12 +94,17 @@ try {
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [reject.questionId])).rows[0].status, 'ARCHIVED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [reject.lessonId])).rows[0].status, 'REJECTED');
   assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [reject.batchId])).rows[0].status, 'REJECTED');
+  const rejectedLineage = await db.query(`SELECT status,platform_id FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [reject.publicationId]);
+  assert.equal(rejectedLineage.rows.length, 2);
+  assert.ok(rejectedLineage.rows.every((x) => x.status === 'REJECTED'));
+  assert.ok(rejectedLineage.rows.every((x) => x.platform_id === null));
+  assert.equal((await db.query(`SELECT status FROM content_engine_publication WHERE publication_id=$1`, [reject.publicationId])).rows[0].status, 'REJECTED');
 
   const pending = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie } });
   assert.equal(pending.status, 200);
   const pendingBody = await pending.json();
   assert.equal(pendingBody.batches.some((batch) => batch.id === approve.batchId || batch.id === reject.batchId), false);
-  console.log('content-engine admin review E2E: PASS');
+  console.log('content-engine admin review + lineage E2E: PASS');
 } finally {
   try {
     for (const id of created.batches) await db.query('DELETE FROM content_review_batch WHERE id=$1', [id]);

@@ -35,5 +35,11 @@ CREATE INDEX IF NOT EXISTS content_engine_lesson_version_topic_idx
 ALTER TABLE content_engine_lineage
   ADD COLUMN IF NOT EXISTS version_number INTEGER;
 
+ALTER TABLE content_engine_lineage
+  DROP CONSTRAINT IF EXISTS content_engine_lineage_status_ck;
+ALTER TABLE content_engine_lineage
+  ADD CONSTRAINT content_engine_lineage_status_ck
+  CHECK (status IN ('IMPORTED','PUBLISHED','REJECTED','ROLLED_BACK'));
+
 CREATE INDEX IF NOT EXISTS content_engine_lineage_topic_version_idx
   ON content_engine_lineage(topic_id, version_number DESC);

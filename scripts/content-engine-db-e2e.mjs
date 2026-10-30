@@ -14,7 +14,7 @@ await client.connect();
 const requiredColumns = {
   content_engine_publication: ['publication_id', 'manifest_hash', 'item_count', 'status'],
   content_engine_lesson_staging: [
-    'lesson_id', 'topic_id', 'title', 'source_ids', 'publication_id', 'status',
+    'id', 'topic_id', 'title', 'source_ids', 'publication_id', 'status',
   ],
   content_review_batch: ['id', 'status', 'lesson_ids'],
 };
@@ -33,6 +33,10 @@ try {
     }
   }
 
+  const topic = await client.query('SELECT id FROM topic ORDER BY id LIMIT 1');
+  assert.equal(topic.rowCount, 1, 'isolated E2E database must contain at least one topic');
+  const topicId = topic.rows[0].id;
+
   const publicationId = `ci-e2e-${crypto.randomUUID()}`;
   const manifestHash = crypto
     .createHash('sha256')
@@ -44,7 +48,7 @@ try {
   await client.query(
     `INSERT INTO content_engine_publication
       (publication_id, manifest_hash, item_count, status)
-     VALUES ($1, $2, $3, 'IMPORTED_PENDING_REVIEW')`,
+     VALUES ($1, $2, $3, 'IMPORTED')`,
     [publicationId, manifestHash, 1],
   );
 
@@ -58,11 +62,12 @@ try {
 
   await client.query(
     `INSERT INTO content_engine_lesson_staging
-      (lesson_id, topic_id, title, concept, definition, explanation,
+      (id, topic_id, title, concept, definition, explanation,
        examples, revision_notes, source_ids, engine_version, publication_id, status)
-     VALUES ($1, NULL, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10, 'PENDING_REVIEW')`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10, $11, 'PENDING')`,
     [
       lessonId,
+      topicId,
       'CI E2E Fixture',
       'Fixture concept',
       'Fixture definition',
@@ -70,21 +75,21 @@ try {
       JSON.stringify(['Fixture example']),
       JSON.stringify(['Fixture note']),
       JSON.stringify(['fixture-evidence-1']),
-      'ci-e2e',
+      1,
       publicationId,
     ],
   );
 
   const staged = await client.query(
-    `SELECT lesson_id, publication_id, status
+    `SELECT id, publication_id, status
        FROM content_engine_lesson_staging
-      WHERE lesson_id = $1`,
+      WHERE id = $1`,
     [lessonId],
   );
   assert.deepEqual(staged.rows[0], {
-    lesson_id: lessonId,
+    id: lessonId,
     publication_id: publicationId,
-    status: 'PENDING_REVIEW',
+    status: 'PENDING',
   });
 
   await client.query('ROLLBACK');

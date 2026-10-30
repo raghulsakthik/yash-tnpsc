@@ -43,3 +43,27 @@ CREATE TABLE IF NOT EXISTS content_engine_publication (
 
 CREATE UNIQUE INDEX IF NOT EXISTS content_engine_publication_manifest_idx
   ON content_engine_publication(manifest_hash);
+
+CREATE TABLE IF NOT EXISTS content_engine_lineage (
+    id                  BIGSERIAL PRIMARY KEY,
+    publication_id      TEXT NOT NULL REFERENCES content_engine_publication(publication_id) ON DELETE CASCADE,
+    content_id          TEXT NOT NULL,
+    content_kind        TEXT NOT NULL CHECK (content_kind IN ('lesson','mcq')),
+    platform_id         TEXT,
+    topic_id            TEXT NOT NULL REFERENCES topic(id) ON DELETE CASCADE,
+    source_ids          JSONB NOT NULL DEFAULT '[]'::jsonb,
+    engine_version      INTEGER,
+    review_batch_id     TEXT,
+    status              TEXT NOT NULL DEFAULT 'IMPORTED',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    published_at        TIMESTAMPTZ,
+    CONSTRAINT content_engine_lineage_status_ck
+      CHECK (status IN ('IMPORTED','PUBLISHED','REJECTED')),
+    UNIQUE (publication_id, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS content_engine_lineage_content_idx
+  ON content_engine_lineage(content_id, content_kind);
+
+CREATE INDEX IF NOT EXISTS content_engine_lineage_topic_idx
+  ON content_engine_lineage(topic_id, status);

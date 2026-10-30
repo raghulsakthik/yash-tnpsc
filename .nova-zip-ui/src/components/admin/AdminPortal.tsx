@@ -49,7 +49,6 @@ import {
 } from '../../types/admin';
 import {
   initialLearnersList,
-  initialAdminLessons,
   initialAdminResources,
   initialAdminQuestions,
   initialAdminPYQs,
@@ -118,10 +117,60 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     return saved ? JSON.parse(saved) : initialLearnersList;
   });
 
-  const [lessons, setLessons] = useState<AdminLesson[]>(() => {
-    const saved = localStorage.getItem('nova_admin_lessons');
-    return saved ? JSON.parse(saved) : initialAdminLessons;
-  });
+  // Real lessons (GET /api/admin/lessons -- see db/migrations/V71__lesson_authoring_metadata.sql
+  // and src/lib/adminCrud.mjs). One row per topic; topics without an
+  // authored lesson yet still appear (hasLesson: false) so "create" can
+  // pick from the real topic list instead of free-typing a subject/topic
+  // name that wouldn't correspond to anything.
+  const [lessons, setLessons] = useState<AdminLesson[]>([]);
+  const [lessonsError, setLessonsError] = useState<string | null>(null);
+
+  const refreshLessons = React.useCallback(() => {
+    novaApi
+      .adminLessons()
+      .then((res) => {
+        const mapped: AdminLesson[] = (res.topics || [])
+          .filter((t: any) => t.hasLesson)
+          .map((t: any) => ({
+            id: t.topicId,
+            title: t.title || t.topicName,
+            description: t.description || '',
+            examId: 'tnpsc-group-2', examName: 'TNPSC Group 2 & 2A',
+            subjectId: t.subjectName, subjectName: t.subjectName,
+            chapterName: t.chapterName, topicName: t.topicName, conceptName: t.topicName,
+            // Not tracked per-lesson -- a topic's curriculum placement
+            // (phase/week/day) lives in Curriculum Builder and isn't 1:1
+            // with "a lesson", so this stays 0 rather than fabricated.
+            phaseNumber: 0, weekNumber: 0, dayNumber: 0,
+            learningObjectives: [], prerequisites: [],
+            estimatedDurationMinutes: t.estimatedDurationMinutes ?? 30,
+            difficulty: t.difficulty || 'Intermediate',
+            language: 'Bilingual', lessonType: 'Theory',
+            contentBlocks: [],
+            examples: [], practiceQuestionIds: [], resourceIds: [],
+            authorId: '', authorName: '',
+            usageCount: 0, completionRate: 0, dropOffRate: 0, avgScore: 0,
+            status: t.status || 'PUBLISHED',
+            version: t.version || 1,
+            createdAt: t.updatedAt || new Date().toISOString(),
+            updatedAt: t.updatedAt || new Date().toISOString(),
+          }));
+        setLessons(mapped);
+        setLessonsError(null);
+      })
+      .catch((err) => setLessonsError(err instanceof Error ? err.message : 'Could not load lessons'));
+  }, []);
+
+  useEffect(() => {
+    refreshLessons();
+  }, [refreshLessons]);
+
+  // Real topics (used by LessonsView's "create new lesson" topic picker --
+  // includes topics that don't have a lesson yet, unlike `lessons` above).
+  const [lessonTopics, setLessonTopics] = useState<any[]>([]);
+  useEffect(() => {
+    novaApi.adminLessons().then((res) => setLessonTopics(res.topics || [])).catch(() => {});
+  }, [lessons.length]);
 
   const [questions, setQuestions] = useState<AdminQuestion[]>(() => {
     const saved = localStorage.getItem('nova_admin_questions');
@@ -237,9 +286,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     localStorage.setItem('nova_admin_learners', JSON.stringify(learners));
   }, [learners]);
 
-  useEffect(() => {
-    localStorage.setItem('nova_admin_lessons', JSON.stringify(lessons));
-  }, [lessons]);
 
   useEffect(() => {
     localStorage.setItem('nova_admin_questions', JSON.stringify(questions));
@@ -329,27 +375,43 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   };
 
   // Lesson operations
-  const handleSaveLesson = (updatedLesson: AdminLesson, reason?: string) => {
+  // updatedLesson.id is the real topic_id -- LessonsView's topic picker
+  // (not a free-text field) is what guarantees that, see its "create new
+  // lesson" flow. PUT /api/admin/lessons/:topicId upserts: no row yet ->
+  // created; row exists -> updated, version incremented server-side.
+  const handleSaveLesson = async (updatedLesson: AdminLesson, reason?: string) => {
     const exists = lessons.some((l) => l.id === updatedLesson.id);
-    if (exists) {
-      setLessons((prev) => prev.map((l) => (l.id === updatedLesson.id ? updatedLesson : l)));
+    try {
+      await novaApi.adminSaveLesson(updatedLesson.id, {
+        title: updatedLesson.title,
+        concept: updatedLesson.topicName || updatedLesson.title,
+        description: updatedLesson.description,
+        learningObjectives: updatedLesson.learningObjectives,
+        difficulty: updatedLesson.difficulty,
+        estimatedDurationMinutes: updatedLesson.estimatedDurationMinutes,
+        contentMarkdown: updatedLesson.contentBlocks[0]?.content || '',
+        status: updatedLesson.status,
+      });
+      refreshLessons();
       recordAudit(
-        'LESSON_UPDATED',
+        exists ? 'LESSON_UPDATED' : 'LESSON_CREATED',
         'Lesson',
         updatedLesson.id,
-        reason || 'Updated lesson content & version'
+        reason || (exists ? 'Updated lesson content & version' : 'Authored new lesson')
       );
-    } else {
-      setLessons((prev) => [updatedLesson, ...prev]);
-      recordAudit('LESSON_CREATED', 'Lesson', updatedLesson.id, reason || 'Authored new lesson');
+    } catch (err) {
+      setLessonsError(err instanceof Error ? err.message : 'Could not save lesson');
     }
   };
 
-  const handleArchiveLesson = (lessonId: string, reason: string) => {
-    setLessons((prev) =>
-      prev.map((l) => (l.id === lessonId ? { ...l, status: 'ARCHIVED' } : l))
-    );
-    recordAudit('LESSON_ARCHIVED', 'Lesson', lessonId, reason);
+  const handleArchiveLesson = async (lessonId: string, reason: string) => {
+    try {
+      await novaApi.adminSetLessonStatus(lessonId, 'ARCHIVED');
+      refreshLessons();
+      recordAudit('LESSON_ARCHIVED', 'Lesson', lessonId, reason);
+    } catch (err) {
+      setLessonsError(err instanceof Error ? err.message : 'Could not archive lesson');
+    }
   };
 
   // Question operations
@@ -694,7 +756,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               tracked as follow-up work. notifications, proctoring-reports,
               and admins-roles are real (GET/POST against actual API
               routes) and excluded from the warning banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && (
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
@@ -727,6 +789,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <LessonsView
               role={activeRole}
               lessons={lessons}
+              topicsWithoutLesson={lessonTopics.filter((t: any) => !t.hasLesson)}
               assignedSubjects={[activeSubjectScope]}
               onSaveLesson={handleSaveLesson}
               onArchiveLesson={handleArchiveLesson}

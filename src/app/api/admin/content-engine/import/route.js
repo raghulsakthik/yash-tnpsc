@@ -38,6 +38,8 @@ export async function POST(request) {
     const groups = new Map();
     for (const item of items) {
       if (!item || !['lesson','mcq'].includes(item.kind) || !item.content_id || !item.topic_id || !item.payload) throw new Error('INVALID_ITEM');
+      const payload = item.payload;
+      if (payload.isPyq === true || payload.isPYQ === true || payload.pyq === true || payload.contentType === 'pyq' || payload.content_type === 'pyq') throw new Error(`PYQ_CONTENT_BLOCKED:${item.content_id}`);
       if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_CREATE, item.topic_id))) throw new Error(`FORBIDDEN_TOPIC:${item.topic_id}`);
       if (!groups.has(item.topic_id)) groups.set(item.topic_id, { questions: [], lessons: [] });
       groups.get(item.topic_id)[item.kind === 'mcq' ? 'questions' : 'lessons'].push(item);
@@ -70,7 +72,7 @@ export async function POST(request) {
     return NextResponse.json({ ok:true, publicationId, manifestHash:expectedHash, importedItems:items.length, reviewBatchIds:batchIds, status:'IMPORTED_PENDING_REVIEW' },{status:201});
   } catch(error) {
     await client.query('ROLLBACK'); const message=error instanceof Error?error.message:'Import failed';
-    const code=message.startsWith('FORBIDDEN_TOPIC:')?'FORBIDDEN_TOPIC':message.startsWith('DUPLICATE_')?'DUPLICATE_CONTENT':message.startsWith('INVALID_')||message.startsWith('MISSING_')?'INVALID_CONTENT':'IMPORT_FAILED';
+    const code=message.startsWith('FORBIDDEN_TOPIC:')?'FORBIDDEN_TOPIC':message.startsWith('PYQ_CONTENT_BLOCKED:')?'PYQ_CONTENT_BLOCKED':message.startsWith('DUPLICATE_')?'DUPLICATE_CONTENT':message.startsWith('INVALID_')||message.startsWith('MISSING_')?'INVALID_CONTENT':'IMPORT_FAILED';
     return NextResponse.json({code,message},{status:code==='FORBIDDEN_TOPIC'?403:400});
   } finally { client.release(); }
 }

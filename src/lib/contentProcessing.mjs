@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { query, pool } from './db.mjs';
 import { getSyllabusTree } from './adminContent.mjs';
 import { extractText } from './documentExtract.mjs';
@@ -70,7 +71,7 @@ export async function createProcessingBatch({ adminId, files }) {
       } else {
         // Local/self-hosted mode keeps the immutable upload in PostgreSQL until processing finishes.
         sourceData = file.data;
-        stored = { size: file.data.length, sha256: crypto.createHash('sha256').update(file.data).digest('hex') };
+        stored = { size: file.data.length, sha256: createHash('sha256').update(file.data).digest('hex') };
       }
       await client.query(
         `INSERT INTO content_processing_job

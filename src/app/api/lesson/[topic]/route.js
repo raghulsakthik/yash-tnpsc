@@ -53,8 +53,16 @@ export async function GET(request, { params }) {
     lesson = getHardcodedLesson(topic);
   }
 
+  // Same reasoning as the lesson query above: topic_resource rows start
+  // as DRAFT and only become learner-visible once an admin approves them
+  // through the review queue (see approveBatch/rejectBatch in
+  // contentReview.mjs, which set status to PUBLISHED/ARCHIVED). This
+  // query had no status filter at all, so a rejected (ARCHIVED) or
+  // still-pending (DRAFT) resource was served to every learner the
+  // moment the row existed -- confirmed live: a resource rejected in the
+  // admin review queue was still returned here immediately after.
   const { rows: resourceRows } = await query(
-    `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 ORDER BY created_at DESC`,
+    `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 AND status = 'PUBLISHED' ORDER BY created_at DESC`,
     [topic]
   );
   const resources = resourceRows.map((r) => ({ title: r.title, body: r.body, imageData: r.image_data, addedAt: r.created_at }));

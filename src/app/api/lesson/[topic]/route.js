@@ -24,10 +24,14 @@ export async function GET(request, { params }) {
     return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   }
 
+  // status = 'PUBLISHED' matters: a lesson an admin has saved as DRAFT,
+  // submitted IN_REVIEW, or ARCHIVED is real content mid-edit or
+  // withdrawn -- it must never reach a learner just because a row exists
+  // for the topic (see db/migrations/V71__lesson_authoring_metadata.sql).
   const { rows: lessonRows } = await query(
     `SELECT title, concept, example_problem, example_steps, example_answer, tip,
-            definition, formulas, shortcuts, common_mistakes
-       FROM lesson WHERE topic_id = $1`,
+            definition, formulas, shortcuts, common_mistakes, content_markdown
+       FROM lesson WHERE topic_id = $1 AND status = 'PUBLISHED'`,
     [topic]
   );
 
@@ -43,6 +47,7 @@ export async function GET(request, { params }) {
       formulas: r.formulas,
       shortcuts: r.shortcuts,
       commonMistakes: r.common_mistakes,
+      contentMarkdown: r.content_markdown || null,
     };
   } else {
     lesson = getHardcodedLesson(topic);

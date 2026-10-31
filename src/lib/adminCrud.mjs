@@ -79,42 +79,83 @@ export async function deleteTopic(id) {
 
 // ----------------------------------------------------------------- lessons
 
+const LESSON_DIFFICULTIES = new Set(['Beginner', 'Intermediate', 'Advanced']);
+const LESSON_STATUSES = new Set(['DRAFT', 'IN_REVIEW', 'APPROVED', 'PUBLISHED', 'ARCHIVED']);
+
 export async function upsertLesson(topicId, {
   title, concept, exampleProblem, exampleSteps, exampleAnswer, tip,
   definition, formulas, shortcuts, commonMistakes,
-}) {
-  if (!title || !concept || !exampleProblem || !exampleAnswer || !tip) {
-    throw new ContentUploadError('MISSING_FIELDS', 'title, concept, exampleProblem, exampleAnswer and tip are required');
+  // Admin Portal's richer authoring fields (see V71__lesson_authoring_metadata.sql).
+  // Two different admin editors write to this table now: /admin/lessons
+  // (worked-example-first) and the Admin Portal (markdown-first). Neither
+  // is required to fill in the other's fields -- only one of "a worked
+  // example" or "markdown content" has to actually be present for the
+  // lesson to have real teachable content.
+  description, learningObjectives, difficulty, estimatedDurationMinutes, contentMarkdown, status,
+} = {}) {
+  if (!title || !concept) {
+    throw new ContentUploadError('MISSING_FIELDS', 'title and concept are required');
   }
   const { rows: topicRows } = await query('SELECT id FROM topic WHERE id = $1', [topicId]);
   if (topicRows.length === 0) throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topicId}`);
 
   const steps = Array.isArray(exampleSteps) ? exampleSteps.filter((s) => typeof s === 'string' && s.trim()) : [];
-  if (steps.length === 0) throw new ContentUploadError('MISSING_STEPS', 'At least one example step is required');
+  const markdown = typeof contentMarkdown === 'string' ? contentMarkdown.trim() : '';
+  const hasWorkedExample = Boolean(exampleProblem && exampleAnswer && tip && steps.length);
+  if (!hasWorkedExample && !markdown) {
+    throw new ContentUploadError('MISSING_CONTENT', 'Provide either a full worked example (problem, steps, answer, tip) or markdown content');
+  }
 
   // These four are optional depth on top of the worked example -- a topic
   // can have a perfectly good lesson without them, so empty/omitted is
   // valid, not an error.
   const cleanList = (arr) => (Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim()) : []);
 
+  if (difficulty !== undefined && !LESSON_DIFFICULTIES.has(difficulty)) {
+    throw new ContentUploadError('INVALID_DIFFICULTY', `difficulty must be one of ${[...LESSON_DIFFICULTIES].join(', ')}`);
+  }
+  if (status !== undefined && !LESSON_STATUSES.has(status)) {
+    throw new ContentUploadError('INVALID_STATUS', `status must be one of ${[...LESSON_STATUSES].join(', ')}`);
+  }
+
   await query(
     `INSERT INTO lesson (
        topic_id, title, concept, example_problem, example_steps, example_answer, tip,
-       definition, formulas, shortcuts, common_mistakes
+       definition, formulas, shortcuts, common_mistakes,
+       description, learning_objectives, difficulty, estimated_duration_minutes, content_markdown, status, version
      )
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb,
+             $12, $13::jsonb, $14, $15, $16, $17, 1)
      ON CONFLICT (topic_id) DO UPDATE SET
-       title = EXCLUDED.title, concept = EXCLUDED.concept, example_problem = EXCLUDED.example_problem,
-       example_steps = EXCLUDED.example_steps, example_answer = EXCLUDED.example_answer, tip = EXCLUDED.tip,
-       definition = EXCLUDED.definition, formulas = EXCLUDED.formulas,
-       shortcuts = EXCLUDED.shortcuts, common_mistakes = EXCLUDED.common_mistakes,
+       title = EXCLUDED.title, concept = EXCLUDED.concept,
+       example_problem = COALESCE(NULLIF(EXCLUDED.example_problem, ''), lesson.example_problem),
+       example_steps = CASE WHEN EXCLUDED.example_steps = '[]'::jsonb THEN lesson.example_steps ELSE EXCLUDED.example_steps END,
+       example_answer = COALESCE(NULLIF(EXCLUDED.example_answer, ''), lesson.example_answer),
+       tip = COALESCE(NULLIF(EXCLUDED.tip, ''), lesson.tip),
+       definition = COALESCE(EXCLUDED.definition, lesson.definition),
+       formulas = CASE WHEN EXCLUDED.formulas = '[]'::jsonb THEN lesson.formulas ELSE EXCLUDED.formulas END,
+       shortcuts = CASE WHEN EXCLUDED.shortcuts = '[]'::jsonb THEN lesson.shortcuts ELSE EXCLUDED.shortcuts END,
+       common_mistakes = CASE WHEN EXCLUDED.common_mistakes = '[]'::jsonb THEN lesson.common_mistakes ELSE EXCLUDED.common_mistakes END,
+       description = COALESCE(NULLIF(EXCLUDED.description, ''), lesson.description),
+       learning_objectives = CASE WHEN EXCLUDED.learning_objectives = '[]'::jsonb THEN lesson.learning_objectives ELSE EXCLUDED.learning_objectives END,
+       difficulty = EXCLUDED.difficulty,
+       estimated_duration_minutes = EXCLUDED.estimated_duration_minutes,
+       content_markdown = COALESCE(NULLIF(EXCLUDED.content_markdown, ''), lesson.content_markdown),
+       status = EXCLUDED.status,
+       version = lesson.version + 1,
        updated_at = now()`,
     [
-      topicId, title, concept, exampleProblem, JSON.stringify(steps), exampleAnswer, tip,
+      topicId, title, concept, exampleProblem || '', JSON.stringify(steps), exampleAnswer || '', tip || '',
       definition?.trim() || null,
       JSON.stringify(cleanList(formulas)),
       JSON.stringify(cleanList(shortcuts)),
       JSON.stringify(cleanList(commonMistakes)),
+      description?.trim() || '',
+      JSON.stringify(cleanList(learningObjectives)),
+      difficulty || 'Intermediate',
+      Number.isFinite(Number(estimatedDurationMinutes)) ? Number(estimatedDurationMinutes) : 30,
+      markdown,
+      status || 'PUBLISHED',
     ]
   );
 }
@@ -127,7 +168,8 @@ export async function deleteLesson(topicId) {
 export async function listLessonsByTopic() {
   const { rows } = await query(`
     SELECT t.id AS topic_id, t.name AS topic_name, c.name AS chapter_name, s.name AS subject_name,
-           l.title, (l.topic_id IS NOT NULL) AS has_lesson
+           l.title, (l.topic_id IS NOT NULL) AS has_lesson,
+           l.description, l.difficulty, l.estimated_duration_minutes, l.status, l.version, l.updated_at
       FROM topic t
       JOIN chapter c ON c.id = t.chapter_id
       JOIN subject s ON s.id = c.subject_id
@@ -141,13 +183,21 @@ export async function listLessonsByTopic() {
     subjectName: r.subject_name,
     hasLesson: r.has_lesson,
     title: r.title,
+    description: r.description,
+    difficulty: r.difficulty,
+    estimatedDurationMinutes: r.estimated_duration_minutes,
+    status: r.status,
+    version: r.version,
+    updatedAt: r.updated_at,
   }));
 }
 
 export async function getLessonForEdit(topicId) {
   const { rows } = await query(
     `SELECT title, concept, example_problem, example_steps, example_answer, tip,
-            definition, formulas, shortcuts, common_mistakes
+            definition, formulas, shortcuts, common_mistakes,
+            description, learning_objectives, difficulty, estimated_duration_minutes,
+            content_markdown, status, version, updated_at
        FROM lesson WHERE topic_id = $1`,
     [topicId]
   );
@@ -164,7 +214,27 @@ export async function getLessonForEdit(topicId) {
     formulas: r.formulas,
     shortcuts: r.shortcuts,
     commonMistakes: r.common_mistakes,
+    description: r.description,
+    learningObjectives: r.learning_objectives,
+    difficulty: r.difficulty,
+    estimatedDurationMinutes: r.estimated_duration_minutes,
+    contentMarkdown: r.content_markdown,
+    status: r.status,
+    version: r.version,
+    updatedAt: r.updated_at,
   };
+}
+
+/** Status-only transition (submit for review / approve / publish / archive) without touching content. */
+export async function setLessonStatus(topicId, status) {
+  if (!LESSON_STATUSES.has(status)) {
+    throw new ContentUploadError('INVALID_STATUS', `status must be one of ${[...LESSON_STATUSES].join(', ')}`);
+  }
+  const { rowCount } = await query(
+    `UPDATE lesson SET status = $2, version = version + 1, updated_at = now() WHERE topic_id = $1`,
+    [topicId, status]
+  );
+  if (rowCount === 0) throw new ContentUploadError('LESSON_NOT_FOUND', `No lesson for topic ${topicId}`);
 }
 
 // --------------------------------------------------------------- questions

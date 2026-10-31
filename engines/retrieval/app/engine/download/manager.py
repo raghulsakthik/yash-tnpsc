@@ -11,6 +11,11 @@ MIN_FREE_BYTES = int(os.getenv('TNPSC_MIN_FREE_BYTES', str(2 * 1024**3)))
 EMERGENCY_FREE_BYTES = int(os.getenv('TNPSC_EMERGENCY_FREE_BYTES', str(1 * 1024**3)))
 CHUNK_SIZE = 1024 * 1024
 MAX_REDIRECTS = 8
+# A bare aiohttp client sends no User-Agent at all, which plenty of real
+# sites (Wikipedia's REST API among them) reject outright with a 403
+# rather than silently allow -- a sensible default descriptive UA fixes
+# that for any source, not just the TN portal this engine was built for.
+DEFAULT_USER_AGENT = 'tnpsc-material-engine/0.3 (+https://github.com/raghulsakthik/yash-tnpsc; educational content retrieval)'
 
 @dataclass(frozen=True)
 class DownloadResult:
@@ -57,7 +62,8 @@ class ResumableDownloader:
                 self.ensure_space(expected_size)
                 offset = temp.stat().st_size if temp.exists() else 0
                 timeout = aiohttp.ClientTimeout(total=None, connect=30, sock_read=60)
-                async with aiohttp.ClientSession(timeout=timeout, headers=headers or {}, raise_for_status=False) as session:
+                session_headers = {'User-Agent': DEFAULT_USER_AGENT, **(headers or {})}
+                async with aiohttp.ClientSession(timeout=timeout, headers=session_headers, raise_for_status=False) as session:
                     current = url
                     for _ in range(MAX_REDIRECTS + 1):
                         range_headers = {'Range': f'bytes={offset}-'} if offset else {}

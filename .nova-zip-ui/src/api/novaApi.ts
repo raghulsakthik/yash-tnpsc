@@ -43,6 +43,7 @@ export const novaApi = {
   dashboard: () => request<Json>('/api/dashboard'),
   courses: () => request<Json>('/api/courses'),
   plan: () => request<Json>('/api/plan/today'),
+  adaptivePlan: () => request<Json>('/api/learning/adaptive-plan'),
   analytics: () => request<Json>('/api/learning/analytics'),
   journey: () => request<Json>('/api/journey'),
   achievements: () => request<Json>('/api/achievements'),

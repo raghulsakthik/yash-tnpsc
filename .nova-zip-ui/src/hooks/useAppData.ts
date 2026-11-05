@@ -76,6 +76,7 @@ export function useAppData() {
   const [curriculumTree, setCurriculumTree] = useState<any>(null);
   const [activeCurriculum, setActiveCurriculum] = useState<any>(null);
   const [curriculumProgress, setCurriculumProgress] = useState<any>(null);
+  const [adaptivePlan, setAdaptivePlan] = useState<any>(null);
   const [quickLabStats, setQuickLabStats] = useState<any>({ attempts: 0, correct: 0, accuracy: 0 });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -118,8 +119,8 @@ export function useAppData() {
         setIsLoggedIn(true);
         setSession(me);
 
-        const [profileData, dashboard, courseData, plan, analytics, notificationData, achievementData, , notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
-          novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.analytics(),
+        const [profileData, dashboard, courseData, plan, adaptivePlanData, analytics, notificationData, achievementData, , notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
+          novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.adaptivePlan().catch(() => null), novaApi.analytics(),
           novaApi.notifications(), novaApi.achievements(), novaApi.calendar(), novaApi.notes(), novaApi.tests(), novaApi.bookmarks(), novaApi.pyq(), novaApi.mistake().catch(() => null),
           novaApi.question('mixed').catch(() => null), novaApi.curriculumTree(), novaApi.activeCurriculum(), novaApi.curriculumProgress(), novaApi.quickLabStats().catch(() => ({ attempts: 0, correct: 0, accuracy: 0 })),
           novaApi.resources().catch(() => null),
@@ -130,6 +131,7 @@ export function useAppData() {
         setCurriculumTree(treeData);
         setActiveCurriculum(activeData);
         setCurriculumProgress(curriculumProgress);
+        setAdaptivePlan(adaptivePlanData);
         setQuickLabStats(labStats);
         setProfile(mapProfile(profileData, dashboard));
         setIsOnboardingOpen(profileData?.onboarded === false);
@@ -515,7 +517,7 @@ export function useAppData() {
   return {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, mistakeQuestion, tests, structuredCourses, notifications, achievements, activities,
-    isDataLoading, dataError, dashboardSnapshot, curriculumTree, activeCurriculum, curriculumProgress, quickLabStats,
+    isDataLoading, dataError, dashboardSnapshot, curriculumTree, activeCurriculum, curriculumProgress, adaptivePlan, quickLabStats,
     isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen, currentView, activeCourseModal,
     isProfileModalOpen, themeToast, isGlowActive, masterclassCourse, totalBookmarks, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,

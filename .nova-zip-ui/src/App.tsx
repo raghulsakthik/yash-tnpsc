@@ -32,7 +32,7 @@ export default function App() {
   const {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, tests, structuredCourses, notifications, achievements, activities,
-    isDataLoading, dataError, dashboardSnapshot, curriculumProgress, activeCurriculum, quickLabStats,
+    isDataLoading, dataError, dashboardSnapshot, curriculumProgress, activeCurriculum, adaptivePlan, quickLabStats,
     isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen, currentView, activeCourseModal,
     isProfileModalOpen, themeToast, isGlowActive, masterclassCourse, totalBookmarks, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
@@ -266,7 +266,7 @@ export default function App() {
 
             {/* EXAM HUB -> JOURNEY ROADMAP VIEW */}
             {currentView === 'journey' && (
-              <JourneyView progress={curriculumProgress} active={activeCurriculum?.current} />
+              <JourneyView progress={curriculumProgress} active={activeCurriculum?.current} adaptivePlan={adaptivePlan} />
             )}
 
             {/* EXAM HUB -> MISTAKE ENGINE VIEW */}

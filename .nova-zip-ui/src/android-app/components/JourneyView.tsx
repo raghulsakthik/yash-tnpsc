@@ -5,10 +5,12 @@ import {
   Trophy,
 } from 'lucide-react';
 import { UserProfile, TodayUnit } from '../../types';
+import { AdaptiveRoadmapPanel, type AdaptiveRoadmapData } from '../../components/AdaptiveRoadmapPanel';
 
 interface JourneyViewProps {
   profile: UserProfile;
   todayUnits: TodayUnit[];
+  adaptivePlan?: AdaptiveRoadmapData | null;
 }
 
 const PHASE_ORDER: UserProfile['currentPhase'][] = [
@@ -35,7 +37,7 @@ const PHASE_META: Record<UserProfile['currentPhase'], { roman: string; name: str
  * which phase is COMPLETED/CURRENT/LOCKED and how far into it the learner
  * is now come from the real profile.
  */
-export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits }) => {
+export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits, adaptivePlan }) => {
   const currentPhaseIndex = Math.max(0, PHASE_ORDER.indexOf(profile.currentPhase));
 
   const phases = PHASE_ORDER.map((phaseKey, index) => {
@@ -80,6 +82,8 @@ export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits })
           </div>
         </div>
       </div>
+
+      <AdaptiveRoadmapPanel plan={adaptivePlan} />
 
       {/* 7-Phase Stepper Cards */}
       <div className="space-y-3">

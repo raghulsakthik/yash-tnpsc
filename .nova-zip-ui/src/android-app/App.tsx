@@ -26,7 +26,7 @@ export default function AndroidApp() {
   const {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, tests, structuredCourses, notifications, activities,
-    isDataLoading, dataError, isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen,
+    isDataLoading, dataError, adaptivePlan, isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen,
     currentView, activeCourseModal, isProfileModalOpen, masterclassCourse, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
     toggleDarkMode,
@@ -66,6 +66,7 @@ export default function AndroidApp() {
         courses={courses}
         structuredCourses={structuredCourses}
         todayUnits={todayUnits}
+        adaptivePlan={adaptivePlan}
         subjectMastery={subjectMastery}
         weakAreas={weakAreas}
         activities={activities}

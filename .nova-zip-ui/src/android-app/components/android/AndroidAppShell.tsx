@@ -39,6 +39,7 @@ import { TestsView } from '../TestsView';
 import { MistakesView } from '../MistakesView';
 import { RevisionView } from '../RevisionView';
 import { JourneyView } from '../JourneyView';
+import type { AdaptiveRoadmapData } from '../../../components/AdaptiveRoadmapPanel';
 import { NotesView } from '../NotesView';
 import { BookmarksView } from '../BookmarksView';
 
@@ -47,6 +48,7 @@ interface AndroidAppShellProps {
   courses: Course[];
   structuredCourses: StructuredCourse[];
   todayUnits: TodayUnit[];
+  adaptivePlan?: AdaptiveRoadmapData | null;
   subjectMastery: SubjectMastery[];
   weakAreas: WeakArea[];
   activities: ActivityDay[];
@@ -88,6 +90,7 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
   courses,
   structuredCourses,
   todayUnits,
+  adaptivePlan,
   subjectMastery,
   weakAreas,
   activities,
@@ -501,7 +504,7 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
           )}
 
           {/* Sub-Views */}
-          {subView === 'journey' && <JourneyView profile={profile} todayUnits={todayUnits} />}
+          {subView === 'journey' && <JourneyView profile={profile} todayUnits={todayUnits} adaptivePlan={adaptivePlan} />}
           {subView === 'notes' && (
             <NotesView
               notes={notes}

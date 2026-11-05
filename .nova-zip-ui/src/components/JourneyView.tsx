@@ -1,5 +1,6 @@
 import React from 'react';
 import { Compass, CheckCircle2, Lock, Trophy } from 'lucide-react';
+import { AdaptiveRoadmapPanel, type AdaptiveRoadmapData } from './AdaptiveRoadmapPanel';
 
 interface JourneyViewProps {
   progress?: {
@@ -7,9 +8,10 @@ interface JourneyViewProps {
     weekDays?: Array<{ dayNumber: number; title: string; purpose?: string; status: string; targetMinutes?: number; completedRequired?: number; totalRequired?: number }>;
   } | null;
   active?: { phaseName?: string; weekNumber?: number; weekTitle?: string; dayNumber?: number } | null;
+  adaptivePlan?: AdaptiveRoadmapData | null;
 }
 
-export const JourneyView: React.FC<JourneyViewProps> = ({ progress, active }) => {
+export const JourneyView: React.FC<JourneyViewProps> = ({ progress, active, adaptivePlan }) => {
   const phases = progress?.phases || [];
   const weekDays = progress?.weekDays || [];
   const currentPhase = phases.find((p) => p.status === 'CURRENT');
@@ -31,6 +33,8 @@ export const JourneyView: React.FC<JourneyViewProps> = ({ progress, active }) =>
           <span>Active Phase: {currentPhase?.name || active?.phaseName || 'Orientation'} · Week {currentWeek}</span>
         </div>
       </div>
+
+      <AdaptiveRoadmapPanel plan={adaptivePlan} />
 
       <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-800 sm:p-6">
         <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4">Examination Progression Phases</h3>

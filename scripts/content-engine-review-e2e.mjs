@@ -166,6 +166,10 @@ try {
   assert.equal(studentAdaptivePlan.status, 200, await studentAdaptivePlan.text());
   const studentAdaptivePlanBody = await studentAdaptivePlan.json();
   assert.equal(studentAdaptivePlanBody.learnerId, studentId);
+  assert.ok(studentAdaptivePlanBody.steps.length > 0);
+  assert.ok(studentAdaptivePlanBody.steps.every((step) => step.topicName && step.subjectName && step.estimatedMinutes > 0));
+  assert.ok(studentAdaptivePlanBody.topicInsights.length > 0);
+  assert.ok(studentAdaptivePlanBody.topicInsights.every((topic) => topic.topicName && topic.classification && typeof topic.accuracy === 'number'));
   assert.ok(studentAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId),
     'a weak prerequisite should be inserted into the first learner’s roadmap before the dependent topic');
   const comparisonAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie: comparisonStudentCookie } });

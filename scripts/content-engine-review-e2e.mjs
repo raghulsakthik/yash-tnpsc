@@ -77,7 +77,10 @@ try {
   }
 
   const approve = await importPublication('approve', 'Version One');
-  const approveResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
+  const unverifiedResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
+  assert.equal(unverifiedResponse.status, 400, await unverifiedResponse.text());
+  assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [approve.batchId])).rows[0].status, 'PENDING');
+  const approveResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve', humanVerified: true }) });
   assert.equal(approveResponse.status, 200, await approveResponse.text());
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [approve.questionId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [approve.lessonId])).rows[0].status, 'PUBLISHED');
@@ -99,7 +102,7 @@ try {
   assert.equal(learnerLesson.title, 'Version One');
 
   const v2 = await importPublication('v2', 'Version Two');
-  const v2Response = await fetch(`${baseUrl}/api/admin/content/review/${v2.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
+  const v2Response = await fetch(`${baseUrl}/api/admin/content/review/${v2.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve', humanVerified: true }) });
   assert.equal(v2Response.status, 200, await v2Response.text());
   assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version Two');
   const versions = await db.query(`SELECT version_number,title,status FROM content_engine_lesson_version WHERE topic_id=$1 ORDER BY version_number`, [topicId]);

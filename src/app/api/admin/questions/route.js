@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../lib/auth.mjs';
-import { PERMISSIONS, canActOnTopic } from '../../../../lib/permissions.mjs';
+import { PERMISSIONS, canActOnTopic, isSubjectScoped } from '../../../../lib/permissions.mjs';
 import { listQuestionsByTopic, listAllQuestions, createQuestion } from '../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../lib/adminContent.mjs';
 import { isQuestionStatus, questionStatusPermission, canCreateQuestionWithStatus } from '../../../../lib/adminQuestionWorkflow.mjs';
@@ -11,8 +11,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/questions?topic=aptitude.fractions -- one topic's
  * questions (the per-lesson editor view).
  * GET /api/admin/questions (optionally ?search=&status=&limit=&offset=)
- * -- the real cross-topic question bank browse for the Admin Portal's
- * Questions and Question Review sections.
+ * -- cross-topic browse for unscoped question admins. Subject experts must
+ * provide a topic ID so the server can enforce their assigned subject scope.
  */
 export async function GET(request) {
   const admin = await requirePermission(request, PERMISSIONS.QUESTION_READ);
@@ -27,6 +27,10 @@ export async function GET(request) {
     } catch (err) {
       return NextResponse.json({ code: 'LIST_FAILED', message: err.message }, { status: 500 });
     }
+  }
+
+  if (isSubjectScoped(admin, PERMISSIONS.QUESTION_READ)) {
+    return NextResponse.json({ code: 'TOPIC_REQUIRED', message: 'Select a syllabus topic to browse questions within your assigned subject scope.' }, { status: 400 });
   }
 
   try {

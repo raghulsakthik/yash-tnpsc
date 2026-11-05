@@ -118,6 +118,8 @@ try {
   assert.ok(scopedTopics.topics.length > 0);
   assert.ok(scopedTopics.topics.every((topic) => topic.subjectId === created.subjectExpertSubjectId));
 
+  const blockedUnscopedQuestionBrowse = await fetch(`${baseUrl}/api/admin/questions`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(blockedUnscopedQuestionBrowse.status, 400, await blockedUnscopedQuestionBrowse.text());
   const allowedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(topicId)}`, { headers: { cookie: subjectExpertCookie } });
   assert.equal(allowedQuestionRead.status, 200, await allowedQuestionRead.text());
   const blockedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(otherTopicId)}`, { headers: { cookie: subjectExpertCookie } });

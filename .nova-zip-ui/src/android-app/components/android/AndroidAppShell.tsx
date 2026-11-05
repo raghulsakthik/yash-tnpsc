@@ -121,6 +121,11 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
   const [subView, setSubView] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Set when a learner taps a search result -- consumed once by
+  // PracticeView (which fetches that specific topic's next question) then
+  // cleared, so re-opening the Practice tab normally afterwards goes back
+  // to the regular mixed-topic queue.
+  const [pendingPracticeTopicId, setPendingPracticeTopicId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarMessage | null>(null);
 
   // Masterclass course for hero card
@@ -221,6 +226,11 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
           onChangeViewMode={onChangeViewMode}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onSelectSearchTopic={(topicId) => {
+            setActiveTab('practice');
+            setSubView(null);
+            setPendingPracticeTopicId(topicId);
+          }}
         />
 
         {/* Android Navigation Drawer */}
@@ -362,6 +372,8 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
               {!subView && (
                 <PracticeView
                   questions={practiceQuestions}
+                  initialTopicId={pendingPracticeTopicId}
+                  onConsumedInitialTopic={() => setPendingPracticeTopicId(null)}
                   onAddXp={(amount) => {
                     onAddXp?.(amount);
                     showSnackbar(`Earned +${amount} XP!`, 'xp');

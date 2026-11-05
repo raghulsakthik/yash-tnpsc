@@ -96,6 +96,7 @@ export const novaApi = {
   completeChapter: (chapterId: string) => request<Json>('/api/curriculum/complete-chapter', { method: 'POST', body: JSON.stringify({ chapterId }) }),
   completeTopic: (topicId: string, completed: boolean) => request<Json>('/api/curriculum/complete-topic', { method: 'POST', body: JSON.stringify({ topicId, completed }) }),
   resources: () => request<Json>('/api/resources'),
+  search: (q: string) => request<Json>(`/api/search?q=${encodeURIComponent(q)}`),
 };
 
 function phaseName(raw?: string): UserProfile['currentPhase'] {

@@ -103,3 +103,40 @@ export async function deleteAdminAccount(userId, { requestingAccountId }) {
   );
   if (rowCount === 0) throw new AdminUserError('ACCOUNT_NOT_FOUND', `No admin account ${userId}`);
 }
+
+/**
+ * Finds a learner (role = 'STUDENT') by exact email, for admin lookup
+ * before deletion -- there's no general learner list/search surface yet,
+ * so email is the only practical way an admin identifies one account
+ * among potentially many thousands.
+ */
+export async function findLearnerByEmail(email) {
+  if (!email) return null;
+  const { rows } = await query(
+    `SELECT u.id, u.email, u.created_at, l.name
+       FROM app_user u JOIN learner l ON l.id = u.id
+      WHERE u.role = 'STUDENT' AND lower(u.email) = lower($1)`,
+    [email]
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Permanently deletes a learner account and everything tied to it
+ * (attempts, bookmarks, notes, sessions, ...) by deleting the root
+ * `learner` row -- app_user and every other learner-owned table reference
+ * it with ON DELETE CASCADE, except content_report.reviewed_by (an admin
+ * audit field, nullable, no cascade by design) which is cleared first so
+ * the delete can't fail on an FK violation. Scoped to role = 'STUDENT'
+ * only: deleting an admin account is deleteAdminAccount's job, not this
+ * one's, so an admin can't be removed through the learner-cleanup path by
+ * mistake.
+ */
+export async function deleteLearnerAccount(learnerId) {
+  const { rows } = await query(`SELECT id FROM app_user WHERE id = $1 AND role = 'STUDENT'`, [learnerId]);
+  if (rows.length === 0) throw new AdminUserError('ACCOUNT_NOT_FOUND', `No learner account ${learnerId}`);
+
+  await query(`UPDATE content_report SET reviewed_by = NULL WHERE reviewed_by = $1`, [learnerId]);
+  const { rowCount } = await query(`DELETE FROM learner WHERE id = $1`, [learnerId]);
+  if (rowCount === 0) throw new AdminUserError('ACCOUNT_NOT_FOUND', `No learner account ${learnerId}`);
+}

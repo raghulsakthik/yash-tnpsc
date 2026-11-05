@@ -76,7 +76,10 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
   const [formContentMarkdown, setFormContentMarkdown] = useState('');
 
   const canCreate = checkPermission(role, 'Lesson', 'CREATE').allowed;
+  const canUpdate = checkPermission(role, 'Lesson', 'UPDATE').allowed;
+  const canReview = checkPermission(role, 'Lesson', 'REVIEW').allowed;
   const canPublish = checkPermission(role, 'Lesson', 'PUBLISH').allowed;
+  const canArchive = checkPermission(role, 'Lesson', 'DELETE').allowed;
 
   const filtered = lessons.filter((lsn) => {
     const matchesSearch =
@@ -355,14 +358,14 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
               </button>
 
               <div className="flex items-center gap-1.5">
-                <button
+                {canUpdate && <button
                   onClick={() => openEditModal(lsn)}
                   className="rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 cursor-pointer"
                 >
                   Edit / Version
-                </button>
+                </button>}
 
-                {lsn.status !== 'ARCHIVED' && (
+                {canArchive && lsn.status !== 'ARCHIVED' && (
                   <button
                     onClick={() => onArchiveLesson(lsn.id, 'Archived per curriculum update')}
                     className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 cursor-pointer"
@@ -524,21 +527,35 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
               </button>
 
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSave('DRAFT')}
-                  className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 cursor-pointer"
-                >
-                  Save as Draft
-                </button>
+                {(canCreate || canUpdate) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSave('DRAFT')}
+                    className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 cursor-pointer"
+                  >
+                    Save as Draft
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => handleSave('IN_REVIEW')}
-                  className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600 shadow-xs cursor-pointer"
-                >
-                  Submit for Review
-                </button>
+                {(canCreate || (canUpdate && !canReview)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSave('IN_REVIEW')}
+                    className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600 shadow-xs cursor-pointer"
+                  >
+                    Submit for Review
+                  </button>
+                )}
+
+                {canReview && editingLesson?.status === 'IN_REVIEW' && (
+                  <button
+                    type="button"
+                    onClick={() => handleSave('APPROVED')}
+                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 shadow-xs cursor-pointer"
+                  >
+                    Approve Content
+                  </button>
+                )}
 
                 {canPublish && (
                   <button

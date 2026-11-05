@@ -2,9 +2,15 @@ export type AdminRole =
   | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'CONTENT_ADMIN'
+  | 'CONTENT_REVIEWER'
   | 'SUBJECT_ADMIN'
   | 'QUESTION_REVIEWER'
-  | 'SUPPORT';
+  | 'QUESTION_BANK_ADMIN'
+  | 'AI_QUALITY_ADMIN'
+  | 'ANALYTICS_ADMIN'
+  | 'AUDITOR'
+  | 'SUPPORT'
+  | 'UNASSIGNED_ADMIN';
 
 export type AdminEntity =
   | 'Learner'
@@ -61,6 +67,7 @@ export type LessonStatus =
 export type QuestionStatus =
   | 'DRAFT'
   | 'IN_REVIEW'
+  | 'REVIEWED'
   | 'APPROVED'
   | 'PUBLISHED'
   | 'REJECTED'
@@ -164,6 +171,7 @@ export interface AdminResource {
 
 export interface AdminQuestion {
   id: string;
+  topicId?: string;
   questionText: string;
   options: Array<{
     id: string;
@@ -187,13 +195,13 @@ export interface AdminQuestion {
     sourcePage: number;
     verifiedProvenance: boolean;
   };
-  generationSource: 'MANUAL_AUTHOR' | 'AI_GENERATED' | 'OFFICIAL_PAST_PAPER';
+  generationSource: 'MANUAL_AUTHOR' | 'AI_GENERATED' | 'OFFICIAL_PAST_PAPER' | 'PDF_EXTRACTED' | 'TEMPLATE_GENERATED';
   status: QuestionStatus;
   authorName: string;
   reviewerName?: string;
   rejectionReason?: string;
-  attemptsCount: number;
-  accuracyRate: number;
+  attemptsCount: number | null;
+  accuracyRate: number | null;
   createdAt: string;
   updatedAt: string;
 }

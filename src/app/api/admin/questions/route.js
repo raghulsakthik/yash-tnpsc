@@ -3,6 +3,7 @@ import { requirePermission } from '../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../lib/permissions.mjs';
 import { listQuestionsByTopic, createQuestion } from '../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../lib/adminContent.mjs';
+import { isQuestionStatus, questionStatusPermission, canCreateQuestionWithStatus } from '../../../../lib/adminQuestionWorkflow.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +23,22 @@ export async function GET(request) {
 
 export async function POST(request) {
   const admin = await requirePermission(request, PERMISSIONS.QUESTION_CREATE);
-  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Question create permission required' }, { status: 403 });
   try {
     const body = await request.json();
+    const status = body.status ?? 'DRAFT';
+    if (!isQuestionStatus(status) || !canCreateQuestionWithStatus(status)) {
+      return NextResponse.json({ code: 'INVALID_STATUS', message: 'New questions may be saved as DRAFT, submitted IN_REVIEW, or published with permission.' }, { status: 400 });
+    }
+    if (status !== 'DRAFT') {
+      const transitionPermission = questionStatusPermission(status);
+      if (!(await requirePermission(request, transitionPermission))) {
+        return NextResponse.json({ code: 'FORBIDDEN_STATUS_TRANSITION', message: `Permission ${transitionPermission} is required for status ${status}.` }, { status: 403 });
+      }
+    }
     if (!(await canActOnTopic(admin, PERMISSIONS.QUESTION_CREATE, body.topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
-    const id = await createQuestion(body);
-    return NextResponse.json({ id }, { status: 201 });
+    const id = await createQuestion({ ...body, status });
+    return NextResponse.json({ id, status }, { status: 201 });
   } catch (err) {
     if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'CREATE_FAILED', message: err.message }, { status: 500 });

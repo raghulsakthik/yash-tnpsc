@@ -83,7 +83,7 @@ export function useAppData() {
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [session, setSession] = useState<{ email: string; role: string } | null>(null);
+  const [session, setSession] = useState<{ email: string; role: string; adminRole?: string | null } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);

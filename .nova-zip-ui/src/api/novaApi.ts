@@ -37,7 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const novaApi = {
-  me: () => request<{ email: string; role: string }>('/api/auth/me'),
+  me: () => request<{ email: string; role: string; adminRole?: string | null }>('/api/auth/me'),
   profile: () => request<Json>('/api/profile'),
   updateProfile: (payload: Json) => request<Json>('/api/profile', { method: 'PUT', body: JSON.stringify(payload) }),
   dashboard: () => request<Json>('/api/dashboard'),
@@ -55,6 +55,11 @@ export const novaApi = {
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
   adminUsers: () => request<Json>('/api/admin/users'),
   adminLessons: () => request<Json>('/api/admin/lessons'),
+  adminTopics: () => request<Json>('/api/admin/topics'),
+  adminQuestions: (topicId: string) => request<Json>(`/api/admin/questions?topic=${encodeURIComponent(topicId)}`),
+  adminCreateQuestion: (payload: Json) => request<Json>('/api/admin/questions', { method: 'POST', body: JSON.stringify(payload) }),
+  adminUpdateQuestion: (id: string, payload: Json) => request<Json>(`/api/admin/questions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  adminDeleteQuestion: (id: string) => request<Json>(`/api/admin/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   adminSaveLesson: (topicId: string, payload: Json) =>
     request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'PUT', body: JSON.stringify(payload) }),
   adminSetLessonStatus: (topicId: string, status: string) =>

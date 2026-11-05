@@ -26,6 +26,7 @@ import { CoursesView } from './components/CoursesView';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { resources } from './data/resources';
 import { useAppData } from './hooks/useAppData';
+import { mapSessionAdminRole } from './utils/adminPermissions';
 
 export default function App() {
   const {
@@ -50,7 +51,7 @@ export default function App() {
     return (
       <AdminPortal
         onReturnToLearnerHub={() => setCurrentView('home')}
-        initialRole={session?.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN'}
+        initialRole={mapSessionAdminRole(session)}
       />
     );
   }

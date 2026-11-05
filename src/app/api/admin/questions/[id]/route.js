@@ -3,6 +3,7 @@ import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
 import { getQuestion, updateQuestion, deleteQuestion } from '../../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../../lib/adminContent.mjs';
+import { isQuestionStatus, questionTransitionPermission } from '../../../../../lib/adminQuestionWorkflow.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,8 +29,19 @@ export async function PATCH(request, { params }) {
     const existing = await getQuestion(id);
     if (!existing) return NextResponse.json({ code: 'QUESTION_NOT_FOUND', message: `No question ${id}` }, { status: 404 });
     if (!(await canActOnTopic(admin, PERMISSIONS.QUESTION_UPDATE, existing.topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this question' }, { status: 403 });
-    await updateQuestion(id, await request.json());
-    return NextResponse.json({ ok: true });
+    const body = await request.json();
+    if (body.status !== undefined) {
+      if (!isQuestionStatus(body.status)) return NextResponse.json({ code: 'INVALID_STATUS', message: 'Unsupported question status' }, { status: 400 });
+      // Editing content while retaining its current status does not grant a
+      // publish/review transition; only an actual status change needs extra permission.
+      const transitionPermission = questionTransitionPermission(existing.status, body.status);
+      if (transitionPermission && (!(await requirePermission(request, transitionPermission)) ||
+          !(await canActOnTopic(admin, transitionPermission, existing.topicId)))) {
+        return NextResponse.json({ code: 'FORBIDDEN_STATUS_TRANSITION', message: `Permission ${transitionPermission} is required.` }, { status: 403 });
+      }
+    }
+    await updateQuestion(id, body);
+    return NextResponse.json({ ok: true, status: body.status ?? existing.status });
   } catch (err) {
     if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'UPDATE_FAILED', message: err.message }, { status: 500 });

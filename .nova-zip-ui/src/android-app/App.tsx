@@ -7,6 +7,7 @@ import { NotificationDrawer } from './components/NotificationDrawer';
 import { AdminPortal } from '../components/admin/AdminPortal';
 import { OnboardingModal } from '../components/OnboardingModal';
 import { useAppData } from '../hooks/useAppData';
+import { mapSessionAdminRole } from '../utils/adminPermissions';
 import { useFcmPush } from './useFcmPush';
 
 /**
@@ -42,7 +43,7 @@ export default function AndroidApp() {
     return (
       <AdminPortal
         onReturnToLearnerHub={() => setCurrentView('home')}
-        initialRole={session?.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN'}
+        initialRole={mapSessionAdminRole(session)}
       />
     );
   }

@@ -20,18 +20,37 @@ import {
 import { AdminQuestion, AdminRole, QuestionStatus } from '../../types/admin';
 import { checkPermission, validateQuestion } from '../../utils/adminPermissions';
 
+interface QuestionTopic {
+  topicId: string;
+  topicName: string;
+  chapterId: string;
+  chapterName: string;
+  subjectId: string;
+  subjectName: string;
+}
+
 interface QuestionsViewProps {
   role: AdminRole;
   questions: AdminQuestion[];
+  topics: QuestionTopic[];
+  selectedTopicId: string;
+  onTopicChange: (topicId: string) => void;
+  isLoading?: boolean;
+  loadError?: string | null;
   assignedSubjects?: string[];
   isReviewQueueMode?: boolean;
-  onSaveQuestion: (question: AdminQuestion, reason?: string) => void;
-  onUpdateStatus: (questionId: string, status: QuestionStatus, reason?: string) => void;
+  onSaveQuestion: (question: AdminQuestion, reason?: string) => Promise<void> | void;
+  onUpdateStatus: (questionId: string, status: QuestionStatus, reason?: string) => Promise<void> | void;
 }
 
 export const QuestionsView: React.FC<QuestionsViewProps> = ({
   role,
   questions,
+  topics,
+  selectedTopicId,
+  onTopicChange,
+  isLoading = false,
+  loadError = null,
   assignedSubjects,
   isReviewQueueMode = false,
   onSaveQuestion,
@@ -43,17 +62,16 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<AdminQuestion | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [operationError, setOperationError] = useState<string | null>(null);
 
   // Form fields
   const [formText, setFormText] = useState('');
   const [formExplanation, setFormExplanation] = useState('');
   const [formSubject, setFormSubject] = useState('Indian Polity & Constitution');
   const [formTopic, setFormTopic] = useState('Preamble & Philosophical Pillars');
+  const [formTopicId, setFormTopicId] = useState('');
   const [formDifficulty, setFormDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [formIsPYQ, setFormIsPYQ] = useState(false);
-  const [formPYQYear, setFormPYQYear] = useState(2024);
-  const [formPYQPaper, setFormPYQPaper] = useState('TNPSC Group 2 Prelims Paper I');
-  const [formPYQNumber, setFormPYQNumber] = useState(42);
   const [formOptions, setFormOptions] = useState([
     { id: 'opt-1', text: '', isCorrect: true },
     { id: 'opt-2', text: '', isCorrect: false },
@@ -62,11 +80,12 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
   ]);
 
   const canCreate = checkPermission(role, 'Question', 'CREATE').allowed;
+  const canUpdate = checkPermission(role, 'Question', 'UPDATE').allowed;
   const canReview = checkPermission(role, 'Question', 'REVIEW').allowed;
   const canApprove = checkPermission(role, 'Question', 'APPROVE').allowed;
 
   const filtered = questions.filter((q) => {
-    if (isReviewQueueMode && q.status !== 'IN_REVIEW') return false;
+    if (isReviewQueueMode && !['IN_REVIEW', 'REVIEWED'].includes(q.status)) return false;
     const matchesSearch =
       q.questionText.toLowerCase().includes(search.toLowerCase()) ||
       q.subjectName.toLowerCase().includes(search.toLowerCase()) ||
@@ -80,13 +99,12 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
     setEditingQuestion(null);
     setFormText('');
     setFormExplanation('');
-    setFormSubject(assignedSubjects?.[0] || 'Indian Polity & Constitution');
-    setFormTopic('Constitutional Architecture');
+    const topic = topics.find((item) => item.topicId === selectedTopicId) || topics[0];
+    setFormTopicId(topic?.topicId || '');
+    setFormSubject(topic?.subjectName || assignedSubjects?.[0] || '');
+    setFormTopic(topic?.topicName || '');
     setFormDifficulty('Medium');
     setFormIsPYQ(false);
-    setFormPYQYear(2024);
-    setFormPYQPaper('TNPSC Group 2 Prelims');
-    setFormPYQNumber(1);
     setFormOptions([
       { id: 'opt-1', text: '', isCorrect: true },
       { id: 'opt-2', text: '', isCorrect: false },
@@ -103,19 +121,15 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
     setFormExplanation(q.explanation);
     setFormSubject(q.subjectName);
     setFormTopic(q.topicName);
+    setFormTopicId(q.topicId || '');
     setFormDifficulty(q.difficulty);
     setFormIsPYQ(q.isPYQ);
-    if (q.pyqMetadata) {
-      setFormPYQYear(q.pyqMetadata.sourceYear);
-      setFormPYQPaper(q.pyqMetadata.paperNumber);
-      setFormPYQNumber(q.pyqMetadata.questionNumber);
-    }
     setFormOptions(q.options);
     setValidationErrors([]);
     setIsEditorOpen(true);
   };
 
-  const handleDuplicate = (q: AdminQuestion) => {
+  const handleDuplicate = async (q: AdminQuestion) => {
     const duplicated: AdminQuestion = {
       ...q,
       id: `q-dup-${Date.now()}`,
@@ -126,78 +140,90 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    onSaveQuestion(duplicated, `Duplicated from question ${q.id}`);
+    try {
+      await onSaveQuestion(duplicated, `Duplicated from question ${q.id}`);
+      setOperationError(null);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'Could not duplicate question');
+    }
   };
 
-  const handleSave = (targetStatus?: QuestionStatus) => {
-    // Subject scope check
+  const handleStatusUpdate = async (questionId: string, status: QuestionStatus, reason: string) => {
+    try {
+      await onUpdateStatus(questionId, status, reason);
+      setOperationError(null);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'Could not update question status');
+    }
+  };
+
+  const handleSave = async (targetStatus?: QuestionStatus) => {
+    if (!formTopicId) {
+      setValidationErrors(['Choose a syllabus topic before saving this question.']);
+      return;
+    }
     if (role === 'SUBJECT_ADMIN' && assignedSubjects && assignedSubjects.length > 0) {
-      const allowed = assignedSubjects.some(
-        (s) => s.toLowerCase() === formSubject.toLowerCase()
-      );
+      const allowed = assignedSubjects.some((s) => s.toLowerCase() === formSubject.toLowerCase());
       if (!allowed) {
-        setValidationErrors([
-          `Subject Scope Violation: You are restricted to [${assignedSubjects.join(
-            ', '
-          )}], not '${formSubject}'.`,
-        ]);
+        setValidationErrors([`Subject Scope Violation: You are restricted to [${assignedSubjects.join(', ')}], not '${formSubject}'.`]);
         return;
       }
     }
 
     const payload: Partial<AdminQuestion> = {
+      topicId: formTopicId,
       questionText: formText,
       explanation: formExplanation,
       options: formOptions,
-      isPYQ: formIsPYQ,
-      pyqMetadata: formIsPYQ
-        ? {
-            sourceYear: Number(formPYQYear),
-            examGroup: 'TNPSC Group 2 & 2A',
-            paperNumber: formPYQPaper,
-            questionNumber: Number(formPYQNumber),
-            sourcePage: 12,
-            verifiedProvenance: true,
-          }
-        : undefined,
+      isPYQ: editingQuestion?.isPYQ ?? false,
+      pyqMetadata: editingQuestion?.pyqMetadata,
     };
-
     const val = validateQuestion(payload);
     if (!val.valid) {
       setValidationErrors(val.errors);
       return;
     }
 
+    const selectedTopic = topics.find((topic) => topic.topicId === formTopicId);
     const updated: AdminQuestion = {
       ...(editingQuestion || {
         id: `q-${Date.now()}`,
+        topicId: formTopicId,
         examName: 'TNPSC Group 2 & 2A Combined',
-        chapterName: 'Core Module',
+        chapterName: selectedTopic?.chapterName || '',
         conceptName: formTopic,
         type: 'MCQ',
-        generationSource: formIsPYQ ? 'OFFICIAL_PAST_PAPER' : 'MANUAL_AUTHOR',
-        authorName: 'Admin Contributor',
+        generationSource: 'MANUAL_AUTHOR',
+        authorName: '—',
         attemptsCount: 0,
         accuracyRate: 0,
         createdAt: new Date().toISOString(),
       }),
+      topicId: formTopicId,
       questionText: formText,
       explanation: formExplanation,
       subjectName: formSubject,
+      chapterName: selectedTopic?.chapterName || editingQuestion?.chapterName || '',
       topicName: formTopic,
       difficulty: formDifficulty,
       options: formOptions,
-      isPYQ: formIsPYQ,
-      pyqMetadata: payload.pyqMetadata,
+      isPYQ: editingQuestion?.isPYQ ?? false,
+      pyqMetadata: editingQuestion?.pyqMetadata,
+      generationSource: editingQuestion?.generationSource || 'MANUAL_AUTHOR',
       status: targetStatus || (editingQuestion ? editingQuestion.status : 'DRAFT'),
       updatedAt: new Date().toISOString(),
     };
 
-    onSaveQuestion(
-      updated,
-      editingQuestion ? `Updated MCQ ${updated.id}` : `Authored new question in ${formSubject}`
-    );
-    setIsEditorOpen(false);
+    try {
+      await onSaveQuestion(
+        updated,
+        editingQuestion ? `Updated MCQ ${updated.id}` : `Authored new question in ${formSubject}`
+      );
+      setOperationError(null);
+      setIsEditorOpen(false);
+    } catch (error) {
+      setValidationErrors([error instanceof Error ? error.message : 'Could not save question']);
+    }
   };
 
   return (
@@ -226,8 +252,33 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
         )}
       </div>
 
+      {loadError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+          {loadError}
+        </div>
+      )}
+      {operationError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+          {operationError}
+        </div>
+      )}
+
       {/* Filter / Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="w-full sm:max-w-sm">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-neutral-500">Syllabus topic</label>
+          <select
+            value={selectedTopicId}
+            onChange={(event) => onTopicChange(event.target.value)}
+            disabled={isLoading || topics.length === 0}
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-800 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
+          >
+            <option value="">Choose a topic…</option>
+            {topics.map((topic) => (
+              <option key={topic.topicId} value={topic.topicId}>{topic.subjectName} · {topic.chapterName} · {topic.topicName}</option>
+            ))}
+          </select>
+        </div>
         <div className="relative w-full sm:w-80">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
           <input
@@ -258,7 +309,13 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
 
       {/* Questions List */}
       <div className="space-y-3">
-        {filtered.map((q) => (
+        {isLoading ? (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">Loading questions for this topic…</div>
+        ) : !selectedTopicId ? (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">Choose a syllabus topic to load its question bank.</div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">No questions found for this topic and filter.</div>
+        ) : filtered.map((q) => (
           <div
             key={q.id}
             className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 transition-all space-y-3"
@@ -331,21 +388,21 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
             {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800 text-xs">
               <div className="text-[11px] text-neutral-400">
-                Author: {q.authorName} · {q.attemptsCount} attempts ({q.accuracyRate}% acc)
+                Author: {q.authorName || '—'} · {q.attemptsCount == null ? '—' : q.attemptsCount} attempts ({q.accuracyRate == null ? '—' : `${q.accuracyRate}%`} acc)
               </div>
 
               <div className="flex items-center gap-2">
-                {canApprove && q.status === 'IN_REVIEW' && (
+                {canReview && q.status === 'IN_REVIEW' && (
                   <>
                     <button
-                      onClick={() => onUpdateStatus(q.id, 'PUBLISHED', 'Approved and published to bank')}
-                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                      onClick={() => void handleStatusUpdate(q.id, 'REVIEWED', 'Reviewed for answer accuracy and syllabus alignment')}
+                      className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700 cursor-pointer"
                     >
                       <Check className="h-3.5 w-3.5" />
-                      <span>Approve & Publish</span>
+                      <span>Mark Reviewed</span>
                     </button>
                     <button
-                      onClick={() => onUpdateStatus(q.id, 'REJECTED', 'Returned for clarification')}
+                      onClick={() => void handleStatusUpdate(q.id, 'REJECTED', 'Returned for clarification')}
                       className="inline-flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 dark:bg-red-950 dark:text-red-300 cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -353,21 +410,37 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                     </button>
                   </>
                 )}
+                {canApprove && ['IN_REVIEW', 'REVIEWED'].includes(q.status) && (
+                  <button
+                    onClick={() => void handleStatusUpdate(q.id, 'PUBLISHED', 'Approved and published to bank')}
+                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Approve & Publish</span>
+                  </button>
+                )}
 
-                <button
-                  onClick={() => handleDuplicate(q)}
+                {canCreate && !q.isPYQ && q.generationSource === 'MANUAL_AUTHOR' && <button
+                  onClick={() => void handleDuplicate(q)}
                   className="rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 cursor-pointer inline-flex items-center gap-1"
                 >
                   <Copy className="h-3 w-3" />
                   <span>Duplicate</span>
-                </button>
+                </button>}
 
-                <button
+                {canUpdate && <button
                   onClick={() => openEditModal(q)}
                   className="rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 cursor-pointer"
                 >
                   Edit
-                </button>
+                </button>}
+                {canUpdate && q.status !== 'ARCHIVED' && <button
+                  onClick={() => void handleStatusUpdate(q.id, 'ARCHIVED', 'Archived from the question bank')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 cursor-pointer"
+                >
+                  <Archive className="h-3 w-3" />
+                  Archive
+                </button>}
               </div>
             </div>
           </div>
@@ -419,34 +492,31 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Subject Mapping *
-                  </label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Subject Mapping</label>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                    {formSubject || 'Select a topic'}
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Syllabus Topic *</label>
                   <select
-                    value={formSubject}
-                    onChange={(e) => setFormSubject(e.target.value)}
+                    value={formTopicId}
+                    disabled={Boolean(editingQuestion)}
+                    onChange={(event) => {
+                      const topic = topics.find((item) => item.topicId === event.target.value);
+                      setFormTopicId(event.target.value);
+                      setFormTopic(topic?.topicName || '');
+                      setFormSubject(topic?.subjectName || '');
+                    }}
                     className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                   >
-                    <option value="Indian Polity & Constitution">Indian Polity & Constitution</option>
-                    <option value="General Studies">General Studies</option>
-                    <option value="Aptitude & Mental Ability">Aptitude & Mental Ability</option>
-                    <option value="History & Culture of Tamil Nadu">History & Culture of Tamil Nadu</option>
+                    <option value="">Choose a syllabus topic…</option>
+                    {topics.map((topic) => (
+                      <option key={topic.topicId} value={topic.topicId}>{topic.chapterName} · {topic.topicName}</option>
+                    ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Topic Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formTopic}
-                    onChange={(e) => setFormTopic(e.target.value)}
-                    placeholder="e.g. Right to Equality"
-                    className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  />
                 </div>
               </div>
 
@@ -491,49 +561,10 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                 </div>
               </div>
 
-              {/* PYQ Provenance Section */}
-              <div className="rounded-2xl border border-neutral-200 p-3.5 space-y-2.5 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-neutral-900 dark:text-white">
-                  <input
-                    type="checkbox"
-                    checked={formIsPYQ}
-                    onChange={(e) => setFormIsPYQ(e.target.checked)}
-                    className="rounded text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Mark as Official Past Year Question (PYQ)</span>
-                </label>
-
-                {formIsPYQ && (
-                  <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
-                    <div>
-                      <label className="block text-neutral-500 mb-0.5">Source Year *</label>
-                      <input
-                        type="number"
-                        value={formPYQYear}
-                        onChange={(e) => setFormPYQYear(Number(e.target.value))}
-                        className="w-full rounded-lg border border-neutral-200 p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-neutral-500 mb-0.5">Exam Paper *</label>
-                      <input
-                        type="text"
-                        value={formPYQPaper}
-                        onChange={(e) => setFormPYQPaper(e.target.value)}
-                        className="w-full rounded-lg border border-neutral-200 p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-neutral-500 mb-0.5">Question # *</label>
-                      <input
-                        type="number"
-                        value={formPYQNumber}
-                        onChange={(e) => setFormPYQNumber(Number(e.target.value))}
-                        className="w-full rounded-lg border border-neutral-200 p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                )}
+              <div className="rounded-2xl border border-purple-200 bg-purple-50/60 p-3.5 text-[11px] text-purple-900 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200">
+                {formIsPYQ
+                  ? 'This is an imported official PYQ. Its source identity and provenance are locked here; use the document ingestion/review pipeline for provenance corrections.'
+                  : 'This form creates original practice questions only. Official PYQs must enter through document ingestion so year, paper, question number and source-page provenance are verified.'}
               </div>
 
               <div>
@@ -565,20 +596,24 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
               >
                 Save as Draft
               </button>
-              <button
-                type="button"
-                onClick={() => handleSave('IN_REVIEW')}
-                className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600 cursor-pointer shadow-xs"
-              >
-                Submit for Review
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSave('PUBLISHED')}
-                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer shadow-xs"
-              >
-                Publish Directly
-              </button>
+              {canReview && (
+                <button
+                  type="button"
+                  onClick={() => void handleSave('IN_REVIEW')}
+                  className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600 cursor-pointer shadow-xs"
+                >
+                  Submit for Review
+                </button>
+              )}
+              {canApprove && (
+                <button
+                  type="button"
+                  onClick={() => void handleSave('PUBLISHED')}
+                  className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer shadow-xs"
+                >
+                  Publish Directly
+                </button>
+              )}
             </div>
           </div>
         </div>

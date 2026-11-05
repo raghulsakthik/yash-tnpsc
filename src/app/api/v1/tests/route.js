@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { createAdaptiveTest } from '../../../../services/adaptiveTestService.mjs';
 import { ValidationError } from '../../../../services/errors.mjs';
 
@@ -15,6 +15,8 @@ export const dynamic = 'force-dynamic';
  * questions scored and picked (27.2), stored DRAFT until POST .../start.
  */
 export async function POST(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   let body = {};
   try {
     body = await request.json();
@@ -23,7 +25,7 @@ export async function POST(request) {
   }
 
   try {
-    const test = await createAdaptiveTest(LEARNER_ID, { questionCount: body.questionCount });
+    const test = await createAdaptiveTest(learner.id, { questionCount: body.questionCount });
     return NextResponse.json(test, { status: 201 });
   } catch (err) {
     if (err instanceof ValidationError) {

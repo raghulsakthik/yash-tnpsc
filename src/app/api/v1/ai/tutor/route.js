@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { getAiTutorResponse } from '../../../../../services/aiTutorService.mjs';
 import { NotFoundError, ValidationError } from '../../../../../services/errors.mjs';
 
@@ -17,6 +17,8 @@ export const dynamic = 'force-dynamic';
  * state in this environment) — never a raw error for that reason alone.
  */
 export async function POST(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   let body;
   try {
     body = await request.json();
@@ -27,7 +29,7 @@ export async function POST(request) {
   if (!task) return NextResponse.json({ code: 'MISSING_FIELDS', message: 'task is required' }, { status: 400 });
 
   try {
-    const result = await getAiTutorResponse(LEARNER_ID, task, { topicId, questionId, secondTopicId, selectedIndex });
+    const result = await getAiTutorResponse(learner.id, task, { topicId, questionId, secondTopicId, selectedIndex });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof NotFoundError) {

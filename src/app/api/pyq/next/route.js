@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
+import { recordEvent } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { getNextPyqQuestion } from '../../../../services/pyqService.mjs';
 import { NotFoundError } from '../../../../services/errors.mjs';
 
@@ -15,10 +16,12 @@ export const dynamic = 'force-dynamic';
  * real paper.
  */
 export async function GET(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const topicId = new URL(request.url).searchParams.get('topic') ?? 'aptitude.fractions';
   try {
-    const question = await getNextPyqQuestion(LEARNER_ID, topicId);
-    await recordEvent(LEARNER_ID, 'PYQ_QUESTION_VIEWED', topicId, { questionId: question.questionId });
+    const question = await getNextPyqQuestion(learner.id, topicId);
+    await recordEvent(learner.id, 'PYQ_QUESTION_VIEWED', topicId, { questionId: question.questionId });
     return NextResponse.json(question);
   } catch (err) {
     if (err instanceof NotFoundError) {

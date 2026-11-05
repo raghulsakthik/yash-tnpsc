@@ -188,6 +188,13 @@ try {
     ['/api/v1/interventions', 'legacy intervention history'],
     ['/api/v1/interventions/effectiveness', 'intervention effectiveness'],
     ['/api/v1/interventions/effectiveness/by-topic', 'topic intervention effectiveness'],
+    ['/api/assessments/default/eligibility', 'default assessment eligibility'],
+    ['/api/milestones', 'milestone history'],
+    ['/api/pyq/performance', 'PYQ performance'],
+    ['/api/v1/analytics', 'legacy learner analytics'],
+    ['/api/v1/exam-readiness', 'exam readiness'],
+    ['/api/v1/pyq', 'legacy PYQ catalogue'],
+    ['/api/v1/ai/context/' + encodeURIComponent(created.adaptiveDependentTopicId), 'personalized AI learner context'],
   ];
   for (const [path, label] of learnerScopedReads) {
     const denied = await fetch(`${baseUrl}${path}`, { headers: { cookie } });
@@ -200,6 +207,24 @@ try {
     body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),
   });
   assert.equal(adminInterventionStart.status, 401, await adminInterventionStart.text());
+  const adminProtectedPosts = [
+    '/api/assessments/default',
+    '/api/assessments/00000000-0000-0000-0000-000000000000/submit',
+    '/api/games',
+    '/api/games/00000000-0000-0000-0000-000000000000/submit',
+    '/api/milestones/evaluate',
+    '/api/sessions',
+    '/api/v1/ai/tutor',
+    '/api/v1/pyq/00000000-0000-0000-0000-000000000000/attempt',
+    '/api/v1/tests',
+    '/api/v1/tests/00000000-0000-0000-0000-000000000000/submit',
+  ];
+  for (const path of adminProtectedPosts) {
+    const denied = await fetch(`${baseUrl}${path}`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: '{}',
+    });
+    assert.equal(denied.status, 401, `admin session must be rejected by ${path}: ${await denied.text()}`);
+  }
   const studentInterventionStart = await fetch(`${baseUrl}/api/learning/interventions/start`, {
     method: 'POST', headers: { 'content-type': 'application/json', cookie: studentCookie },
     body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),

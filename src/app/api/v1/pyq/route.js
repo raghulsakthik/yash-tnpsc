@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { listPyqQuestions } from '../../../../services/pyqCatalogService.mjs';
 import { ValidationError } from '../../../../services/errors.mjs';
 
@@ -14,6 +14,8 @@ export const dynamic = 'force-dynamic';
  * real sum of this list's estimated_seconds — the "timed" mode's budget.
  */
 export async function GET(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const year = searchParams.get('year') ? Number(searchParams.get('year')) : undefined;
   const subjectId = searchParams.get('subjectId') ?? undefined;
@@ -22,7 +24,7 @@ export async function GET(request) {
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined;
 
   try {
-    const result = await listPyqQuestions(LEARNER_ID, { year, subjectId, topicId, mode, limit });
+    const result = await listPyqQuestions(learner.id, { year, subjectId, topicId, mode, limit });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof ValidationError) {

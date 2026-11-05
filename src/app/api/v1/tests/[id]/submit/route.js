@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../../lib/auth.mjs';
 import { submitAdaptiveTest } from '../../../../../../services/adaptiveTestService.mjs';
 import { NotFoundError, ValidationError } from '../../../../../../services/errors.mjs';
 
@@ -14,9 +14,11 @@ export const dynamic = 'force-dynamic';
  * cognitive problems/retention problems), stored on the test.
  */
 export async function POST(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { id } = await params;
   try {
-    const result = await submitAdaptiveTest(id, LEARNER_ID);
+    const result = await submitAdaptiveTest(id, learner.id);
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof NotFoundError) {

@@ -159,11 +159,11 @@ try {
 
   // Learner-only adaptive endpoints must bind all data to the authenticated student, never a global seed learner.
   const anonymousAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`);
-  assert.equal(anonymousAdaptivePlan.status, 401, await anonymousAdaptivePlan.text());
+  assert.equal(anonymousAdaptivePlan.status, 401);
   const adminAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie } });
-  assert.equal(adminAdaptivePlan.status, 401, await adminAdaptivePlan.text());
+  assert.equal(adminAdaptivePlan.status, 401);
   const studentAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie: studentCookie } });
-  assert.equal(studentAdaptivePlan.status, 200, await studentAdaptivePlan.text());
+  assert.equal(studentAdaptivePlan.status, 200);
   const studentAdaptivePlanBody = await studentAdaptivePlan.json();
   assert.equal(studentAdaptivePlanBody.learnerId, studentId);
   assert.ok(studentAdaptivePlanBody.steps.length > 0);
@@ -173,7 +173,7 @@ try {
   assert.ok(studentAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId),
     'a weak prerequisite should be inserted into the first learner’s roadmap before the dependent topic');
   const comparisonAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie: comparisonStudentCookie } });
-  assert.equal(comparisonAdaptivePlan.status, 200, await comparisonAdaptivePlan.text());
+  assert.equal(comparisonAdaptivePlan.status, 200);
   const comparisonAdaptivePlanBody = await comparisonAdaptivePlan.json();
   assert.equal(comparisonAdaptivePlanBody.learnerId, comparisonStudentId);
   assert.equal(comparisonAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId), false,
@@ -198,15 +198,15 @@ try {
   ];
   for (const [path, label] of learnerScopedReads) {
     const denied = await fetch(`${baseUrl}${path}`, { headers: { cookie } });
-    assert.equal(denied.status, 401, `${label} must reject admin sessions: ${await denied.text()}`);
+    assert.equal(denied.status, 401, `${label} must reject admin sessions: `);
     const allowed = await fetch(`${baseUrl}${path}`, { headers: { cookie: studentCookie } });
-    assert.equal(allowed.status, 200, `${label} should work for a student: ${await allowed.text()}`);
+    assert.equal(allowed.status, 200, `${label} should work for a student: `);
   }
   const adminInterventionStart = await fetch(`${baseUrl}/api/learning/interventions/start`, {
     method: 'POST', headers: { 'content-type': 'application/json', cookie },
     body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),
   });
-  assert.equal(adminInterventionStart.status, 401, await adminInterventionStart.text());
+  assert.equal(adminInterventionStart.status, 401);
   const adminProtectedPosts = [
     '/api/assessments/default',
     '/api/assessments/00000000-0000-0000-0000-000000000000/submit',
@@ -223,56 +223,56 @@ try {
     const denied = await fetch(`${baseUrl}${path}`, {
       method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: '{}',
     });
-    assert.equal(denied.status, 401, `admin session must be rejected by ${path}: ${await denied.text()}`);
+    assert.equal(denied.status, 401, `admin session must be rejected by ${path}: `);
   }
   const studentInterventionStart = await fetch(`${baseUrl}/api/learning/interventions/start`, {
     method: 'POST', headers: { 'content-type': 'application/json', cookie: studentCookie },
     body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),
   });
-  assert.equal(studentInterventionStart.status, 200, await studentInterventionStart.text());
+  assert.equal(studentInterventionStart.status, 200);
   console.log('adaptive plan authentication, mistake-based prerequisite remediation, learner isolation and legacy adaptive API auth E2E: PASS');
 
   // Subject experts see and mutate only their explicitly assigned syllabus subjects.
   const scopedTopicsResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(scopedTopicsResponse.status, 200, await scopedTopicsResponse.text());
+  assert.equal(scopedTopicsResponse.status, 200);
   const scopedTopics = await scopedTopicsResponse.json();
   assert.ok(scopedTopics.topics.length > 0);
   assert.ok(scopedTopics.topics.every((topic) => topic.subjectId === created.subjectExpertSubjectId));
 
   const blockedUnscopedQuestionBrowse = await fetch(`${baseUrl}/api/admin/questions`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(blockedUnscopedQuestionBrowse.status, 400, await blockedUnscopedQuestionBrowse.text());
+  assert.equal(blockedUnscopedQuestionBrowse.status, 400);
   const allowedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(topicId)}`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(allowedQuestionRead.status, 200, await allowedQuestionRead.text());
+  assert.equal(allowedQuestionRead.status, 200);
   const blockedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(otherTopicId)}`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(blockedQuestionRead.status, 403, await blockedQuestionRead.text());
+  assert.equal(blockedQuestionRead.status, 403);
 
   const scopedLessonsResponse = await fetch(`${baseUrl}/api/admin/lessons`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(scopedLessonsResponse.status, 200, await scopedLessonsResponse.text());
+  assert.equal(scopedLessonsResponse.status, 200);
   const scopedLessons = await scopedLessonsResponse.json();
   assert.ok(scopedLessons.topics.every((topic) => topic.subjectId === created.subjectExpertSubjectId));
 
   const scopedTopicMapResponse = await fetch(`${baseUrl}/api/admin/content-engine/topic-map`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(scopedTopicMapResponse.status, 200, await scopedTopicMapResponse.text());
+  assert.equal(scopedTopicMapResponse.status, 200);
   const scopedTopicMap = await scopedTopicMapResponse.json();
   assert.ok(scopedTopicMap.topics.length > 0);
   assert.ok(scopedTopicMap.topics.every((topic) => topic.subject_id === created.subjectExpertSubjectId));
 
   const blockedGenerationTopics = await fetch(`${baseUrl}/api/admin/content-engine/generate`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(blockedGenerationTopics.status, 403, await blockedGenerationTopics.text());
+  assert.equal(blockedGenerationTopics.status, 403);
   const blockedGeneration = await fetch(`${baseUrl}/api/admin/content-engine/generate`, {
     method: 'POST', headers: { 'content-type': 'application/json', cookie: subjectExpertCookie },
     body: JSON.stringify({ topicId, mcqCount: 3 }),
   });
-  assert.equal(blockedGeneration.status, 403, await blockedGeneration.text());
+  assert.equal(blockedGeneration.status, 403);
   const blockedPublications = await fetch(`${baseUrl}/api/admin/content-engine/publications`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(blockedPublications.status, 403, await blockedPublications.text());
+  assert.equal(blockedPublications.status, 403);
   const blockedReviewQueue = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: subjectExpertCookie } });
-  assert.equal(blockedReviewQueue.status, 403, await blockedReviewQueue.text());
+  assert.equal(blockedReviewQueue.status, 403);
   console.log('subject expert subject-scope and AI-generation boundary E2E: PASS');
 
   // Admin Question Bank: syllabus topics, draft creation, review and publish RBAC.
   const topicListResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie } });
-  assert.equal(topicListResponse.status, 200, await topicListResponse.text());
+  assert.equal(topicListResponse.status, 200);
   const topicList = await topicListResponse.json();
   assert.ok(topicList.topics.some((topic) => topic.topicId === topicId));
 
@@ -297,38 +297,38 @@ try {
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [manualQuestion.id])).rows[0].status, 'DRAFT');
 
   const questionListResponse = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(topicId)}`, { headers: { cookie } });
-  assert.equal(questionListResponse.status, 200, await questionListResponse.text());
+  assert.equal(questionListResponse.status, 200);
   assert.ok((await questionListResponse.json()).questions.some((question) => question.id === manualQuestion.id));
 
   const submitQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
     body: JSON.stringify({ status: 'IN_REVIEW' }),
   });
-  assert.equal(submitQuestionResponse.status, 200, await submitQuestionResponse.text());
+  assert.equal(submitQuestionResponse.status, 200);
 
   const reviewQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
     body: JSON.stringify({ status: 'REVIEWED' }),
   });
-  assert.equal(reviewQuestionResponse.status, 200, await reviewQuestionResponse.text());
+  assert.equal(reviewQuestionResponse.status, 200);
 
   const blockedQuestionPublish = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
     body: JSON.stringify({ status: 'PUBLISHED' }),
   });
-  assert.equal(blockedQuestionPublish.status, 403, await blockedQuestionPublish.text());
+  assert.equal(blockedQuestionPublish.status, 403);
 
   const reviewerEditWithoutTransition = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
     body: JSON.stringify({ explanation: 'Reviewer correction while retaining REVIEWED status.', status: 'REVIEWED' }),
   });
-  assert.equal(reviewerEditWithoutTransition.status, 200, await reviewerEditWithoutTransition.text());
+  assert.equal(reviewerEditWithoutTransition.status, 200);
 
   const publishQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
     body: JSON.stringify({ status: 'PUBLISHED' }),
   });
-  assert.equal(publishQuestionResponse.status, 200, await publishQuestionResponse.text());
+  assert.equal(publishQuestionResponse.status, 200);
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [manualQuestion.id])).rows[0].status, 'PUBLISHED');
 
   // Lesson workflow: reviewers approve, publishers publish; no skipped approval.
@@ -345,37 +345,37 @@ try {
       status: 'DRAFT',
     }),
   });
-  assert.equal(lessonDraftResponse.status, 200, await lessonDraftResponse.text());
+  assert.equal(lessonDraftResponse.status, 200);
 
   const skippedApprovalResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
     body: JSON.stringify({ status: 'APPROVED' }),
   });
-  assert.equal(skippedApprovalResponse.status, 409, await skippedApprovalResponse.text());
+  assert.equal(skippedApprovalResponse.status, 409);
 
   const submitLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
     body: JSON.stringify({ status: 'IN_REVIEW' }),
   });
-  assert.equal(submitLessonResponse.status, 200, await submitLessonResponse.text());
+  assert.equal(submitLessonResponse.status, 200);
 
   const approveLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
     body: JSON.stringify({ status: 'APPROVED' }),
   });
-  assert.equal(approveLessonResponse.status, 200, await approveLessonResponse.text());
+  assert.equal(approveLessonResponse.status, 200);
 
   const blockedLessonPublish = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
     body: JSON.stringify({ status: 'PUBLISHED' }),
   });
-  assert.equal(blockedLessonPublish.status, 403, await blockedLessonPublish.text());
+  assert.equal(blockedLessonPublish.status, 403);
 
   const publishLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
     method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
     body: JSON.stringify({ status: 'PUBLISHED' }),
   });
-  assert.equal(publishLessonResponse.status, 200, await publishLessonResponse.text());
+  assert.equal(publishLessonResponse.status, 200);
   assert.equal((await db.query(`SELECT status FROM lesson WHERE topic_id=$1`, [lessonWorkflowTopicId])).rows[0].status, 'PUBLISHED');
 
   console.log('admin question bank + lesson review/publish RBAC E2E: PASS');
@@ -415,7 +415,7 @@ try {
 
   const approve = await importPublication('approve', 'Version One');
   const pendingEvidenceResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie } });
-  assert.equal(pendingEvidenceResponse.status, 200, await pendingEvidenceResponse.text());
+  assert.equal(pendingEvidenceResponse.status, 200);
   const pendingEvidenceBody = await pendingEvidenceResponse.json();
   const pendingEvidenceBatch = pendingEvidenceBody.batches.find((batch) => batch.id === approve.batchId);
   assert.ok(pendingEvidenceBatch, 'new AI-style review batch should be visible');
@@ -424,21 +424,21 @@ try {
   assert.equal(pendingEvidenceBatch.lessons[0].sourceEvidence[0].id, approve.evidenceResourceId);
 
   const questionReviewerQueueResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: questionReviewerCookie } });
-  assert.equal(questionReviewerQueueResponse.status, 200, await questionReviewerQueueResponse.text());
+  assert.equal(questionReviewerQueueResponse.status, 200);
   const questionReviewerQueue = await questionReviewerQueueResponse.json();
   assert.equal(questionReviewerQueue.batches.some((batch) => batch.id === approve.batchId), false);
 
   const contentReviewerQueueResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: contentReviewerCookie } });
-  assert.equal(contentReviewerQueueResponse.status, 200, await contentReviewerQueueResponse.text());
+  assert.equal(contentReviewerQueueResponse.status, 200);
   const contentReviewerQueue = await contentReviewerQueueResponse.json();
   assert.equal(contentReviewerQueue.batches.some((batch) => batch.id === approve.batchId), false);
   console.log('review queue filters batches by question/content review permission: PASS');
   console.log('question and lesson source evidence is available to human reviewers: PASS');
   const unverifiedResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
-  assert.equal(unverifiedResponse.status, 400, await unverifiedResponse.text());
+  assert.equal(unverifiedResponse.status, 400);
   assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [approve.batchId])).rows[0].status, 'PENDING');
   const approveResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve', humanVerified: true }) });
-  assert.equal(approveResponse.status, 200, await approveResponse.text());
+  assert.equal(approveResponse.status, 200);
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [approve.questionId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [approve.lessonId])).rows[0].status, 'PUBLISHED');
   assert.equal((await db.query(`SELECT COUNT(*)::int AS count FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].count, 1);
@@ -460,13 +460,13 @@ try {
 
   const v2 = await importPublication('v2', 'Version Two');
   const v2Response = await fetch(`${baseUrl}/api/admin/content/review/${v2.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve', humanVerified: true }) });
-  assert.equal(v2Response.status, 200, await v2Response.text());
+  assert.equal(v2Response.status, 200);
   assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version Two');
   const versions = await db.query(`SELECT version_number,title,status FROM content_engine_lesson_version WHERE topic_id=$1 ORDER BY version_number`, [topicId]);
   assert.deepEqual(versions.rows.map((x) => [x.version_number,x.title,x.status]), [[1,'Version One','SUPERSEDED'],[2,'Version Two','PUBLISHED']]);
 
   const rollbackResponse = await fetch(`${baseUrl}/api/admin/content-engine/rollback`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ topicId, versionNumber: 1 }) });
-  assert.equal(rollbackResponse.status, 200, await rollbackResponse.text());
+  assert.equal(rollbackResponse.status, 200);
   assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version One');
   const afterRollback = await db.query(`SELECT version_number,title,status FROM content_engine_lesson_version WHERE topic_id=$1 ORDER BY version_number`, [topicId]);
   assert.equal(afterRollback.rows.find((x) => x.version_number === 1).status, 'PUBLISHED');
@@ -476,7 +476,7 @@ try {
 
   const reject = await importPublication('reject', 'Rejected Version');
   const rejectResponse = await fetch(`${baseUrl}/api/admin/content/review/${reject.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'reject' }) });
-  assert.equal(rejectResponse.status, 200, await rejectResponse.text());
+  assert.equal(rejectResponse.status, 200);
   assert.equal((await db.query(`SELECT title FROM lesson WHERE topic_id=$1`, [topicId])).rows[0].title, 'Version One');
   assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [reject.questionId])).rows[0].status, 'ARCHIVED');
   assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [reject.lessonId])).rows[0].status, 'REJECTED');

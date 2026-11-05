@@ -451,7 +451,7 @@ try {
   assert.equal(approvedLineage.rows.find((x) => x.content_kind === 'lesson').version_number, 1);
   assert.equal((await db.query(`SELECT status FROM content_engine_publication WHERE publication_id=$1`, [approve.publicationId])).rows[0].status, 'APPROVED');
 
-  const learnerLessonResponse = await fetch(`${baseUrl}/api/lesson/${encodeURIComponent(topicId)}`, { headers: { cookie } });
+  const learnerLessonResponse = await fetch(`${baseUrl}/api/lesson/${encodeURIComponent(topicId)}`, { headers: { cookie: studentCookie } });
   const learnerLessonText = await learnerLessonResponse.text();
   assert.equal(learnerLessonResponse.status, 200, learnerLessonText);
   const learnerLesson = JSON.parse(learnerLessonText);

@@ -122,6 +122,26 @@ export async function findLearnerByEmail(email) {
 }
 
 /**
+ * Finds learners whose email starts with the given prefix -- the practical
+ * way to find a batch of disposable test/QA accounts afterwards (they're
+ * typically registered with a shared, deterministic prefix like
+ * "android-verify-") when their individual emails were never recorded.
+ * Capped at 50 so this can't become an unbounded roster dump.
+ */
+export async function findLearnersByEmailPrefix(prefix) {
+  if (!prefix) return [];
+  const { rows } = await query(
+    `SELECT u.id, u.email, u.created_at, l.name
+       FROM app_user u JOIN learner l ON l.id = u.id
+      WHERE u.role = 'STUDENT' AND u.email ILIKE $1 || '%'
+      ORDER BY u.created_at DESC
+      LIMIT 50`,
+    [prefix.replace(/[%_\\]/g, (c) => `\\${c}`)]
+  );
+  return rows;
+}
+
+/**
  * Permanently deletes a learner account and everything tied to it
  * (attempts, bookmarks, notes, sessions, ...) by deleting the root
  * `learner` row -- app_user and every other learner-owned table reference

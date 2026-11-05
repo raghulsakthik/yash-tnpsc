@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../../lib/auth.mjs';
-import { PERMISSIONS } from '../../../../../lib/permissions.mjs';
+import { PERMISSIONS, canActOnSubject } from '../../../../../lib/permissions.mjs';
 import { query } from '../../../../../lib/db.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -37,9 +37,13 @@ export async function GET(request) {
     ORDER BY s.sort_order, c.sort_order, t.sort_order, t.id
   `);
 
+  const topics = [];
+  for (const topic of rows) {
+    if (await canActOnSubject(admin, PERMISSIONS.CONTENT_CREATE, topic.subject_id)) topics.push(topic);
+  }
   return NextResponse.json({
     contractVersion: 1,
     exam: 'tnpsc-prelims-495',
-    topics: rows,
+    topics,
   });
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PERMISSIONS, hasPermission } from '../src/lib/permissions.mjs';
+import { PERMISSIONS, hasPermission, isSubjectScoped } from '../src/lib/permissions.mjs';
 import { QUESTION_STATUSES, canCreateQuestionWithStatus, isQuestionStatus, questionStatusPermission, questionTransitionPermission } from '../src/lib/adminQuestionWorkflow.mjs';
 
 const admin = (adminRole) => ({ role: 'ADMIN', adminRole });
@@ -84,4 +84,15 @@ test('analytics admin is limited to analytics read and auditor remains read-only
   assert.equal(hasPermission(auditor, PERMISSIONS.CONTENT_READ), true);
   assert.equal(hasPermission(auditor, PERMISSIONS.QUESTION_READ), true);
   assert.equal(hasPermission(auditor, PERMISSIONS.QUESTION_UPDATE), false);
+});
+
+test('subject expert read and AI capabilities remain constrained to assigned syllabus subjects', () => {
+  const expert = admin('subject_expert');
+  assert.equal(hasPermission(expert, PERMISSIONS.CONTENT_READ), true);
+  assert.equal(hasPermission(expert, PERMISSIONS.QUESTION_READ), true);
+  assert.equal(hasPermission(expert, PERMISSIONS.AI_GENERATE), false);
+  assert.equal(isSubjectScoped(expert, PERMISSIONS.CONTENT_READ), true);
+  assert.equal(isSubjectScoped(expert, PERMISSIONS.QUESTION_READ), true);
+  assert.equal(isSubjectScoped(expert, PERMISSIONS.AI_GENERATE), true);
+  assert.equal(isSubjectScoped(admin('auditor'), PERMISSIONS.CONTENT_READ), false);
 });

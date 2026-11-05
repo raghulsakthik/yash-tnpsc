@@ -8,7 +8,7 @@ The Content Engine can generate one syllabus-topic lesson and 3–10 original fo
 
 Set `GEMINI_API_KEY` as a server-side secret in local `.env.local` or the deployment environment. Do not expose it through a `NEXT_PUBLIC_*` variable, commit it, or paste it into chat. The current provider adapter uses the configured Gemini model in `src/lib/ai/provider.mjs`.
 
-The API also requires the platform database and migrations through V74. The local sample `.env.local` currently points to PostgreSQL at `localhost:5432`; start the database and run the normal migration/seed workflow before using the feature.
+The API also requires the platform database and migrations through V75. The local sample `.env.local` currently points to PostgreSQL at `localhost:5432`; start the database and run the normal migration/seed workflow before using the feature.
 
 ## Source eligibility
 
@@ -31,6 +31,13 @@ Resources without auditable lineage are deliberately excluded. Approve source ma
 6. Open Admin → Review. Preview the questions, lesson and source evidence. AI-suggested options are not highlighted as verified answers.
 7. An authorised reviewer must expand the preview and explicitly confirm human verification. The API enforces this confirmation; a client-side checkbox alone is not trusted.
 8. Approval publishes through the existing review transaction and immutable lesson-version/lineage flow. Rejection archives the staged items.
+
+## Access control
+
+- Generation topic listing, generation requests, publication listing and generation audit access require the explicit `AI_GENERATE` permission; general content-read access is not enough.
+- Generation checks the selected topic against the authenticated admin's subject scope before reading approved source material.
+- The topic-map endpoint and admin lesson/question topic lists filter subjects for subject-scoped experts.
+- Publication and audit views do not expose cross-subject records to a scoped generation role.
 
 ## Safety properties
 

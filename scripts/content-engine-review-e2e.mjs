@@ -30,6 +30,8 @@ const created = {
   adminId: null, sessionHash: null,
   questionReviewerId: null, questionReviewerSessionHash: null,
   contentReviewerId: null, contentReviewerSessionHash: null,
+  subjectExpertId: null, subjectExpertSessionHash: null,
+  subjectExpertSubjectId: null,
   publications: [], batches: [], questionIds: [], lessonIds: [],
   manualQuestionIds: [], lessonWorkflowTopicId: null,
 };
@@ -63,6 +65,28 @@ try {
   await db.query(`INSERT INTO app_user(id,role,status,admin_role) VALUES ($1,'ADMIN','ACTIVE','content_reviewer')`, [contentReviewerId]);
   await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [contentReviewerId, created.contentReviewerSessionHash]);
 
+  const scopedSubject = await db.query(
+    `SELECT c.subject_id FROM topic t JOIN chapter c ON c.id=t.chapter_id WHERE t.id=$1`,
+    [topicId]
+  );
+  assert.ok(scopedSubject.rows.length, 'the main test topic must belong to a subject');
+  created.subjectExpertSubjectId = scopedSubject.rows[0].subject_id;
+  const outOfScopeTopic = await db.query(
+    `SELECT t.id FROM topic t JOIN chapter c ON c.id=t.chapter_id WHERE c.subject_id<>$1 ORDER BY t.id LIMIT 1`,
+    [created.subjectExpertSubjectId]
+  );
+  assert.ok(outOfScopeTopic.rows.length, 'a topic in a different subject is required for scope tests');
+  const otherTopicId = outOfScopeTopic.rows[0].id;
+
+  const subjectExpertId = crypto.randomUUID();
+  const subjectExpertToken = crypto.randomBytes(32).toString('hex');
+  created.subjectExpertId = subjectExpertId;
+  created.subjectExpertSessionHash = tokenHash(subjectExpertToken);
+  await db.query(`INSERT INTO learner(id,name) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [subjectExpertId, 'Subject Expert E2E']);
+  await db.query(`INSERT INTO app_user(id,role,status,admin_role) VALUES ($1,'ADMIN','ACTIVE','subject_expert')`, [subjectExpertId]);
+  await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [subjectExpertId, created.subjectExpertSessionHash]);
+  await db.query(`INSERT INTO admin_subject_scope(user_id,subject_id) VALUES ($1,$2)`, [subjectExpertId, created.subjectExpertSubjectId]);
+
   const workflowTopic = await db.query(
     `SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id
       WHERE l.topic_id IS NULL AND t.id<>$1 ORDER BY t.id LIMIT 1`,
@@ -85,6 +109,41 @@ try {
   const cookie = `session_token=${token}`;
   const questionReviewerCookie = `session_token=${questionReviewerToken}`;
   const contentReviewerCookie = `session_token=${contentReviewerToken}`;
+  const subjectExpertCookie = `session_token=${subjectExpertToken}`;
+
+  // Subject experts see and mutate only their explicitly assigned syllabus subjects.
+  const scopedTopicsResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(scopedTopicsResponse.status, 200, await scopedTopicsResponse.text());
+  const scopedTopics = await scopedTopicsResponse.json();
+  assert.ok(scopedTopics.topics.length > 0);
+  assert.ok(scopedTopics.topics.every((topic) => topic.subjectId === created.subjectExpertSubjectId));
+
+  const allowedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(topicId)}`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(allowedQuestionRead.status, 200, await allowedQuestionRead.text());
+  const blockedQuestionRead = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(otherTopicId)}`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(blockedQuestionRead.status, 403, await blockedQuestionRead.text());
+
+  const scopedLessonsResponse = await fetch(`${baseUrl}/api/admin/lessons`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(scopedLessonsResponse.status, 200, await scopedLessonsResponse.text());
+  const scopedLessons = await scopedLessonsResponse.json();
+  assert.ok(scopedLessons.topics.every((topic) => topic.subjectId === created.subjectExpertSubjectId));
+
+  const scopedTopicMapResponse = await fetch(`${baseUrl}/api/admin/content-engine/topic-map`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(scopedTopicMapResponse.status, 200, await scopedTopicMapResponse.text());
+  const scopedTopicMap = await scopedTopicMapResponse.json();
+  assert.ok(scopedTopicMap.topics.length > 0);
+  assert.ok(scopedTopicMap.topics.every((topic) => topic.subject_id === created.subjectExpertSubjectId));
+
+  const blockedGenerationTopics = await fetch(`${baseUrl}/api/admin/content-engine/generate`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(blockedGenerationTopics.status, 403, await blockedGenerationTopics.text());
+  const blockedGeneration = await fetch(`${baseUrl}/api/admin/content-engine/generate`, {
+    method: 'POST', headers: { 'content-type': 'application/json', cookie: subjectExpertCookie },
+    body: JSON.stringify({ topicId, mcqCount: 3 }),
+  });
+  assert.equal(blockedGeneration.status, 403, await blockedGeneration.text());
+  const blockedPublications = await fetch(`${baseUrl}/api/admin/content-engine/publications`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(blockedPublications.status, 403, await blockedPublications.text());
+  console.log('subject expert subject-scope and AI-generation boundary E2E: PASS');
 
   // Admin Question Bank: syllabus topics, draft creation, review and publish RBAC.
   const topicListResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie } });
@@ -286,10 +345,10 @@ try {
     for (const id of created.manualQuestionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
     if (created.lessonWorkflowTopicId) await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.lessonWorkflowTopicId]);
     for (const id of created.publications) await db.query('DELETE FROM content_engine_publication WHERE publication_id=$1', [id]);
-    for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash].filter(Boolean)) {
+    for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash, created.subjectExpertSessionHash].filter(Boolean)) {
       await db.query('DELETE FROM user_session WHERE token_hash=$1', [hash]);
     }
-    for (const id of [created.adminId, created.questionReviewerId, created.contentReviewerId].filter(Boolean)) {
+    for (const id of [created.adminId, created.questionReviewerId, created.contentReviewerId, created.subjectExpertId].filter(Boolean)) {
       await db.query('DELETE FROM app_user WHERE id=$1', [id]);
       await db.query('DELETE FROM learner WHERE id=$1', [id]);
     }

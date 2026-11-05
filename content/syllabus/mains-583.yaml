@@ -1,0 +1,203 @@
+# TNPSC Combined Civil Services Main Examination – II (Group IIA Services)
+# Official syllabus code 583, dated 04.07.2025.
+# Part A: General Studies 150 questions; Part B: General Intelligence and Reasoning 50.
+# This curriculum is separate from preliminary code 495. Never mix its content.
+
+exam: tnpsc-group-2a-mains-583
+curriculum_id: tnpsc-group-2a-mains-583
+source_reference: TNPSC Group IIA Mains Syllabus, code 583, dated 04.07.2025
+status: DRAFT
+code: 583
+dated: 2025-07-04
+exam_group: TNPSC_GROUP_2A
+exam_stage: MAINS
+total_questions: 200
+
+subjects:
+  - id: mains-583.general-studies
+    name: General Studies
+    sort_order: 1
+    chapters:
+      - id: mains583.tamil-history-culture
+        name: Modern History of Tamil Nadu, Tamil Society, Culture and Heritage
+        sort_order: 1
+        question_count: 30
+        transcribed: true
+        topics:
+          - { id: mains583.history.europeans-arrival, name: "Advent of Europeans and European powers", aliases: ["Portuguese Dutch English Danish French", "Advent of Europeans"] }
+          - { id: mains583.history.anglo-french-rivalry, name: "Anglo-French rivalry" }
+          - { id: mains583.history.anglo-mysore-maratha, name: "Anglo-Mysore and Anglo-Maratha wars", aliases: ["Anglo French Rivalry", "Anglo-Mysore War", "Anglo-Maratha War"] }
+          - { id: mains583.history.polygar-rebellion, name: "Polygar rebellion", aliases: ["The Polligar rebellion"] }
+          - { id: mains583.history.vellore-mutiny, name: "Vellore Mutiny", aliases: ["Vellore Mutiny"] }
+          - { id: mains583.history.social-reforms, name: "Eighteenth- and nineteenth-century socio-religious reforms", aliases: ["Socio-Religious Reform Movements"] }
+          - { id: mains583.history.missionaries-reform-societies, name: "Christian missionaries and reform societies" }
+          - { id: mains583.history.company-administration, name: "British East India Company reforms in Tamil Nadu", aliases: ["Reforms of British East India Company"] }
+          - { id: mains583.history.madras-associations, name: "Madras Native Association and Madras Mahajana Sabha" }
+          - { id: mains583.history.swadeshi-home-rule, name: "Swadeshi Movement and Home Rule Agitation" }
+          - { id: mains583.history.freedom-movements, name: "Non-Cooperation, Civil Disobedience and Quit India movements" }
+          - { id: mains583.history.ancient-tamil-society, name: "Ancient Tamil society and archaeological evidence", aliases: ["Tamil Society"] }
+          - { id: mains583.history.archaeological-sites, name: "Arikkamedu, Adichanallur and Keezhadi", aliases: ["Archeological excavation evidence"] }
+          - { id: mains583.history.sangam-literature, name: "Sangam literature and the Sangam era" }
+          - { id: mains583.history.thirukkural-philosophy, name: "Thirukkural: philosophical, human, social and management principles" }
+          - { id: mains583.history.tamilians-freedom, name: "Contribution of Tamilians to the freedom movement", aliases: ["Contribution of Tamilians in Freedom movement"] }
+          - { id: mains583.history.women-journalists-literary, name: "Literary personalities, journalists and women activists" }
+          - { id: mains583.history.socio-political-movements, name: "Nineteenth- and twentieth-century socio-political movements" }
+          - { id: mains583.history.justice-rationalism, name: "Justice Party and development of rationalism" }
+          - { id: mains583.history.self-respect-dravidian, name: "Self-Respect, Dravidian and Pure Tamil movements", aliases: ["Tani Tamil Iyakkam", "Pure Tamil Movement"] }
+          - { id: mains583.history.periyar-anna-scholars, name: "Thanthai Periyar, Arignar Anna and other scholars" }
+
+      - id: mains583.state-administration
+        name: Administration of States with reference to Tamil Nadu
+        sort_order: 2
+        question_count: 45
+        transcribed: true
+        topics:
+          - { id: mains583.governance.preamble-philosophy, name: "Constitutional Preamble and philosophical features", aliases: ["Preamble of the Indian Constitution"] }
+          - { id: mains583.governance.constitution-sources, name: "Salient features and sources of the Constitution", aliases: ["Constitution of India: Salient features and Sources"] }
+          - { id: mains583.governance.union-state-ut, name: "Union, States and Union Territories", aliases: ["Union and its Territories", "Article 1"] }
+          - { id: mains583.governance.citizenship-rights-duties, name: "Citizenship, Fundamental Rights and Fundamental Duties" }
+          - { id: mains583.governance.directive-principles, name: "Directive Principles of State Policy" }
+          - { id: mains583.governance.union-executive, name: "President, Vice-President, Prime Minister and Council of Ministers" }
+          - { id: mains583.governance.parliament, name: "Parliament: Lok Sabha and Rajya Sabha", aliases: ["Parliament (Lok Sabha and Rajya Sabha)", "Parliament Committees"] }
+          - { id: mains583.governance.state-executive, name: "Chief Minister and State Council of Ministers", aliases: ["State Government"] }
+          - { id: mains583.governance.tn-legislative-assembly, name: "Tamil Nadu Legislative Assembly: structure, powers and functions", aliases: ["State Legislature"] }
+          - { id: mains583.governance.local-government, name: "Three-tier local government system" }
+          - { id: mains583.governance.constitutional-amendments, name: "73rd and 74th Constitutional Amendments" }
+          - { id: mains583.governance.tn-panchayat-act, name: "Tamil Nadu Panchayat Act 1994 and Grama Sabha", aliases: ["Functions; Local Governments: Three-tier system"] }
+          - { id: mains583.governance.tn-administration-structure, name: "Nature, evolution and organisational structure of Tamil Nadu administration", aliases: ["Tamil Nadu Administration - 1"] }
+          - { id: mains583.governance.secretariat, name: "Secretariat, Chief Secretary and Principal Secretaries", aliases: ["Tamil Nadu Administration - 1"] }
+          - { id: mains583.governance.district-collector, name: "District Collector: role and functions", aliases: ["Tamil Nadu Administration - District Administration"] }
+          - { id: mains583.governance.district-revenue, name: "District Revenue Officer and Revenue Divisional Officer" }
+          - { id: mains583.governance.taluk-block-administration, name: "Tahsildar, Block Development Officer and Revenue Inspector" }
+          - { id: mains583.governance.village-administration, name: "Village Administrative Officer and village administration" }
+          - { id: mains583.governance.egovernance-policy, name: "Tamil Nadu e-Governance Policy", aliases: ["e-Governance"] }
+          - { id: mains583.governance.mobile-governance, name: "E-Governance and Mobile-Governance initiatives" }
+          - { id: mains583.governance.state-agencies, name: "Tamil Nadu specialised undertakings and agencies" }
+          - { id: mains583.governance.welfare-schemes, name: "Government welfare schemes since 1990: objectives and implementation", aliases: ["Government of Tamil Nadu: Welfare Schemes and Measures"] }
+          - { id: mains583.governance.welfare-impact, name: "Issues, challenges and socio-economic impact of welfare schemes" }
+          - { id: mains583.governance.current-affairs, name: "Current affairs in Tamil Nadu governance" }
+
+      - id: mains583.science-technology
+        name: Science and Technology in Development
+        sort_order: 3
+        question_count: 20
+        transcribed: true
+        topics:
+          - { id: mains583.science.atomic-nuclear, name: "Atomic and nuclear physics and applications of nuclear energy", aliases: ["Atomic and Nuclear Physics"] }
+          - { id: mains583.science.electronics-communication, name: "Electronics and communication" }
+          - { id: mains583.science.robotics, name: "Robotics and applications" }
+          - { id: mains583.science.nanotechnology, name: "Nanotechnology and applications", aliases: ["Nanotechnology and its Applications"] }
+          - { id: mains583.science.cells-batteries-fuels, name: "Electrochemical cells, batteries, gaseous fuels and LPG", aliases: ["Gaseous Fuels", "Electrochemical Cells and Batteries"] }
+          - { id: mains583.science.polymers-vitamins, name: "Polymers, carbohydrates, vitamins and antibiotics", aliases: ["Polymers", "Carbohydrates, Vitamins and Antibiotics"] }
+          - { id: mains583.science.gis, name: "Geographic Information Systems and applications", aliases: ["Applications of Geographic Information System (GIS)"] }
+          - { id: mains583.science.biotechnology, name: "Biotechnology concepts, tools and applications", aliases: ["Biotechnology: Applications of biotechnology"] }
+          - { id: mains583.science.genetic-engineering, name: "Plant genetic engineering and transgenic plants", aliases: ["Plant genetic engineering", "Biotechnological methods for crop improvement"] }
+          - { id: mains583.science.gm-crops, name: "Edible vaccines, Bt cotton, Golden rice and genetically modified crops" }
+          - { id: mains583.science.plant-tissue-culture, name: "Plant tissue culture in forestry and horticulture", aliases: ["Application of Plant Tissue Culture in Forestry and Horticulture"] }
+          - { id: mains583.science.dna-pcr-elisa, name: "DNA fingerprinting, PCR and ELISA", aliases: ["DNA Fingerprinting", "Applications of PCR and ELISA in disease diagnosis"] }
+          - { id: mains583.science.reproductive-techniques, name: "IVF, artificial insemination and reproductive techniques", aliases: ["Advanced Reproductive Technology (ART)"] }
+          - { id: mains583.science.vaccines, name: "Vaccine types and human vaccination schedules", aliases: ["Vaccines"] }
+          - { id: mains583.science.tn-scientists, name: "Contributions of scientists from Tamil Nadu", aliases: ["Contributions of Scientists from Tamil Nadu"] }
+          - { id: mains583.science.computer-hardware, name: "Computer hardware, input and output devices", aliases: ["Digital Computer Fundamentals: Hardware Components"] }
+          - { id: mains583.science.computer-memory-storage, name: "RAM, ROM, PROM, EPROM, EEPROM and storage devices", aliases: ["Memory types: RAM, ROM, PROM, EPROM, EEPROM"] }
+          - { id: mains583.science.cpu-software, name: "CPU, control unit, ALU and software types", aliases: ["CPU: Control Unit - Arithmetic Logic Unit"] }
+          - { id: mains583.science.os-database-office, name: "Operating systems, Windows and Linux commands, DBMS and office software", aliases: ["Software types: System Software", "DBMS - Database Creation, Queries"] }
+          - { id: mains583.science.network-security, name: "Browsers, email, document sharing, networks and user authentication", aliases: ["Computer Network"] }
+
+      - id: mains583.tn-economy-social-issues
+        name: Tamil Nadu Economy and Social Issues in Tamil Nadu
+        sort_order: 4
+        question_count: 30
+        transcribed: true
+        topics:
+          - { id: mains583.economy.tn-economy-budget, name: "Tamil Nadu economy, State Budget, revenue and expenditure", aliases: ["Tamil Nadu Economy"] }
+          - { id: mains583.economy.growth-sectors, name: "Agriculture, industry and service-sector growth" }
+          - { id: mains583.economy.crops-farming, name: "Major crops, food grains, cash crops and farming types", aliases: ["Agriculture"] }
+          - { id: mains583.economy.organic-contract-farming, name: "Organic, inorganic and contract farming" }
+          - { id: mains583.economy.fpo-marketing, name: "Farmer Producer Organisations and agricultural marketing" }
+          - { id: mains583.economy.agriculture-budget, name: "Agricultural marketing issues and Tamil Nadu Agriculture Budget" }
+          - { id: mains583.economy.education-ger, name: "Illiteracy, Gross Enrolment Ratio and education indicators", aliases: ["Education", "Education: Illiteracy"] }
+          - { id: mains583.economy.student-welfare, name: "Student welfare schemes and education initiatives" }
+          - { id: mains583.economy.education-social-development, name: "Education and social development" }
+          - { id: mains583.economy.poverty-unemployment, name: "Poverty alleviation and unemployment in Tamil Nadu", aliases: ["Poverty and Unemployment"] }
+          - { id: mains583.economy.employment-migration, name: "Employment generation schemes and labour migration" }
+          - { id: mains583.economy.population, name: "Population growth, sex ratio and population density" }
+          - { id: mains583.economy.population-control, name: "Population control and family planning programmes" }
+          - { id: mains583.economy.child-labour, name: "Child labour issues", aliases: ["Child Labour issues"] }
+          - { id: mains583.economy.health-statistics, name: "Health vital statistics and health schemes", aliases: ["Health", "Health: Vital Statistics"] }
+          - { id: mains583.economy.women-empowerment, name: "Women empowerment, domestic violence, dowry and legal awareness", aliases: ["Women Empowerment"] }
+          - { id: mains583.economy.self-help-groups, name: "Women welfare schemes and Self Help Groups" }
+          - { id: mains583.economy.marginalised-groups, name: "Welfare of Scheduled Castes, Scheduled Tribes and marginalised groups", aliases: ["Marginalised Groups"] }
+          - { id: mains583.economy.disability-elderly-transgender, name: "Elderly people, persons with disabilities and transgender welfare" }
+          - { id: mains583.economy.minority-welfare, name: "Welfare programmes for religious minorities" }
+
+      - id: mains583.tn-geography-environment
+        name: Geography of Tamil Nadu, Environment, Biodiversity and Disaster Management
+        sort_order: 5
+        question_count: 25
+        transcribed: true
+        topics:
+          - { id: mains583.geography.location-administration, name: "Tamil Nadu location and administrative units" }
+          - { id: mains583.geography.relief-rivers, name: "Relief features and major rivers" }
+          - { id: mains583.geography.climate, name: "Temperature, rainfall and monsoon" }
+          - { id: mains583.geography.soils, name: "Soil classification and distribution" }
+          - { id: mains583.geography.forests-wildlife, name: "Forests, wildlife, bird sanctuaries and forest products" }
+          - { id: mains583.geography.livestock, name: "Livestock, cattle and dairying" }
+          - { id: mains583.geography.fishing, name: "Freshwater and saline-water fishing" }
+          - { id: mains583.geography.irrigation, name: "Canal, tank and well irrigation, watershed and minor projects" }
+          - { id: mains583.geography.minerals, name: "Iron ore and bauxite distribution and production" }
+          - { id: mains583.geography.power-resources, name: "Coal and petroleum power resources" }
+          - { id: mains583.geography.industries, name: "Iron and steel, textiles, cement, automobile and other industries" }
+          - { id: mains583.geography.transport, name: "Road, railway, air and sea transport" }
+          - { id: mains583.geography.pollution, name: "Air, water, soil, thermal, radioactive and noise pollution" }
+          - { id: mains583.geography.renewable-resources, name: "Renewable and non-renewable natural resources" }
+          - { id: mains583.geography.biodiversity-types-values, name: "Genetic, species and ecosystem diversity and their values" }
+          - { id: mains583.geography.biodiversity-threats, name: "Habitat destruction, invasive species, climate change and extinction" }
+          - { id: mains583.geography.conservation, name: "In-situ and ex-situ biodiversity conservation" }
+          - { id: mains583.geography.tn-biodiversity-hotspots, name: "Tamil Nadu biodiversity action plan and hotspots" }
+          - { id: mains583.geography.sustainable-development, name: "Sustainable development goals and targets" }
+          - { id: mains583.geography.green-energy-climate, name: "Green energy, Paris Agreement and COP28" }
+          - { id: mains583.geography.disaster-management, name: "Natural and anthropogenic disasters and disaster management" }
+          - { id: mains583.geography.climate-adaptation, name: "Climate change governance, mitigation and adaptation" }
+          - { id: mains583.geography.tn-disaster-authority, name: "Tamil Nadu State Disaster Management Authority and State Plan" }
+          - { id: mains583.geography.ngo-civil-society, name: "Role of NGOs and civil society in disaster management" }
+
+  - id: mains-583.general-intelligence
+    name: General Intelligence and Reasoning
+    sort_order: 2
+    chapters:
+      - id: mains583.reasoning.core
+        name: General Intelligence and Reasoning
+        sort_order: 1
+        question_count: 50
+        transcribed: true
+        topics:
+          - { id: mains583.reasoning.analogy, name: "Analogy" }
+          - { id: mains583.reasoning.classification, name: "Classification" }
+          - { id: mains583.reasoning.coding-decoding, name: "Coding and decoding" }
+          - { id: mains583.reasoning.relationships, name: "Relationship concepts" }
+          - { id: mains583.reasoning.puzzles, name: "Puzzles" }
+          - { id: mains583.reasoning.dice, name: "Dice" }
+          - { id: mains583.reasoning.direction-distance, name: "Direction and distance" }
+          - { id: mains583.reasoning.venn-diagrams, name: "Logical Venn diagrams" }
+          - { id: mains583.reasoning.alpha-numeric, name: "Alpha-numeric reasoning" }
+          - { id: mains583.reasoning.arithmetical, name: "Arithmetical reasoning" }
+          - { id: mains583.reasoning.truth-verification, name: "Verification of truth of statements" }
+          - { id: mains583.reasoning.similarities-differences, name: "Similarities and differences" }
+          - { id: mains583.reasoning.calendar, name: "Calendar" }
+          - { id: mains583.reasoning.permutation-combination, name: "Permutation and combination" }
+          - { id: mains583.reasoning.missing-characters, name: "Inserting missing characters" }
+          - { id: mains583.reasoning.logical-reasoning, name: "Logical reasoning" }
+          - { id: mains583.reasoning.figural-series, name: "Figural series" }
+          - { id: mains583.reasoning.numerical-operations, name: "Numerical operations" }
+          - { id: mains583.reasoning.symbolic-operations, name: "Symbolic operations" }
+          - { id: mains583.reasoning.word-building, name: "Word building" }
+          - { id: mains583.reasoning.statement-conclusion, name: "Statement and conclusion" }
+          - { id: mains583.reasoning.address-matching, name: "Address matching" }
+          - { id: mains583.reasoning.mirror-images, name: "Mirror images" }
+          - { id: mains583.reasoning.embedded-figures, name: "Embedded figures" }
+          - { id: mains583.reasoning.visual-reasoning, name: "Visual reasoning" }
+          - { id: mains583.reasoning.figural-classification, name: "Figural classification" }
+          - { id: mains583.reasoning.square-completion, name: "Square completion" }
+
+prerequisites: []

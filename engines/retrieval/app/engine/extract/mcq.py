@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, asdict
-import hashlib, re
+import hashlib
+import re
 from bs4 import BeautifulSoup
+
 
 @dataclass(frozen=True)
 class MCQ:
@@ -10,55 +13,126 @@ class MCQ:
     option_b: str | None = None
     option_c: str | None = None
     option_d: str | None = None
+    option_e: str | None = None
     answer: str | None = None
     explanation: str | None = None
     source_page: int | None = None
 
     @property
     def fingerprint(self) -> str:
-        s=' '.join((self.question,self.option_a or '',self.option_b or '',self.option_c or '',self.option_d or '')).lower()
-        return hashlib.sha256(re.sub(r'\s+',' ',s).strip().encode()).hexdigest()
+        values = [self.question, *(getattr(self, f"option_{key}") or "" for key in "abcde")]
+        normalized = " ".join(" ".join(values).lower().split())
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-_OPT=re.compile(r'^\s*[\(\[]?([A-D])\s*[\)\].:-]\s*(.+)$',re.I)
-_NUM=re.compile(r'^\s*(\d{1,4})[.)\-:]\s+(.+)$')
+
+# Some scanned/OCR-derived PDFs render option B as the digit 8.
+_OPT = re.compile(r"^\s*[\(\[]?([A-E8])\s*[\)\].:-]\s*(.+)$", re.I)
+_NUM = re.compile(r"^\s*(\d{1,4})[.)\-:'’]+\s+(.+)$")
+_ANSWER = re.compile(r"^\s*(?:answer|ans|correct\s+option)\s*[:.-]\s*([A-E])(?:\s|$)", re.I)
+
 
 class MCQExtractor:
+    """Conservative question candidate extraction with page provenance.
+
+    Extracted candidates are not publishable MCQs: an absent answer key remains
+    null, OCR-corrupted text is preserved for review, and PYQ source detection
+    is handled separately by the content ingestion boundary.
+    """
+
     def extract_html(self, html: str) -> list[dict]:
-        soup=BeautifulSoup(html,'html.parser')
-        return self.extract_text(soup.get_text('\n'))
+        soup = BeautifulSoup(html, "html.parser")
+        return self.extract_text(soup.get_text("\n"))
+
+    @staticmethod
+    def _normalize_option_label(label: str) -> str:
+        return "B" if label.upper() == "8" else label.upper()
 
     def extract_text(self, text: str) -> list[dict]:
-        lines=[re.sub(r'\s+',' ',x).strip() for x in text.splitlines() if x.strip()]
-        out=[]; i=0
-        while i < len(lines):
-            m=_NUM.match(lines[i])
-            if not m: i+=1; continue
-            question=m.group(2); opts={}; j=i+1
-            while j < len(lines) and len(opts)<4:
-                om=_OPT.match(lines[j])
-                if om: opts[om.group(1).upper()]=om.group(2).strip(); j+=1; continue
-                if _NUM.match(lines[j]): break
-                if len(question)<1000 and not opts: question+=' '+lines[j]; j+=1; continue
-                j+=1
-            answer=None; explanation=None
-            k=j
-            while k < min(len(lines),j+3):
-                am=re.match(r'^answer\s*[:.-]\s*([A-D])(?:\s|$)',lines[k],re.I)
-                if am: answer=am.group(1).upper(); break
-                k+=1
-            if len(opts)>=2:
-                out.append(asdict(MCQ(question[:4000],opts.get('A'),opts.get('B'),opts.get('C'),opts.get('D'),answer,explanation)))
-            i=max(j,i+1)
+        out: list[dict] = []
+        pages = (text or "").split("\f")
+        for page_number, page_text in enumerate(pages, 1):
+            lines = [re.sub(r"\s+", " ", line).strip() for line in page_text.splitlines() if line.strip()]
+            i = 0
+            while i < len(lines):
+                match = _NUM.match(lines[i])
+                if not match:
+                    i += 1
+                    continue
+
+                question_number = int(match.group(1))
+                question = match.group(2).strip()
+                options: dict[str, str] = {}
+                answer = None
+                j = i + 1
+
+                while j < len(lines):
+                    answer_match = _ANSWER.match(lines[j])
+                    if answer_match:
+                        answer = answer_match.group(1).upper()
+                        j += 1
+                        break
+                    option_match = _OPT.match(lines[j])
+                    if option_match:
+                        label = self._normalize_option_label(option_match.group(1))
+                        value = option_match.group(2).strip()
+                        if label not in options and value:
+                            options[label] = value
+                        j += 1
+                        continue
+
+                    next_question = _NUM.match(lines[j])
+                    if next_question and options:
+                        break
+
+                    # Keep wrapped question text only until the first option.
+                    if not options and len(question) < 4000:
+                        question += " " + lines[j]
+                    j += 1
+
+                # Do not guess a correct answer from option ordering or content.
+                explanation = None
+
+                if len(options) >= 2 and question.strip():
+                    item = MCQ(
+                        question=question[:4000],
+                        option_a=options.get("A"),
+                        option_b=options.get("B"),
+                        option_c=options.get("C"),
+                        option_d=options.get("D"),
+                        option_e=options.get("E"),
+                        answer=answer,
+                        explanation=explanation,
+                        source_page=page_number,
+                    )
+                    payload = asdict(item)
+                    payload["question_number"] = question_number
+                    payload["answer_verified"] = answer is not None
+                    payload["needs_review"] = answer is None or any(
+                        not options.get(key) for key in "ABCDE" if key in options
+                    )
+                    out.append(payload)
+
+                i = max(j, i + 1)
         return out
 
     def extract_file(self, path: str) -> list[dict]:
         from pathlib import Path
-        p=Path(path)
-        if p.suffix.lower() in {'.html','.htm'}: return self.extract_html(p.read_text(errors='replace'))
-        if p.suffix.lower()=='.txt': return self.extract_text(p.read_text(errors='replace'))
-        if p.suffix.lower()=='.pdf':
-            import shutil, subprocess
-            if not shutil.which('pdftotext'): return []
-            r=subprocess.run(['pdftotext','-layout',str(p),'-'],capture_output=True,text=True,timeout=120)
-            return self.extract_text(r.stdout) if r.returncode==0 else []
+        import shutil
+        import subprocess
+
+        source = Path(path)
+        if source.suffix.lower() in {".html", ".htm"}:
+            return self.extract_html(source.read_text(errors="replace"))
+        if source.suffix.lower() == ".txt":
+            return self.extract_text(source.read_text(errors="replace"))
+        if source.suffix.lower() == ".pdf":
+            if not shutil.which("pdftotext"):
+                return []
+            result = subprocess.run(
+                ["pdftotext", "-layout", str(source), "-"],
+                capture_output=True,
+                text=True,
+                timeout=180,
+            )
+            return self.extract_text(result.stdout) if result.returncode == 0 else []
         return []

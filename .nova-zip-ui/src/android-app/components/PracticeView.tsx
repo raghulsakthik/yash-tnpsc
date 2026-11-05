@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PenTool, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PracticeQuestion } from '../../types';
@@ -7,6 +7,10 @@ import { novaApi, mapPracticeQuestion } from '../../api/novaApi';
 interface PracticeViewProps {
   questions: PracticeQuestion[];
   onAddXp: (amount: number) => void;
+  /** Set when a learner jumped here from a search result -- start a fresh session on this specific topic instead of the seeded mixed-topic question. */
+  initialTopicId?: string | null;
+  /** Called once initialTopicId has been consumed, so the parent can clear it. */
+  onConsumedInitialTopic?: () => void;
 }
 
 const SESSION_LENGTH = 10;
@@ -14,6 +18,8 @@ const SESSION_LENGTH = 10;
 export const PracticeView: React.FC<PracticeViewProps> = ({
   questions,
   onAddXp,
+  initialTopicId,
+  onConsumedInitialTopic,
 }) => {
   const [currentQ, setCurrentQ] = useState<PracticeQuestion | null>(questions[0] ?? null);
   const [answeredCount, setAnsweredCount] = useState(0);
@@ -27,6 +33,39 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
   const [isLoadingNext, setIsLoadingNext] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!initialTopicId) return;
+    let cancelled = false;
+    setIsLoadingNext(true);
+    setError(null);
+    novaApi
+      .question(initialTopicId)
+      .then((payload) => {
+        if (cancelled) return;
+        const mapped = mapPracticeQuestion(payload);
+        if (mapped) {
+          setCurrentQ(mapped);
+          setAnsweredCount(0);
+          setScore(0);
+          setIsFinished(false);
+          setSelectedOption(null);
+          setIsAnswered(false);
+          setServerCorrectIndex(null);
+          setExplanation('');
+          setStartedAt(Date.now());
+        }
+      })
+      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : 'Unable to load that topic.'))
+      .finally(() => {
+        if (!cancelled) setIsLoadingNext(false);
+        onConsumedInitialTopic?.();
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTopicId]);
 
   // Every attempt is scored and recorded by the real adaptive engine
   // (/api/attempts) -- this used to compare the selected option against

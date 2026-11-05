@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Menu,
   Search,
@@ -12,8 +12,13 @@ import {
   Download,
   X,
   Compass,
+  BookOpen,
+  FileText,
+  HelpCircle,
 } from 'lucide-react';
 import { BrandLogo } from '../BrandLogo';
+import { novaApi } from '../../../api/novaApi';
+import { SearchResults } from '../../../types';
 
 interface AndroidTopBarProps {
   title: string;
@@ -28,6 +33,7 @@ interface AndroidTopBarProps {
   onChangeViewMode: (mode: 'device' | 'mobile' | 'desktop') => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onSelectSearchTopic: (topicId: string) => void;
 }
 
 export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
@@ -43,12 +49,57 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
   onChangeViewMode,
   searchQuery,
   onSearchChange,
+  onSelectSearchTopic,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Real search against /api/search -- this input existed before (it was
+  // just never wired to anything: searchQuery was lifted up to
+  // AndroidAppShell and set on every keystroke, but nothing ever read it
+  // back). Debounced the same way the web search page already does, to
+  // avoid a DB round-trip on every keystroke.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults(null);
+      setSearchError(null);
+      return;
+    }
+    setIsSearching(true);
+    const handle = setTimeout(() => {
+      novaApi
+        .search(q)
+        .then((data) => {
+          setSearchResults(data as unknown as SearchResults);
+          setSearchError(null);
+        })
+        .catch((err) => setSearchError(err instanceof Error ? err.message : 'Search failed'))
+        .finally(() => setIsSearching(false));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    onSearchChange('');
+    setSearchResults(null);
+  };
+
+  const selectTopic = (topicId: string) => {
+    closeSearch();
+    onSelectSearchTopic(topicId);
+  };
+
+  const totalResults = searchResults
+    ? searchResults.topics.length + searchResults.lessons.length + searchResults.questions.length
+    : 0;
 
   return (
-    <header className="sticky top-0 z-30 flex flex-col bg-stone-50/96 dark:bg-stone-950/96 backdrop-blur-xl border-b border-stone-200/90 dark:border-stone-800/90 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-colors select-none">
+    <header className="sticky top-0 z-30 flex flex-col bg-stone-50/96 dark:bg-stone-950/96 backdrop-blur-xl border-b border-stone-200/90 dark:border-stone-800/90 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-colors select-none relative">
       <div className="flex h-14 items-center justify-between gap-2 px-3 sm:px-4">
         {/* Left: Drawer Trigger + Classical Academy Seal + Title */}
         <div className="flex items-center gap-2.5 min-w-0">
@@ -107,10 +158,7 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
               )}
             </div>
             <button
-              onClick={() => {
-                setIsSearchOpen(false);
-                onSearchChange('');
-              }}
+              onClick={closeSearch}
               className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors cursor-pointer"
             >
               Cancel
@@ -254,6 +302,78 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
 
       {/* Classical Bottom Gold Accent Shimmer */}
       <div className="h-[1px] w-full bg-linear-to-r from-transparent via-amber-500/35 to-transparent" />
+
+      {/* Search results dropdown -- real results from /api/search */}
+      {isSearchOpen && searchQuery.trim().length >= 2 && (
+        <div className="absolute inset-x-0 top-full z-40 max-h-[70vh] overflow-y-auto border-b border-stone-200/90 bg-white shadow-xl dark:border-stone-800 dark:bg-stone-950 animate-in fade-in duration-150">
+          {isSearching && !searchResults && (
+            <p className="px-4 py-4 text-xs text-stone-500 dark:text-stone-400">Searching…</p>
+          )}
+          {searchError && (
+            <p className="px-4 py-4 text-xs font-semibold text-red-600 dark:text-red-400">{searchError}</p>
+          )}
+          {!searchError && searchResults && totalResults === 0 && (
+            <p className="px-4 py-4 text-xs text-stone-500 dark:text-stone-400">No matches for &quot;{searchQuery}&quot;.</p>
+          )}
+
+          {searchResults && searchResults.topics.length > 0 && (
+            <div className="px-3 py-2">
+              <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Topics</span>
+              {searchResults.topics.map((t) => (
+                <button
+                  key={t.topicId}
+                  onClick={() => selectTopic(t.topicId)}
+                  className="mt-1 flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer"
+                >
+                  <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold text-stone-900 dark:text-stone-100">{t.name}</span>
+                    <span className="block truncate text-[10px] text-stone-500 dark:text-stone-400">{t.subjectName} / {t.chapterName}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {searchResults && searchResults.lessons.length > 0 && (
+            <div className="border-t border-stone-100 px-3 py-2 dark:border-stone-900">
+              <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Lessons</span>
+              {searchResults.lessons.map((l) => (
+                <button
+                  key={l.topicId}
+                  onClick={() => selectTopic(l.topicId)}
+                  className="mt-1 flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer"
+                >
+                  <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold text-stone-900 dark:text-stone-100">{l.title}</span>
+                    <span className="block truncate text-[10px] text-stone-500 dark:text-stone-400">{l.snippet}…</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {searchResults && searchResults.questions.length > 0 && (
+            <div className="border-t border-stone-100 px-3 py-2 dark:border-stone-900">
+              <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Questions</span>
+              {searchResults.questions.map((q2) => (
+                <button
+                  key={q2.questionId}
+                  onClick={() => selectTopic(q2.topicId)}
+                  className="mt-1 flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer"
+                >
+                  <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-medium text-stone-900 dark:text-stone-100">{q2.prompt}</span>
+                    <span className="block truncate text-[10px] text-stone-500 dark:text-stone-400">{q2.topicName}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 };

@@ -274,3 +274,29 @@ export interface StructuredCourse {
   lastStudiedLessonId?: string;
 }
 
+export interface SearchTopicResult {
+  topicId: string;
+  name: string;
+  chapterName: string;
+  subjectName: string;
+}
+
+export interface SearchLessonResult {
+  topicId: string;
+  title: string;
+  snippet: string;
+}
+
+export interface SearchQuestionResult {
+  questionId: string;
+  topicId: string;
+  topicName: string;
+  prompt: string;
+}
+
+export interface SearchResults {
+  topics: SearchTopicResult[];
+  lessons: SearchLessonResult[];
+  questions: SearchQuestionResult[];
+}
+

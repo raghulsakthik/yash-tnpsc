@@ -1,8 +1,11 @@
+import crypto from 'node:crypto';
 import { query, pool } from './db.mjs';
 import { getSyllabusTree } from './adminContent.mjs';
 import { extractText } from './documentExtract.mjs';
 import { renderPdfDiagramToPng } from './pdfRender.mjs';
 import { classifyContent } from './ai/contentClassifier.mjs';
+import { detectPyqSource } from './pyqSource.mjs';
+import { evaluateClassifiedContent } from './contentQuality.mjs';
 import { putObject, getObject, deleteObject, contentObjectKey, isObjectStorageConfigured } from './objectStorage.mjs';
 
 export class ContentProcessingError extends Error {
@@ -114,8 +117,33 @@ export async function processJob(jobId) {
     const { pages, isPdf } = await extractText(buffer, job.file_name);
     await updateJob(jobId, { stage: 'CLASSIFYING', progress: 35 });
 
-    const syllabusTree = await getSyllabusTree();
-    const result = await classifyContent(pages, syllabusTree);
+    const sourceText = pages.map((page) => page.text).join('\n');
+    const pyqSource = detectPyqSource(job.file_name, sourceText, { sourceYear: job.source_year, examCode: job.exam_code, examGroup: job.exam_group, paper: job.paper });
+    let result;
+    if (pyqSource.isPyq) {
+      // PYQ papers are evidence-library inputs, never ordinary learner MCQs.
+      result = {
+        mcqs: [],
+        resources: [],
+        truncated: false,
+        chunkCount: 0,
+        sourceClassification: {
+          kind: 'PYQ_SOURCE',
+          ...pyqSource,
+          sourceYear: job.source_year,
+          examCode: job.exam_code,
+          examGroup: job.exam_group,
+          paper: job.paper,
+          publishableAsNormalContent: false,
+          message: 'Retain this document in the PYQ evidence library. It must not be converted into ordinary learner MCQs or generated notes.',
+        },
+        qualitySummary: { total: 0, mcqs: 0, resources: 0, blocked: 0, reviewRequired: 0, autoPublished: 0 },
+      };
+    } else {
+      const syllabusTree = await getSyllabusTree();
+      const classified = await classifyContent(pages, syllabusTree);
+      result = evaluateClassifiedContent({ pages, result: classified, syllabusTree });
+    }
     await updateJob(jobId, { stage: 'VALIDATING', progress: 70 });
 
     if (isPdf) {

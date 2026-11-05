@@ -18,3 +18,13 @@ test('does not block ordinary study notes that mention exam questions', () => {
   const result = detectPyqSource('Fundamental Rights Study Notes.pdf', 'Practice questions and examples about Fundamental Rights.');
   assert.equal(result.isPyq, false);
 });
+
+test('batch metadata with an explicit exam year keeps the source in the PYQ lane', () => {
+  const result = detectPyqSource('upload.pdf', 'General Studies', {
+    sourceYear: 2022,
+    examCode: '495',
+    examGroup: 'Group IIA',
+  });
+  assert.equal(result.isPyq, true);
+  assert.equal(result.reason, 'explicit-exam-metadata');
+});

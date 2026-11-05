@@ -5,6 +5,7 @@ import { extractText, ExtractError } from '../../../../../lib/documentExtract.mj
 import { renderPdfDiagramToPng } from '../../../../../lib/pdfRender.mjs';
 import { classifyContent, ClassifyError } from '../../../../../lib/ai/contentClassifier.mjs';
 import { detectPyqSource } from '../../../../../lib/pyqSource.mjs';
+import { evaluateClassifiedContent } from '../../../../../lib/contentQuality.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,8 @@ export async function POST(request) {
     }
 
     const syllabusTree = await getSyllabusTree();
-    const result = await classifyContent(pages, syllabusTree);
+    const classified = await classifyContent(pages, syllabusTree);
+    const result = evaluateClassifiedContent({ pages, result: classified, syllabusTree });
 
     if (isPdf) {
       // Cropped per item, not cached per page: two questions sharing a

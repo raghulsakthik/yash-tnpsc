@@ -20,9 +20,18 @@ import {
 import { AdminQuestion, AdminRole, QuestionStatus } from '../../types/admin';
 import { checkPermission, validateQuestion } from '../../utils/adminPermissions';
 
+export interface AdminTopicOption {
+  topicId: string;
+  topicName: string;
+  chapterName: string;
+  subjectName: string;
+}
+
 interface QuestionsViewProps {
   role: AdminRole;
   questions: AdminQuestion[];
+  /** Real curriculum topics (topicId/topicName/chapterName/subjectName) -- the question editor must save against a real topic_id, not free text. */
+  topics: AdminTopicOption[];
   assignedSubjects?: string[];
   isReviewQueueMode?: boolean;
   onSaveQuestion: (question: AdminQuestion, reason?: string) => void;
@@ -32,6 +41,7 @@ interface QuestionsViewProps {
 export const QuestionsView: React.FC<QuestionsViewProps> = ({
   role,
   questions,
+  topics,
   assignedSubjects,
   isReviewQueueMode = false,
   onSaveQuestion,
@@ -44,11 +54,13 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
   const [editingQuestion, setEditingQuestion] = useState<AdminQuestion | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  const subjectNames = Array.from(new Set(topics.map((t) => t.subjectName))).sort();
+
   // Form fields
   const [formText, setFormText] = useState('');
   const [formExplanation, setFormExplanation] = useState('');
-  const [formSubject, setFormSubject] = useState('Indian Polity & Constitution');
-  const [formTopic, setFormTopic] = useState('Preamble & Philosophical Pillars');
+  const [formSubject, setFormSubject] = useState(subjectNames[0] || '');
+  const [formTopicId, setFormTopicId] = useState(topics.find((t) => t.subjectName === subjectNames[0])?.topicId || '');
   const [formDifficulty, setFormDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [formIsPYQ, setFormIsPYQ] = useState(false);
   const [formPYQYear, setFormPYQYear] = useState(2024);
@@ -80,8 +92,9 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
     setEditingQuestion(null);
     setFormText('');
     setFormExplanation('');
-    setFormSubject(assignedSubjects?.[0] || 'Indian Polity & Constitution');
-    setFormTopic('Constitutional Architecture');
+    const subject = assignedSubjects?.[0] || subjectNames[0] || '';
+    setFormSubject(subject);
+    setFormTopicId(topics.find((t) => t.subjectName === subject)?.topicId || '');
     setFormDifficulty('Medium');
     setFormIsPYQ(false);
     setFormPYQYear(2024);
@@ -102,7 +115,7 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
     setFormText(q.questionText);
     setFormExplanation(q.explanation);
     setFormSubject(q.subjectName);
-    setFormTopic(q.topicName);
+    setFormTopicId(q.topicId || topics.find((t) => t.topicName === q.topicName)?.topicId || '');
     setFormDifficulty(q.difficulty);
     setFormIsPYQ(q.isPYQ);
     if (q.pyqMetadata) {
@@ -168,12 +181,16 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
       return;
     }
 
+    const selectedTopic = topics.find((t) => t.topicId === formTopicId);
+    if (!selectedTopic) {
+      setValidationErrors(['Pick a real topic before saving -- there is no curriculum topic selected.']);
+      return;
+    }
+
     const updated: AdminQuestion = {
       ...(editingQuestion || {
         id: `q-${Date.now()}`,
         examName: 'TNPSC Group 2 & 2A Combined',
-        chapterName: 'Core Module',
-        conceptName: formTopic,
         type: 'MCQ',
         generationSource: formIsPYQ ? 'OFFICIAL_PAST_PAPER' : 'MANUAL_AUTHOR',
         authorName: 'Admin Contributor',
@@ -183,8 +200,11 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
       }),
       questionText: formText,
       explanation: formExplanation,
-      subjectName: formSubject,
-      topicName: formTopic,
+      topicId: selectedTopic.topicId,
+      subjectName: selectedTopic.subjectName,
+      chapterName: selectedTopic.chapterName,
+      topicName: selectedTopic.topicName,
+      conceptName: selectedTopic.topicName,
       difficulty: formDifficulty,
       options: formOptions,
       isPYQ: formIsPYQ,
@@ -426,27 +446,32 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                   </label>
                   <select
                     value={formSubject}
-                    onChange={(e) => setFormSubject(e.target.value)}
+                    onChange={(e) => {
+                      const subject = e.target.value;
+                      setFormSubject(subject);
+                      setFormTopicId(topics.find((t) => t.subjectName === subject)?.topicId || '');
+                    }}
                     className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                   >
-                    <option value="Indian Polity & Constitution">Indian Polity & Constitution</option>
-                    <option value="General Studies">General Studies</option>
-                    <option value="Aptitude & Mental Ability">Aptitude & Mental Ability</option>
-                    <option value="History & Culture of Tamil Nadu">History & Culture of Tamil Nadu</option>
+                    {subjectNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Topic Name *
+                    Topic *
                   </label>
-                  <input
-                    type="text"
-                    value={formTopic}
-                    onChange={(e) => setFormTopic(e.target.value)}
-                    placeholder="e.g. Right to Equality"
+                  <select
+                    value={formTopicId}
+                    onChange={(e) => setFormTopicId(e.target.value)}
                     className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  />
+                  >
+                    {topics.filter((t) => t.subjectName === formSubject).map((t) => (
+                      <option key={t.topicId} value={t.topicId}>{t.chapterName} / {t.topicName}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

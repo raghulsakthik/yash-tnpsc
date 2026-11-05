@@ -1,20 +1,41 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../lib/permissions.mjs';
-import { listQuestionsByTopic, createQuestion } from '../../../../lib/adminCrud.mjs';
+import { listQuestionsByTopic, listAllQuestions, createQuestion } from '../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../lib/adminContent.mjs';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/admin/questions?topic=aptitude.fractions */
+/**
+ * GET /api/admin/questions?topic=aptitude.fractions -- one topic's
+ * questions (the per-lesson editor view).
+ * GET /api/admin/questions (optionally ?search=&status=&limit=&offset=)
+ * -- the real cross-topic question bank browse for the Admin Portal's
+ * Questions and Question Review sections.
+ */
 export async function GET(request) {
   const admin = await requirePermission(request, PERMISSIONS.QUESTION_READ);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
-  const topicId = new URL(request.url).searchParams.get('topic');
-  if (!topicId) return NextResponse.json({ code: 'MISSING_TOPIC', message: 'A `topic` query param is required' }, { status: 400 });
-  if (!(await canActOnTopic(admin, PERMISSIONS.QUESTION_READ, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
+  const { searchParams } = new URL(request.url);
+  const topicId = searchParams.get('topic');
+
+  if (topicId) {
+    if (!(await canActOnTopic(admin, PERMISSIONS.QUESTION_READ, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
+    try {
+      return NextResponse.json({ questions: await listQuestionsByTopic(topicId) });
+    } catch (err) {
+      return NextResponse.json({ code: 'LIST_FAILED', message: err.message }, { status: 500 });
+    }
+  }
+
   try {
-    return NextResponse.json({ questions: await listQuestionsByTopic(topicId) });
+    const result = await listAllQuestions({
+      search: searchParams.get('search'),
+      status: searchParams.get('status'),
+      limit: searchParams.get('limit'),
+      offset: searchParams.get('offset'),
+    });
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ code: 'LIST_FAILED', message: err.message }, { status: 500 });
   }

@@ -73,6 +73,20 @@ export const novaApi = {
     request<Json>(`/api/admin/learners/${encodeURIComponent(learnerId)}`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
   adminCreateLearner: (payload: { name: string; email: string; phone?: string }) =>
     request<Json>('/api/admin/learners', { method: 'POST', body: JSON.stringify(payload) }),
+  adminQuestionsList: (params?: { search?: string; status?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    if (params?.offset != null) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Json>(`/api/admin/questions${suffix}`);
+  },
+  adminCreateQuestion: (payload: Json) => request<Json>('/api/admin/questions', { method: 'POST', body: JSON.stringify(payload) }),
+  adminUpdateQuestion: (questionId: string, payload: Json) =>
+    request<Json>(`/api/admin/questions/${encodeURIComponent(questionId)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  adminDeleteQuestion: (questionId: string) =>
+    request<Json>(`/api/admin/questions/${encodeURIComponent(questionId)}`, { method: 'DELETE' }),
   registerFcmToken: (token: string, deviceInfo?: string) =>
     request<Json>('/api/push/fcm/register', { method: 'POST', body: JSON.stringify({ token, deviceInfo }) }),
   adminBroadcastNotification: (title: string, message: string) =>

@@ -4,6 +4,20 @@ export class ContentReviewError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }
 
+export function mapStagedLessonToLiveFields(lesson) {
+  const examples = Array.isArray(lesson.examples) ? lesson.examples : [];
+  const primary = examples.find((example) => example && typeof example === 'object' && !Array.isArray(example)) ?? {};
+  const steps = Array.isArray(primary.steps)
+    ? primary.steps.map((step) => String(step).trim()).filter(Boolean)
+    : examples.filter((example) => typeof example === 'string' && example.trim()).map((step) => step.trim());
+  return {
+    exampleProblem: String(primary.problem ?? '').trim(),
+    exampleSteps: steps,
+    exampleAnswer: String(primary.answer ?? '').trim(),
+    tip: String((lesson.revision_notes || [])[0] ?? '').trim(),
+  };
+}
+
 export async function createReviewBatch({ topicId, generationSource, questionIds = [], resourceIds = [], lessonIds = [], avgQualityScore = null }) {
   const { rows } = await query(
     `INSERT INTO content_review_batch (topic_id, generation_source, question_ids, avg_quality_score, lesson_ids)
@@ -25,13 +39,22 @@ export async function listPendingBatches() {
   for (const b of batches) {
     const { rows: questions } = await query(
       `SELECT id,prompt,options,answer_index,explanation,shortcut,common_mistake,difficulty::float8 AS difficulty,
-              quality_score::float8 AS quality_score,source,source_year,exam_code,exam_group,paper,question_number,source_page
+              quality_score::float8 AS quality_score,source,source_year,exam_code,exam_group,paper,question_number,source_page,generation_source
          FROM question WHERE id=ANY($1::text[])`, [b.question_ids]);
     const resourceIds=Array.isArray(b.resource_ids)?b.resource_ids:[];
     const { rows: resources } = await query(`SELECT id,title,body,source,status FROM topic_resource WHERE id=ANY($1::uuid[])`, [resourceIds]);
     const lessonIds=Array.isArray(b.lesson_ids)?b.lesson_ids:[];
     const { rows: lessons } = await query(`SELECT id,topic_id,title,concept,definition,explanation,examples,revision_notes,source_ids FROM content_engine_lesson_staging WHERE id=ANY($1::text[])`, [lessonIds]);
-    out.push({id:b.id,topicId:b.topic_id,topicName:b.topic_name,generationSource:b.generation_source,avgQualityScore:b.avg_quality_score,createdAt:b.created_at,questions,resources,lessons});
+    const lessonSourceIds = [...new Set(lessons.flatMap((lesson) => Array.isArray(lesson.source_ids) ? lesson.source_ids : []))];
+    const { rows: lessonSources } = await query(
+      `SELECT id::text AS id,title,source,body FROM topic_resource WHERE id::text=ANY($1::text[])`,
+      [lessonSourceIds]
+    );
+    const lessonsWithEvidence = lessons.map((lesson) => ({
+      ...lesson,
+      sourceEvidence: lessonSources.filter((source) => (lesson.source_ids || []).includes(source.id)),
+    }));
+    out.push({id:b.id,topicId:b.topic_id,topicName:b.topic_name,generationSource:b.generation_source,avgQualityScore:b.avg_quality_score,createdAt:b.created_at,questions,resources,lessons:lessonsWithEvidence});
   }
   return out;
 }
@@ -75,6 +98,7 @@ async function publishLessonVersion(client, lesson, batchId, reviewerId) {
       JSON.stringify(lesson.examples || []),JSON.stringify(lesson.revision_notes || []),JSON.stringify(lesson.source_ids || []),lesson.engine_version,batchId,reviewerId]
   );
 
+  const liveFields = mapStagedLessonToLiveFields(lesson);
   await client.query(`
     INSERT INTO lesson(topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,formulas,shortcuts,common_mistakes)
     VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
@@ -84,9 +108,10 @@ async function publishLessonVersion(client, lesson, batchId, reviewerId) {
       definition=EXCLUDED.definition,
       example_problem=EXCLUDED.example_problem,
       example_steps=EXCLUDED.example_steps,
+      example_answer=EXCLUDED.example_answer,
       tip=EXCLUDED.tip,
       updated_at=now()`,
-    [lesson.topic_id,lesson.title,lesson.concept,lesson.explanation || '',JSON.stringify(lesson.examples || []),'',(lesson.revision_notes || [])[0] || '',lesson.definition || '']
+    [lesson.topic_id,lesson.title,lesson.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,lesson.definition || '']
   );
 
   const platformId = lesson.topic_id;
@@ -147,6 +172,7 @@ export async function rollbackLessonVersion({ topicId, versionNumber, reviewerId
     await client.query(`UPDATE content_engine_lesson_version SET status='SUPERSEDED',superseded_at=COALESCE(superseded_at,now()) WHERE topic_id=$1 AND status='PUBLISHED' AND version_number<>$2`,[topicId,versionNumber]);
     await client.query(`UPDATE content_engine_lesson_version SET status='PUBLISHED',rolled_back_at=now(),published_at=now(),reviewed_by=$3 WHERE topic_id=$1 AND version_number=$2`,[topicId,versionNumber,reviewerId]);
 
+    const liveFields = mapStagedLessonToLiveFields(target);
     await client.query(`
       INSERT INTO lesson(topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,formulas,shortcuts,common_mistakes)
       VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
@@ -156,9 +182,10 @@ export async function rollbackLessonVersion({ topicId, versionNumber, reviewerId
         definition=EXCLUDED.definition,
         example_problem=EXCLUDED.example_problem,
         example_steps=EXCLUDED.example_steps,
+        example_answer=EXCLUDED.example_answer,
         tip=EXCLUDED.tip,
         updated_at=now()`,
-      [topicId,target.title,target.concept,target.explanation || '',JSON.stringify(target.examples || []),'',(target.revision_notes || [])[0] || '',target.definition || '']
+      [topicId,target.title,target.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,target.definition || '']
     );
 
     await client.query(`UPDATE content_engine_lineage SET status='REJECTED',platform_id=NULL WHERE topic_id=$1 AND content_kind='lesson' AND status='PUBLISHED' AND version_number<>$2`,[topicId,versionNumber]);

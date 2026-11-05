@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /** GET /api/admin/content-engine/publications?limit=50 */
 export async function GET(request) {
-  const admin = await requirePermission(request, PERMISSIONS.CONTENT_CREATE);
+  const admin = await requirePermission(request, PERMISSIONS.CONTENT_CREATE) || await requirePermission(request, PERMISSIONS.AI_GENERATE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Content permission required' }, { status: 403 });
 
   const requested = Number(new URL(request.url).searchParams.get('limit') || 50);

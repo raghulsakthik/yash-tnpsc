@@ -288,40 +288,55 @@ export function useAppData() {
     setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, isBookmarked: !c.isBookmarked } : c)));
   };
 
-  const handleToggleLesson = (lessonId: string) => {
+  // This used to be entirely local state -- toggling a lesson's checkbox
+  // never called the backend, so the "completed" flag was lost on the next
+  // reload, and the XP it granted was never real either (XP is *derived*
+  // from real curriculum progress on every load -- see mapProfile -- not a
+  // stored counter, so bumping it locally had nothing durable underneath
+  // it). course.lessons[].id here is actually a topic_id (see
+  // buildCourseFromBackend / /api/courses), so this now calls the real
+  // /api/curriculum/complete-topic bypass endpoint, then refetches courses
+  // + plan + profile + dashboard so the UI reflects the server's actual
+  // state -- including XP, which naturally updates once it's recomputed
+  // from the real progress this just persisted, not from a local bump.
+  const handleToggleLesson = async (lessonId: string) => {
+    const course = courses.find((c) => c.lessons.some((l) => l.id === lessonId));
+    const lesson = course?.lessons.find((l) => l.id === lessonId);
+    if (!course || !lesson) return;
+    const nextCompleted = !lesson.completed;
+    const wasModalOpenForThisCourse = activeCourseModal?.id === course.id;
+
+    // Optimistic local update for instant feedback -- corrected by the
+    // authoritative refetch below as soon as it resolves.
     setCourses((prev) =>
-      prev.map((course) => {
-        const hasLesson = course.lessons.some((l) => l.id === lessonId);
-        if (!hasLesson) return course;
-
-        const updatedLessons = course.lessons.map((l) => (l.id === lessonId ? { ...l, completed: !l.completed } : l));
+      prev.map((c) => {
+        if (c.id !== course.id) return c;
+        const updatedLessons = c.lessons.map((l) => (l.id === lessonId ? { ...l, completed: nextCompleted } : l));
         const newProgress = calculateCourseProgress(updatedLessons);
-        const updatedCourse = { ...course, lessons: updatedLessons, progress: newProgress };
-
-        if (activeCourseModal && activeCourseModal.id === course.id) {
-          setActiveCourseModal(updatedCourse);
-        }
+        const updatedCourse = { ...c, lessons: updatedLessons, progress: newProgress };
+        if (wasModalOpenForThisCourse) setActiveCourseModal(updatedCourse);
         return updatedCourse;
       })
     );
 
-    setActivities((prev) => {
-      const copy = [...prev];
-      if (copy.length > 0) {
-        const last = { ...copy[copy.length - 1] };
-        last.count += 1;
-        last.level = Math.min(4, last.level + 1);
-        copy[copy.length - 1] = last;
-      }
-      return copy;
-    });
-
-    setProfile((prev) => {
-      if (prev.dailyGoal && prev.dailyGoal.type === 'lessons') {
-        return { ...prev, dailyGoal: { ...prev.dailyGoal, current: prev.dailyGoal.current + 1 } };
-      }
-      return prev;
-    });
+    try {
+      await novaApi.completeTopic(lessonId, nextCompleted);
+      const [freshCourses, freshPlan, freshProfile, freshDashboard] = await Promise.all([
+        novaApi.courses(), novaApi.plan(), novaApi.profile(), novaApi.dashboard(),
+      ]);
+      const rebuilt = buildCourseFromBackend(freshCourses, freshPlan);
+      setCourses((prev) => [rebuilt, ...prev.filter((c) => c.category === 'Saved question')]);
+      if (wasModalOpenForThisCourse) setActiveCourseModal(rebuilt);
+      setProfile(mapProfile(freshProfile, freshDashboard));
+      setActivities(
+        (freshDashboard?.activity?.heatmap || []).map((day: { date: string; count: number }) => {
+          const count = Number(day.count || 0);
+          return { date: day.date, count, level: count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4 };
+        })
+      );
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to save lesson progress');
+    }
   };
 
   const handleUpdateDailyGoal = async (dailyGoal: DailyGoal) => {

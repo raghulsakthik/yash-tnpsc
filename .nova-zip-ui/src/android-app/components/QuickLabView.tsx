@@ -5,44 +5,64 @@ import {
   Sparkles,
   CheckCircle,
   RotateCcw,
-  Award,
   Zap,
   Play,
-  CheckCircle2,
   XCircle,
-  HelpCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { novaApi } from '../../api/novaApi';
 
 interface QuickLabViewProps {
   onAddXp: (amount: number) => void;
 }
 
+type QuickLabMode = { slug: string; name: string; desc: string; recommended: boolean };
+type QuickLabQuestion = { token: string; prompt: string; revealPrompt?: string; hint?: string; options: string[]; memorize?: boolean };
+
+const SPRINT_LENGTH = 5;
+const SPRINT_SECONDS = 180;
+
+// Quick Lab used to run entirely off two hardcoded 4-question banks
+// (math/polity) baked straight into this component -- every learner saw
+// the exact same 8 questions forever, and nothing was ever sent to the
+// server. The real backend (/api/quick-lab/modes, /:mode/next, /submit)
+// only ever had math-style generators (quicklab_mode table / quicklab.mjs)
+// -- there is no "polity" mode server-side -- so this now loads the real,
+// admin-configured mode list and generates a fresh question from the
+// server every time, grading each answer through /submit.
 export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
-  const [selectedLab, setSelectedLab] = useState<'math' | 'polity'>('math');
+  const [modes, setModes] = useState<QuickLabMode[]>([]);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [modesError, setModesError] = useState<string | null>(null);
+  const [isLoadingModes, setIsLoadingModes] = useState(true);
+
   const [isRunning, setIsRunning] = useState(false);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [timeLeft, setTimeLeft] = useState(180);
   const [completed, setCompleted] = useState(false);
+  const [answeredCount, setAnsweredCount] = useState(0);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(SPRINT_SECONDS);
 
-  // Rapid mental math sprint items
-  const mathDrill = [
-    { q: 'What is 16.66% of 540?', options: ['90', '85', '95', '100'], correct: 0, hint: '16.66% = 1/6th' },
-    { q: 'What is 12.5% of 6400?', options: ['700', '800', '850', '900'], correct: 1, hint: '12.5% = 1/8th' },
-    { q: 'Convert 1/14 into approximate percentage:', options: ['6.66%', '7.14%', '7.69%', '8.33%'], correct: 1, hint: '100 / 14 = 7.14%' },
-    { q: 'If price increases by 25%, consumption must decrease by what % to keep expenditure constant?', options: ['20%', '25%', '16.66%', '30%'], correct: 0, hint: 'x/(100+x) = 25/125 = 1/5 = 20%' },
-  ];
+  const [question, setQuestion] = useState<QuickLabQuestion | null>(null);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null);
+  const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
 
-  // Constitutional landmark recall items
-  const polityDrill = [
-    { q: 'Which Article deals with Right to Constitutional Remedies (the "Heart and Soul")?', options: ['Article 19', 'Article 21', 'Article 32', 'Article 226'], correct: 2, hint: 'Dr. B.R. Ambedkar quotation' },
-    { q: 'Which Article empowers High Courts to issue Writs for Fundamental AND legal rights?', options: ['Article 32', 'Article 143', 'Article 226', 'Article 356'], correct: 2, hint: 'High Court jurisdiction' },
-    { q: 'Which Schedule contains the 22 officially recognized languages of India?', options: ['7th Schedule', '8th Schedule', '9th Schedule', '10th Schedule'], correct: 1, hint: 'Eighth Schedule' },
-    { q: 'Which Constitutional Amendment added Fundamental Duties (Part IV-A)?', options: ['42nd Amendment (1976)', '44th Amendment (1978)', '86th Amendment (2002)', '73rd Amendment (1992)'], correct: 0, hint: 'Swaran Singh Committee' },
-  ];
-
-  const currentQuestions = selectedLab === 'math' ? mathDrill : polityDrill;
+  useEffect(() => {
+    let cancelled = false;
+    novaApi
+      .quickLabModes()
+      .then((payload: any) => {
+        if (cancelled) return;
+        const list: QuickLabMode[] = payload?.modes || [];
+        setModes(list);
+        setSelectedMode((prev) => prev || list.find((m) => m.recommended)?.slug || list[0]?.slug || null);
+      })
+      .catch((err) => !cancelled && setModesError(err instanceof Error ? err.message : 'Unable to load Quick Lab modes.'))
+      .finally(() => !cancelled && setIsLoadingModes(false));
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!isRunning || completed) return;
@@ -59,39 +79,89 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
     return () => clearInterval(timer);
   }, [isRunning, completed]);
 
-  const handleStart = () => {
-    setIsRunning(true);
-    setCompleted(false);
-    setCurrentIdx(0);
-    setAnswers({});
-    setTimeLeft(selectedLab === 'math' ? 180 : 120);
+  const loadNextQuestion = async (mode: string) => {
+    setIsLoadingQuestion(true);
+    setError(null);
+    try {
+      const payload = await novaApi.quickLabNext(mode);
+      setQuestion(payload as QuickLabQuestion);
+      setSelectedOption(null);
+      setCorrectIndex(null);
+      setStartedAt(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load the next question.');
+    } finally {
+      setIsLoadingQuestion(false);
+    }
   };
 
-  const handleSelect = (optIdx: number) => {
-    setAnswers((prev) => ({ ...prev, [currentIdx]: optIdx }));
+  const handleStart = async () => {
+    if (!selectedMode) return;
+    setIsRunning(true);
+    setCompleted(false);
+    setAnsweredCount(0);
+    setScore(0);
+    setTimeLeft(SPRINT_SECONDS);
+    await loadNextQuestion(selectedMode);
+  };
+
+  const handleSelect = async (optIdx: number) => {
+    if (!question || !selectedMode || selectedOption != null) return;
+    setSelectedOption(optIdx);
+    try {
+      const result = await novaApi.quickLabSubmit({
+        token: question.token,
+        selectedIndex: optIdx,
+        mode: selectedMode,
+        timeTakenMs: Date.now() - startedAt,
+      });
+      setCorrectIndex(Number(result.correctIndex));
+      if (result.correct) setScore((s) => s + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to submit your answer.');
+    }
+  };
+
+  const handleNext = async () => {
+    const nextCount = answeredCount + 1;
+    setAnsweredCount(nextCount);
+    if (nextCount >= SPRINT_LENGTH || !selectedMode) {
+      handleFinish();
+      return;
+    }
+    await loadNextQuestion(selectedMode);
   };
 
   const handleFinish = () => {
     setIsRunning(false);
     setCompleted(true);
     onAddXp(200);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
   };
-
-  const score = currentQuestions.reduce(
-    (acc, q, i) => (answers[i] === q.correct ? acc + 1 : acc),
-    0
-  );
 
   const formatTimer = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
+
+  if (isLoadingModes) {
+    return (
+      <div className="w-full max-w-4xl mx-auto rounded-3xl border border-stone-200/90 bg-white p-8 text-center shadow-xs dark:border-stone-800/90 dark:bg-stone-900">
+        <p className="text-sm text-stone-500 dark:text-stone-400">Loading Quick Lab modes…</p>
+      </div>
+    );
+  }
+
+  if (modesError || modes.length === 0) {
+    return (
+      <div className="w-full max-w-4xl mx-auto rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-xs dark:border-red-900 dark:bg-red-950/30">
+        <p className="text-sm font-semibold text-red-700 dark:text-red-300">{modesError || 'No Quick Lab modes are enabled right now.'}</p>
+      </div>
+    );
+  }
+
+  const activeMode = modes.find((m) => m.slug === selectedMode) || modes[0];
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-5 animate-in fade-in select-none">
@@ -105,7 +175,7 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
             </h2>
           </div>
           <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-            Timed heuristic calculations and high-speed landmark recall drills
+            Timed heuristic calculations generated fresh by the real adaptive engine
           </p>
         </div>
 
@@ -115,37 +185,34 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
         </div>
       </div>
 
-      {/* Drill Selector Tabs */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-stone-200/80 bg-stone-100/80 p-1 dark:border-stone-800 dark:bg-stone-800 text-xs font-semibold shadow-inner">
-        <button
-          onClick={() => {
-            setSelectedLab('math');
-            setIsRunning(false);
-            setCompleted(false);
-          }}
-          className={`rounded-xl py-2 transition-all cursor-pointer ${
-            selectedLab === 'math'
-              ? 'bg-white font-bold text-stone-900 shadow-2xs dark:bg-stone-900 dark:text-amber-400 ring-1 ring-amber-500/20'
-              : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
-          }`}
-        >
-          ⚡ Mental Math Sprint (Percentages)
-        </button>
-        <button
-          onClick={() => {
-            setSelectedLab('polity');
-            setIsRunning(false);
-            setCompleted(false);
-          }}
-          className={`rounded-xl py-2 transition-all cursor-pointer ${
-            selectedLab === 'polity'
-              ? 'bg-white font-bold text-stone-900 shadow-2xs dark:bg-stone-900 dark:text-amber-400 ring-1 ring-amber-500/20'
-              : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
-          }`}
-        >
-          🏛️ Constitutional Articles Speed Recall
-        </button>
-      </div>
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      {/* Drill Mode Selector */}
+      {!isRunning && !completed && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {modes.map((m) => (
+            <button
+              key={m.slug}
+              onClick={() => setSelectedMode(m.slug)}
+              className={`rounded-xl border p-3 text-left text-xs transition-all cursor-pointer ${
+                selectedMode === m.slug
+                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 ring-1 ring-amber-500/30'
+                  : 'border-stone-200 bg-white hover:border-amber-300 dark:border-stone-800 dark:bg-stone-900'
+              }`}
+            >
+              <span className="font-bold text-stone-900 dark:text-stone-100">{m.name}</span>
+              {m.recommended && (
+                <span className="ml-2 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">Recommended</span>
+              )}
+              <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">{m.desc}</p>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main Lab Card */}
       <div className="rounded-3xl border border-stone-200/90 bg-white p-5 sm:p-7 shadow-xs dark:border-stone-800/90 dark:bg-stone-900 space-y-5">
@@ -156,19 +223,16 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-100">
-                {selectedLab === 'math'
-                  ? '5-Minute Mental Math Sprint'
-                  : 'Constitutional Articles Speed Recall'}
+                {activeMode?.name || 'Quick Lab'}
               </h3>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                {selectedLab === 'math'
-                  ? 'Calculate fractional equivalents and percentage shifts instantly without scratch paper.'
-                  : 'Recall landmark constitutional articles, amendments, and schedules under high-pressure exam timing.'}
+                {activeMode?.desc}
               </p>
             </div>
             <button
               onClick={handleStart}
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-95 transition-all cursor-pointer mx-auto"
+              disabled={!selectedMode}
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-95 transition-all cursor-pointer mx-auto disabled:opacity-60"
             >
               <Play className="h-4 w-4" />
               <span>Initiate 3-Minute Speed Sprint</span>
@@ -179,7 +243,7 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
             {/* Timer Strip */}
             <div className="flex items-center justify-between border-b border-stone-100 pb-3 dark:border-stone-800">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                Item {currentIdx + 1} of {currentQuestions.length}
+                Item {answeredCount + 1} of {SPRINT_LENGTH}
               </span>
               <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-stone-900 dark:text-stone-100 bg-stone-100 px-2.5 py-1 rounded-lg dark:bg-stone-800">
                 <Clock className="h-3.5 w-3.5 text-amber-500" />
@@ -187,61 +251,71 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
               </div>
             </div>
 
-            {/* Question */}
-            <div className="rounded-2xl border border-stone-100 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-800/60">
-              <h4 className="font-serif text-base font-bold text-stone-900 dark:text-stone-100">
-                {currentQuestions[currentIdx].q}
-              </h4>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                💡 Shortcut: {currentQuestions[currentIdx].hint}
-              </p>
-            </div>
+            {isLoadingQuestion || !question ? (
+              <p className="text-center text-xs text-stone-500 dark:text-stone-400 py-8">Loading…</p>
+            ) : (
+              <>
+                {/* Question */}
+                <div className="rounded-2xl border border-stone-100 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-800/60">
+                  <h4 className="font-serif text-base font-bold text-stone-900 dark:text-stone-100">
+                    {question.prompt}
+                  </h4>
+                  {question.hint && (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">💡 Shortcut: {question.hint}</p>
+                  )}
+                </div>
 
-            {/* Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {currentQuestions[currentIdx].options.map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSelect(i)}
-                  className={`flex items-center gap-2.5 rounded-2xl border p-3 text-xs font-medium text-left transition-all cursor-pointer active:scale-98 ${
-                    answers[currentIdx] === i
-                      ? 'border-amber-500 bg-amber-50/80 text-amber-950 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-200 ring-1 ring-amber-500/40'
-                      : 'border-stone-200 bg-white hover:border-amber-400 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-200'
-                  }`}
-                >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-600 dark:bg-stone-800 dark:text-stone-400">
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  <span>{opt}</span>
-                </button>
-              ))}
-            </div>
+                {/* Options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {question.options.map((opt, i) => {
+                    const isSelected = selectedOption === i;
+                    const isCorrect = correctIndex === i;
+                    let cls = 'border-stone-200 bg-white hover:border-amber-400 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-200';
+                    if (selectedOption != null) {
+                      if (isCorrect) cls = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40';
+                      else if (isSelected) cls = 'border-red-500 bg-red-50 dark:bg-red-950/40';
+                      else cls = 'opacity-40 border-stone-200 dark:border-stone-800';
+                    }
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleSelect(i)}
+                        disabled={selectedOption != null}
+                        className={`flex items-center gap-2.5 rounded-2xl border p-3 text-xs font-medium text-left transition-all cursor-pointer active:scale-98 ${cls}`}
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-600 dark:bg-stone-800 dark:text-stone-400">
+                          {String.fromCharCode(65 + i)}
+                        </span>
+                        <span>{opt}</span>
+                        {selectedOption != null && isCorrect && <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 ml-auto" />}
+                        {selectedOption != null && isSelected && !isCorrect && <XCircle className="h-4 w-4 text-red-600 shrink-0 ml-auto" />}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            {/* Controls */}
-            <div className="flex items-center justify-between border-t border-stone-100 pt-4 dark:border-stone-800">
-              <button
-                onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
-                disabled={currentIdx === 0}
-                className="text-xs font-semibold text-stone-500 disabled:opacity-30 cursor-pointer"
-              >
-                Previous
-              </button>
-              {currentIdx + 1 === currentQuestions.length ? (
-                <button
-                  onClick={handleFinish}
-                  className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 cursor-pointer"
-                >
-                  Complete Lab & Submit
-                </button>
-              ) : (
-                <button
-                  onClick={() => setCurrentIdx((i) => i + 1)}
-                  className="rounded-xl bg-amber-500 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-95 cursor-pointer"
-                >
-                  Next Item →
-                </button>
-              )}
-            </div>
+                {/* Controls */}
+                <div className="flex items-center justify-end border-t border-stone-100 pt-4 dark:border-stone-800">
+                  {selectedOption != null && (
+                    answeredCount + 1 === SPRINT_LENGTH ? (
+                      <button
+                        onClick={handleFinish}
+                        className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 cursor-pointer"
+                      >
+                        Complete Lab & Submit
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleNext}
+                        className="rounded-xl bg-amber-500 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-95 cursor-pointer"
+                      >
+                        Next Item →
+                      </button>
+                    )
+                  )}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* Finished State */
@@ -254,7 +328,7 @@ export const QuickLabView: React.FC<QuickLabViewProps> = ({ onAddXp }) => {
                 Speed Drill Completed!
               </h3>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                Score: <strong className="font-mono text-emerald-600">{score} / {currentQuestions.length}</strong> · You earned +200 XP
+                Score: <strong className="font-mono text-emerald-600">{score} / {SPRINT_LENGTH}</strong> · You earned +200 XP
               </p>
             </div>
             <div className="flex justify-center gap-3">

@@ -2,62 +2,127 @@ import React, { useState } from 'react';
 import { PenTool, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PracticeQuestion } from '../../types';
+import { novaApi, mapPracticeQuestion } from '../../api/novaApi';
 
 interface PracticeViewProps {
   questions: PracticeQuestion[];
   onAddXp: (amount: number) => void;
 }
 
+const SESSION_LENGTH = 10;
+
 export const PracticeView: React.FC<PracticeViewProps> = ({
   questions,
   onAddXp,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentQ, setCurrentQ] = useState<PracticeQuestion | null>(questions[0] ?? null);
+  const [answeredCount, setAnsweredCount] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [serverCorrectIndex, setServerCorrectIndex] = useState<number | null>(null);
+  const [explanation, setExplanation] = useState<string>('');
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingNext, setIsLoadingNext] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
 
-  const currentQ = questions[currentIndex];
-
-  const handleSelect = (idx: number) => {
-    if (isAnswered) return;
+  // Every attempt is scored and recorded by the real adaptive engine
+  // (/api/attempts) -- this used to compare the selected option against
+  // the question's own correctIndex entirely on-device, which meant the
+  // server never learned the learner had answered: no mastery update, no
+  // spaced-repetition signal, no mistake-tracking, and the dashboard's
+  // accuracy/streak numbers would look wrong on the next load because
+  // nothing was ever recorded.
+  const handleSelect = async (idx: number) => {
+    if (isAnswered || isSubmitting || !currentQ) return;
     setSelectedOption(idx);
-    setIsAnswered(true);
-
-    if (idx === currentQ.correctIndex) {
-      setScore((s) => s + 1);
-      onAddXp(50);
-      confetti({
-        particleCount: 50,
-        spread: 50,
-        origin: { y: 0.7 },
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const result = await novaApi.attempt({
+        attemptId: crypto.randomUUID(),
+        questionId: currentQ.id,
+        selectedIndex: idx,
+        timeTakenMs: Date.now() - startedAt,
+        mode: 'PRACTICE',
       });
+      const correctIndex = Number(result.correctIndex);
+      setServerCorrectIndex(correctIndex);
+      setExplanation(result.explanation || currentQ.explanation || '');
+      setIsAnswered(true);
+      if (result.correct) {
+        setScore((s) => s + 1);
+        onAddXp(50);
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to submit your answer right now.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleNext = () => {
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((i) => i + 1);
-      setSelectedOption(null);
-      setIsAnswered(false);
-    } else {
+  const handleNext = async () => {
+    const nextCount = answeredCount + 1;
+    setAnsweredCount(nextCount);
+    if (nextCount >= SESSION_LENGTH) {
       setIsFinished(true);
-      confetti({
-        particleCount: 120,
-        spread: 90,
-        origin: { y: 0.5 },
-      });
+      confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 } });
+      return;
+    }
+    setIsLoadingNext(true);
+    setError(null);
+    try {
+      const payload = await novaApi.question(currentQ?.topic || 'mixed');
+      const mapped = mapPracticeQuestion(payload);
+      if (mapped) {
+        setCurrentQ(mapped);
+        setSelectedOption(null);
+        setIsAnswered(false);
+        setServerCorrectIndex(null);
+        setExplanation('');
+        setStartedAt(Date.now());
+      } else {
+        setIsFinished(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load the next question.');
+    } finally {
+      setIsLoadingNext(false);
     }
   };
 
-  const handleRestart = () => {
-    setCurrentIndex(0);
-    setSelectedOption(null);
-    setIsAnswered(false);
+  const handleRestart = async () => {
+    setAnsweredCount(0);
     setScore(0);
     setIsFinished(false);
+    setIsLoadingNext(true);
+    setError(null);
+    try {
+      const payload = await novaApi.question('mixed');
+      const mapped = mapPracticeQuestion(payload);
+      setCurrentQ(mapped);
+      setSelectedOption(null);
+      setIsAnswered(false);
+      setServerCorrectIndex(null);
+      setExplanation('');
+      setStartedAt(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to start a new session.');
+    } finally {
+      setIsLoadingNext(false);
+    }
   };
+
+  if (!currentQ) {
+    return (
+      <div className="w-full max-w-3xl mx-auto rounded-3xl border border-stone-200/90 bg-white p-8 text-center shadow-xs dark:border-stone-800/90 dark:bg-stone-900">
+        <p className="text-sm text-stone-500 dark:text-stone-400">No adaptive practice question is available right now.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-5 select-none animate-in fade-in">
@@ -81,12 +146,18 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
       {!isFinished ? (
         <div className="rounded-3xl border border-stone-200/90 bg-white p-5 sm:p-7 shadow-xs dark:border-stone-800/90 dark:bg-stone-900">
           {/* Progress Indicator */}
           <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-2">
             <span className="font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider text-[10px]">
-              Question {currentIndex + 1} of {questions.length} · {currentQ.topic}
+              Question {answeredCount + 1} of {SESSION_LENGTH} · {currentQ.topic}
             </span>
             <span className="font-mono font-bold text-stone-800 dark:text-stone-200">Score: {score}</span>
           </div>
@@ -94,7 +165,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800 mb-5">
             <div
               className="h-full rounded-full bg-linear-to-r from-orange-500 to-amber-500 transition-all duration-300"
-              style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+              style={{ width: `${((answeredCount + 1) / SESSION_LENGTH) * 100}%` }}
             />
           </div>
 
@@ -107,7 +178,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           <div className="mt-6 space-y-3">
             {currentQ.options.map((opt, idx) => {
               const isSelected = selectedOption === idx;
-              const isCorrect = idx === currentQ.correctIndex;
+              const isCorrect = serverCorrectIndex === idx;
 
               let btnClass =
                 'border-neutral-200 hover:border-orange-300 hover:bg-orange-50/30 text-neutral-800 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-neutral-600';
@@ -128,7 +199,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                 <button
                   key={idx}
                   onClick={() => handleSelect(idx)}
-                  disabled={isAnswered}
+                  disabled={isAnswered || isSubmitting}
                   className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left text-xs sm:text-sm font-medium transition-all ${btnClass}`}
                 >
                   <div className="flex items-center gap-3">
@@ -156,15 +227,16 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
                 Explanation:
               </p>
               <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                {currentQ.explanation}
+                {explanation}
               </p>
 
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={handleNext}
-                  className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600 active:scale-98"
+                  disabled={isLoadingNext}
+                  className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600 active:scale-98 disabled:opacity-60"
                 >
-                  <span>{currentIndex + 1 === questions.length ? 'See Results' : 'Next Question'}</span>
+                  <span>{isLoadingNext ? 'Loading…' : answeredCount + 1 === SESSION_LENGTH ? 'See Results' : 'Next Question'}</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -181,7 +253,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             Practise Session Finished!
           </h3>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            You scored {score} out of {questions.length} questions correctly.
+            You scored {score} out of {SESSION_LENGTH} questions correctly.
           </p>
 
           <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-4 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
@@ -192,7 +264,8 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           <div className="mt-8 flex justify-center gap-3">
             <button
               onClick={handleRestart}
-              className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600"
+              disabled={isLoadingNext}
+              className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600 disabled:opacity-60"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Retry Practice</span>

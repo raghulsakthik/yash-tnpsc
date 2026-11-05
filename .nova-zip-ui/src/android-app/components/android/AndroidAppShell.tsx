@@ -37,6 +37,7 @@ import { PYQView } from '../PYQView';
 import { QuickLabView } from '../QuickLabView';
 import { TestsView } from '../TestsView';
 import { MistakesView } from '../MistakesView';
+import { RevisionView } from '../RevisionView';
 import { JourneyView } from '../JourneyView';
 import { NotesView } from '../NotesView';
 import { BookmarksView } from '../BookmarksView';
@@ -367,6 +368,16 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
                 >
                   Mistakes ({mistakes.length})
                 </button>
+                <button
+                  onClick={() => setSubView('revision')}
+                  className={`flex-1 rounded-lg py-1.5 px-3 transition-all cursor-pointer whitespace-nowrap text-center ${
+                    subView === 'revision'
+                      ? 'bg-white text-neutral-900 shadow-2xs dark:bg-neutral-900 dark:text-white font-bold'
+                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+                  }`}
+                >
+                  Revision
+                </button>
               </div>
 
               {!subView && (
@@ -403,6 +414,14 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
                   onAddXp={(amount) => {
                     onAddXp?.(amount);
                     showSnackbar(`Mistake resolved! +${amount} XP`, 'xp');
+                  }}
+                />
+              )}
+              {subView === 'revision' && (
+                <RevisionView
+                  onAddXp={(amount) => {
+                    onAddXp?.(amount);
+                    showSnackbar(`Reviewed! +${amount} XP`, 'xp');
                   }}
                 />
               )}

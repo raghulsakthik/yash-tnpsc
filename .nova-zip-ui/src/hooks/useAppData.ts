@@ -211,6 +211,28 @@ export function useAppData() {
     );
   };
 
+  // "Complete Module" on the Courses browse screen used to be
+  // onCompleteModule={() => {}} in the Android entry point -- a dead
+  // button with no backend call at all, clicking it changed nothing. The
+  // real backend has no free-form "complete this chapter" path
+  // (/api/curriculum/complete only ever accepts a unit on the learner's
+  // current adaptive day) -- /api/curriculum/complete-chapter is a
+  // deliberate, explicit-override endpoint for this exact case: marking
+  // every unit in a browsed-into chapter complete without touching the
+  // learner's sequential day/week/phase pointer. _courseId is unused here
+  // (moduleId already IS the chapterId -- see buildStructuredCourses,
+  // one module per chapter) but kept for API-shape parity with the other
+  // per-course handlers.
+  const handleCompleteModule = async (_courseId: string, moduleId: string) => {
+    try {
+      await novaApi.completeChapter(moduleId);
+      const fresh = await novaApi.courses();
+      setStructuredCourses(mapStructuredCourses(fresh));
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to complete this module');
+    }
+  };
+
   const [themeToast, setThemeToast] = useState<{ visible: boolean; mode: 'dark' | 'light' } | null>(null);
   const [isGlowActive, setIsGlowActive] = useState(false);
 
@@ -485,7 +507,7 @@ export function useAppData() {
     setDataError,
     toggleDarkMode,
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
-    handleUpdateStructuredLessonStep, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
+    handleUpdateStructuredLessonStep, handleCompleteModule, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
     handlePracticeTopic, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
     handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,

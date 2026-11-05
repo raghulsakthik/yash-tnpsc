@@ -93,6 +93,7 @@ export const novaApi = {
   attempt: (payload: Json) => request<Json>('/api/attempts', { method: 'POST', body: JSON.stringify(payload) }),
   startIntervention: (payload: Json) => request<Json>('/api/learning/interventions/start', { method: 'POST', body: JSON.stringify(payload) }),
   completeCurriculumUnit: (unitId: string, score?: number) => request<Json>('/api/curriculum/complete', { method: 'POST', body: JSON.stringify({ unitId, ...(score == null ? {} : { score }) }) }),
+  completeChapter: (chapterId: string) => request<Json>('/api/curriculum/complete-chapter', { method: 'POST', body: JSON.stringify({ chapterId }) }),
   resources: () => request<Json>('/api/resources'),
 };
 

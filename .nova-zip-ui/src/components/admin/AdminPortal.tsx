@@ -48,7 +48,6 @@ import {
   QuestionStatus,
 } from '../../types/admin';
 import {
-  initialLearnersList,
   initialAdminResources,
   initialAdminQuestions,
   initialAdminPYQs,
@@ -111,11 +110,54 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   const [currentSectionSlug, setCurrentSectionSlug] = useState<string>('dashboard');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // Core Persistent Administrative State
-  const [learners, setLearners] = useState<LearnerRecord[]>(() => {
-    const saved = localStorage.getItem('nova_admin_learners');
-    return saved ? JSON.parse(saved) : initialLearnersList;
-  });
+  // Real learner roster (GET /api/admin/learners -- see src/lib/adminUsers.mjs
+  // listLearners). Previously seeded from mockAdminData into localStorage.
+  // xp/level/streak/weak-topics/strong-topics stay at an honest zero/empty
+  // in the real response -- computing those correctly per-learner in bulk
+  // is real work the single-learner /api/profile and
+  // /api/learning/analytics routes already do, not something to fake
+  // cheaply here.
+  const [learners, setLearners] = useState<LearnerRecord[]>([]);
+  const [learnersError, setLearnersError] = useState<string | null>(null);
+
+  const refreshLearners = React.useCallback((search?: string) => {
+    novaApi
+      .adminLearners({ search, limit: 100 })
+      .then((res: any) => {
+        const mapped: LearnerRecord[] = (res.learners || []).map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          email: l.email,
+          handle: `@${String(l.name || 'learner').toLowerCase().replace(/\s+/g, '_')}`,
+          phone: l.phone || '',
+          avatarText: String(l.name || 'L').charAt(0).toUpperCase(),
+          targetExam: 'TNPSC',
+          targetTrack: 'TNPSC Group 2 & 2A',
+          currentPhase: 0,
+          totalXp: 0,
+          level: 1,
+          streakDays: 0,
+          studyTimeHours: 0,
+          accuracyRate: Number(l.accuracyRate ?? 0),
+          overallReadiness: 0,
+          completedLessons: Number(l.completedLessons ?? 0),
+          testsAttempted: Number(l.testsAttempted ?? 0),
+          weakTopics: [],
+          strongTopics: [],
+          accountStatus: l.accountStatus === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
+          suspensionReason: l.suspensionReason || undefined,
+          lastActive: l.lastActive || '—',
+          createdAt: l.createdAt,
+        }));
+        setLearners(mapped);
+        setLearnersError(null);
+      })
+      .catch((err) => setLearnersError(err instanceof Error ? err.message : 'Could not load learners'));
+  }, []);
+
+  useEffect(() => {
+    refreshLearners();
+  }, [refreshLearners]);
 
   // Real lessons (GET /api/admin/lessons -- see db/migrations/V71__lesson_authoring_metadata.sql
   // and src/lib/adminCrud.mjs). One row per topic; topics without an
@@ -283,11 +325,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   }, [activeSubjectScope]);
 
   useEffect(() => {
-    localStorage.setItem('nova_admin_learners', JSON.stringify(learners));
-  }, [learners]);
-
-
-  useEffect(() => {
     localStorage.setItem('nova_admin_questions', JSON.stringify(questions));
   }, [questions]);
 
@@ -346,7 +383,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     setAuditLogs((prev) => [newEntry, ...prev]);
   };
 
-  // Learner operations
+  // Learner operations -- status updates and creation now reach the real
+  // app_user table (/api/admin/learners) instead of only mutating local
+  // React state. accountStatus === 'FLAGGED_PROCTORING' isn't a real value
+  // in app_user.status (ACTIVE/SUSPENDED/DELETED -- see
+  // V25__users_auth.sql) and the actual suspend/reactivate button only
+  // ever toggles ACTIVE<->SUSPENDED, so that's all this write-path needs
+  // to support.
   const handleUpdateLearnerStatus = (
     learnerId: string,
     newStatus: LearnerRecord['accountStatus'],
@@ -354,24 +397,43 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   ) => {
     const target = learners.find((l) => l.id === learnerId);
     if (!target) return;
+    if (newStatus !== 'ACTIVE' && newStatus !== 'SUSPENDED') return;
     setLearners((prev) =>
       prev.map((l) =>
         l.id === learnerId ? { ...l, accountStatus: newStatus, suspensionReason: reason } : l
       )
     );
-    recordAudit(
-      newStatus === 'SUSPENDED' ? 'LEARNER_SUSPENDED' : 'LEARNER_REACTIVATED',
-      'Learner',
-      learnerId,
-      reason,
-      { status: target.accountStatus },
-      { status: newStatus }
-    );
+    novaApi
+      .adminUpdateLearnerStatus(learnerId, newStatus, reason)
+      .then(() => {
+        recordAudit(
+          newStatus === 'SUSPENDED' ? 'LEARNER_SUSPENDED' : 'LEARNER_REACTIVATED',
+          'Learner',
+          learnerId,
+          reason,
+          { status: target.accountStatus },
+          { status: newStatus }
+        );
+      })
+      .catch((err) => {
+        // Revert the optimistic update -- the real write failed.
+        setLearners((prev) =>
+          prev.map((l) => (l.id === learnerId ? { ...l, accountStatus: target.accountStatus, suspensionReason: target.suspensionReason } : l))
+        );
+        setLearnersError(err instanceof Error ? err.message : 'Unable to update this learner');
+      });
   };
 
   const handleAddLearner = (learner: Partial<LearnerRecord>) => {
-    setLearners((prev) => [learner as LearnerRecord, ...prev]);
-    recordAudit('LEARNER_CREATED', 'Learner', learner.id || '', 'Enrolled new aspirant');
+    if (!learner.name || !learner.email) return;
+    novaApi
+      .adminCreateLearner({ name: learner.name, email: learner.email })
+      .then((res: any) => {
+        recordAudit('LEARNER_CREATED', 'Learner', res.id || '', 'Enrolled new aspirant');
+        refreshLearners();
+        window.alert(`Account created for ${learner.email}.\nTemporary password: ${res.tempPassword}\n\nRelay this to the learner directly -- it is shown only once.`);
+      })
+      .catch((err) => setLearnersError(err instanceof Error ? err.message : 'Unable to create this learner'));
   };
 
   // Lesson operations
@@ -751,12 +813,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {/* Most sections below still read/write local mock data (seeded
               once, then persisted to this browser's localStorage) -- real
-              backend wiring per section (learners, lessons, questions,
-              tests, proctoring policies, audit logs, AI proposals) is
-              tracked as follow-up work. notifications, proctoring-reports,
-              and admins-roles are real (GET/POST against actual API
-              routes) and excluded from the warning banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && (
+              backend wiring per section (questions, tests, proctoring
+              policies, audit logs, AI proposals) is tracked as follow-up
+              work. notifications, proctoring-reports, admins-roles,
+              lessons, curriculum, and learners are real (GET/POST/PATCH
+              against actual API routes) and excluded from the warning
+              banner below. */}
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>

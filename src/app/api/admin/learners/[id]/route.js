@@ -1,9 +1,41 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS } from '../../../../../lib/permissions.mjs';
-import { deleteLearnerAccount, AdminUserError } from '../../../../../lib/adminUsers.mjs';
+import { deleteLearnerAccount, updateLearnerStatus, AdminUserError } from '../../../../../lib/adminUsers.mjs';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * PATCH /api/admin/learners/:id
+ * body: { status: 'ACTIVE' | 'SUSPENDED', reason? }
+ *
+ * Suspend/reactivate -- the Admin Portal's Learners section previously
+ * only flipped this in local React state. Scoped to role = 'STUDENT',
+ * same as DELETE below.
+ */
+export async function PATCH(request, { params }) {
+  const admin = await requirePermission(request, PERMISSIONS.USERS_UPDATE);
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+
+  const { id } = await params;
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ code: 'BAD_JSON', message: 'Body is not JSON' }, { status: 400 });
+  }
+
+  try {
+    await updateLearnerStatus(id, body.status, body.reason);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof AdminUserError) {
+      const status = err.code === 'ACCOUNT_NOT_FOUND' ? 404 : 400;
+      return NextResponse.json({ code: err.code, message: err.message }, { status });
+    }
+    return NextResponse.json({ code: 'UPDATE_FAILED', message: err.message }, { status: 500 });
+  }
+}
 
 /**
  * DELETE /api/admin/learners/:id -- permanently deletes a learner account

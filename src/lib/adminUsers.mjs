@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { query } from './db.mjs';
 import { hashPassword } from './auth.mjs';
 import { ADMIN_ROLE_LABELS } from './permissions.mjs';
@@ -159,4 +160,117 @@ export async function deleteLearnerAccount(learnerId) {
   await query(`UPDATE content_report SET reviewed_by = NULL WHERE reviewed_by = $1`, [learnerId]);
   const { rowCount } = await query(`DELETE FROM learner WHERE id = $1`, [learnerId]);
   if (rowCount === 0) throw new AdminUserError('ACCOUNT_NOT_FOUND', `No learner account ${learnerId}`);
+}
+
+/**
+ * The real learner roster for the Admin Portal's Learners section --
+ * previously this section was seeded entirely from mockAdminData into
+ * localStorage, never touching the database. Deliberately keeps the
+ * per-row stats cheap and bulk-safe (a handful of COUNT/AVG aggregates
+ * joined once for the whole page, not one query per learner): xp/level/
+ * streak/weak-topics/strong-topics stay at an honest zero/empty rather
+ * than approximating them, since computing those correctly in bulk (spaced
+ * repetition state, mastery per topic) is real per-learner work the
+ * learner-facing /api/profile and /api/learning/analytics routes already
+ * do one row at a time -- faking a cheaper bulk version would just be a
+ * different kind of wrong number.
+ */
+export async function listLearners({ search, limit = 50, offset = 0 } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const safeOffset = Math.max(Number(offset) || 0, 0);
+  const params = [];
+  let whereClause = `u.role = 'STUDENT'`;
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`);
+    whereClause += ` AND (l.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`;
+  }
+
+  const { rows: countRows } = await query(`SELECT COUNT(*)::int AS n FROM app_user u JOIN learner l ON l.id = u.id WHERE ${whereClause}`, params);
+
+  params.push(safeLimit, safeOffset);
+  const { rows } = await query(
+    `SELECT u.id, l.name, u.email, lp.phone, u.status, u.suspension_reason, u.created_at, u.last_login_at,
+            COALESCE(attempt_stats.total, 0) AS attempts_total,
+            COALESCE(attempt_stats.correct, 0) AS attempts_correct,
+            COALESCE(test_stats.n, 0) AS tests_completed,
+            COALESCE(unit_stats.n, 0) AS completed_units
+       FROM app_user u
+       JOIN learner l ON l.id = u.id
+       LEFT JOIN learner_profile lp ON lp.learner_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE correct)::int AS correct
+           FROM question_attempt a WHERE a.learner_id = u.id
+       ) attempt_stats ON true
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*)::int AS n FROM test t WHERE t.learner_id = u.id AND t.status = 'COMPLETED'
+       ) test_stats ON true
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*)::int AS n FROM learner_unit_progress p WHERE p.learner_id = u.id AND p.status = 'COMPLETED'
+       ) unit_stats ON true
+      WHERE ${whereClause}
+      ORDER BY u.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  return {
+    total: countRows[0]?.n ?? 0,
+    learners: rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      accountStatus: r.status,
+      suspensionReason: r.suspension_reason,
+      createdAt: r.created_at,
+      lastActive: r.last_login_at,
+      testsAttempted: Number(r.tests_completed),
+      completedLessons: Number(r.completed_units),
+      accuracyRate: Number(r.attempts_total) > 0 ? Math.round((Number(r.attempts_correct) / Number(r.attempts_total)) * 100) : 0,
+    })),
+  };
+}
+
+/**
+ * Suspend or reactivate a learner account. Scoped to role = 'STUDENT' for
+ * the same reason deleteLearnerAccount is -- this must never be able to
+ * touch an admin account.
+ */
+export async function updateLearnerStatus(learnerId, status, reason) {
+  if (!['ACTIVE', 'SUSPENDED'].includes(status)) {
+    throw new AdminUserError('INVALID_STATUS', "status must be 'ACTIVE' or 'SUSPENDED'");
+  }
+  const { rowCount } = await query(
+    `UPDATE app_user SET status = $2, suspension_reason = $3, updated_at = now() WHERE id = $1 AND role = 'STUDENT'`,
+    [learnerId, status, status === 'SUSPENDED' ? (reason || null) : null]
+  );
+  if (rowCount === 0) throw new AdminUserError('ACCOUNT_NOT_FOUND', `No learner account ${learnerId}`);
+}
+
+/**
+ * Admin-created learner account -- the Add Learner modal in the Admin
+ * Portal, previously a local-only row. Generates a random temporary
+ * password (shown once in the response, never stored in plaintext) rather
+ * than requiring the admin to invent one; there's no email-delivery path
+ * for account creation yet, so the admin is expected to relay it directly.
+ */
+export async function createLearnerAccount({ name, email, phone }) {
+  if (!name || !email) {
+    throw new AdminUserError('MISSING_FIELDS', 'name and email are required');
+  }
+  const { rows: existing } = await query('SELECT id FROM app_user WHERE lower(email) = lower($1)', [email]);
+  if (existing.length > 0) throw new AdminUserError('EMAIL_TAKEN', `${email} already has an account`);
+
+  const tempPassword = crypto.randomBytes(9).toString('base64url');
+  const passwordHash = hashPassword(tempPassword);
+
+  const { rows } = await query(`INSERT INTO learner (name) VALUES ($1) RETURNING id`, [name]);
+  const learnerId = rows[0].id;
+  await query(`INSERT INTO learner_profile (learner_id, phone) VALUES ($1, $2) ON CONFLICT (learner_id) DO NOTHING`, [learnerId, phone || null]);
+  await query(
+    `INSERT INTO app_user (id, email, password_hash, role, status, email_verified) VALUES ($1, $2, $3, 'STUDENT', 'ACTIVE', false)`,
+    [learnerId, email, passwordHash]
+  );
+
+  return { id: learnerId, tempPassword };
 }

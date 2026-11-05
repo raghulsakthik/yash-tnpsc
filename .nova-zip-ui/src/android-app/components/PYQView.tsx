@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Archive, Bookmark, CheckCircle, XCircle, ArrowRight, Filter, Sparkles, BookOpen } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PYQItem } from '../../types';
+import { novaApi } from '../../api/novaApi';
 
 interface PYQViewProps {
   pyqs: PYQItem[];
@@ -12,6 +13,7 @@ export const PYQView: React.FC<PYQViewProps> = ({ pyqs, onAddXp }) => {
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [items, setItems] = useState<PYQItem[]>(pyqs);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const years = ['all', 2024, 2023, 2022];
   const subjects = ['all', 'Indian Polity', 'Aptitude', 'History', 'General Science'];
@@ -22,32 +24,57 @@ export const PYQView: React.FC<PYQViewProps> = ({ pyqs, onAddXp }) => {
     return true;
   });
 
-  const handleSelectOption = (pyqId: string, optionIdx: number) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== pyqId) return item;
-        const isCorrect = optionIdx === item.correctIndex;
-        if (isCorrect && !item.attempted) {
-          onAddXp(60);
-          confetti({
-            particleCount: 50,
-            spread: 50,
-            origin: { y: 0.6 },
-          });
-        }
-        return {
-          ...item,
-          attempted: true,
-          selectedOption: optionIdx,
-        };
-      })
-    );
+  // Grading used to compare optionIdx against the question's own
+  // correctIndex entirely on-device. The server never heard about the
+  // attempt, so PYQ practice never fed the adaptive engine, mistake
+  // tracking, or the dashboard's accuracy numbers. Now it's recorded via
+  // the same /api/attempts endpoint the web app and Android Practice tab
+  // use, and the server's verdict (not the locally-held correctIndex)
+  // drives the UI.
+  const handleSelectOption = async (pyqId: string, optionIdx: number) => {
+    const target = items.find((item) => item.id === pyqId);
+    if (!target || target.attempted || submittingId) return;
+    setSubmittingId(pyqId);
+    try {
+      const result = await novaApi.attempt({
+        attemptId: crypto.randomUUID(),
+        questionId: pyqId,
+        selectedIndex: optionIdx,
+        timeTakenMs: 0,
+        mode: 'PRACTICE',
+      });
+      const correctIndex = Number(result.correctIndex);
+      if (result.correct) {
+        onAddXp(60);
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+      }
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === pyqId
+            ? { ...item, attempted: true, selectedOption: optionIdx, correctIndex, explanation: result.explanation || item.explanation }
+            : item
+        )
+      );
+    } catch {
+      // Leave the question unanswered so the learner can retry.
+    } finally {
+      setSubmittingId(null);
+    }
   };
 
   const handleToggleBookmark = (id: string) => {
+    const target = items.find((item) => item.id === id);
+    if (!target) return;
+    const nextBookmarked = !target.isBookmarked;
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isBookmarked: !item.isBookmarked } : item))
+      prev.map((item) => (item.id === id ? { ...item, isBookmarked: nextBookmarked } : item))
     );
+    const call = nextBookmarked ? novaApi.bookmark(id) : novaApi.unbookmark(id);
+    call.catch(() => {
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, isBookmarked: !nextBookmarked } : item))
+      );
+    });
   };
 
   return (
@@ -174,7 +201,7 @@ export const PYQView: React.FC<PYQViewProps> = ({ pyqs, onAddXp }) => {
                   <button
                     key={optIdx}
                     onClick={() => handleSelectOption(item.id, optIdx)}
-                    disabled={item.attempted}
+                    disabled={item.attempted || submittingId === item.id}
                     className={`flex items-center justify-between rounded-2xl border p-3 text-left text-xs font-medium transition-all cursor-pointer ${btnClass}`}
                   >
                     <div className="flex items-center gap-2.5">

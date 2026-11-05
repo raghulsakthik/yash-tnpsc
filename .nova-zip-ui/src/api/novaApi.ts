@@ -66,6 +66,27 @@ export const novaApi = {
     request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   adminDeleteLesson: (topicId: string) =>
     request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'DELETE' }),
+  adminLearners: (params?: { search?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    if (params?.offset != null) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Json>(`/api/admin/learners${suffix}`);
+  },
+  adminUpdateLearnerStatus: (learnerId: string, status: 'ACTIVE' | 'SUSPENDED', reason?: string) =>
+    request<Json>(`/api/admin/learners/${encodeURIComponent(learnerId)}`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
+  adminCreateLearner: (payload: { name: string; email: string; phone?: string }) =>
+    request<Json>('/api/admin/learners', { method: 'POST', body: JSON.stringify(payload) }),
+  adminQuestionsList: (params?: { search?: string; status?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    if (params?.offset != null) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Json>(`/api/admin/questions${suffix}`);
+  },
   registerFcmToken: (token: string, deviceInfo?: string) =>
     request<Json>('/api/push/fcm/register', { method: 'POST', body: JSON.stringify({ token, deviceInfo }) }),
   adminBroadcastNotification: (title: string, message: string) =>

@@ -240,6 +240,81 @@ export async function setLessonStatus(topicId, status) {
 
 // --------------------------------------------------------------- questions
 
+/**
+ * Cross-topic question bank browse (the Admin Portal's Questions and
+ * Question Review sections -- both the same QuestionsView component,
+ * previously backed by mockAdminData/localStorage, not this). Unlike
+ * listQuestionsByTopic (which GET /api/admin/questions?topic= already
+ * used for a per-lesson editor view), this isn't scoped to one topic --
+ * it's the "browse everything" list the bank UI needs, with the real
+ * subject/chapter/topic names joined in for display.
+ */
+export async function listAllQuestions({ search, status, limit = 50, offset = 0 } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const safeOffset = Math.max(Number(offset) || 0, 0);
+  const params = [];
+  const where = [];
+
+  if (status) {
+    params.push(status);
+    where.push(`q.status = $${params.length}`);
+  }
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`);
+    where.push(`(q.prompt ILIKE $${params.length} OR t.name ILIKE $${params.length} OR s.name ILIKE $${params.length})`);
+  }
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS n FROM question q JOIN topic t ON t.id = q.topic_id JOIN chapter c ON c.id = t.chapter_id JOIN subject s ON s.id = c.subject_id ${whereClause}`,
+    params
+  );
+
+  params.push(safeLimit, safeOffset);
+  const { rows } = await query(
+    `SELECT q.id, q.topic_id, q.prompt, q.options, q.answer_index, q.explanation, q.trap,
+            q.difficulty::float8 AS difficulty, q.estimated_seconds, q.status, q.source, q.source_year,
+            q.created_at, q.updated_at,
+            t.name AS topic_name, c.name AS chapter_name, s.id AS subject_id, s.name AS subject_name,
+            (SELECT COUNT(*)::int FROM question_attempt a WHERE a.question_id = q.id) AS attempts_count,
+            (SELECT COUNT(*) FILTER (WHERE a.correct)::int FROM question_attempt a WHERE a.question_id = q.id) AS correct_count
+       FROM question q
+       JOIN topic t ON t.id = q.topic_id
+       JOIN chapter c ON c.id = t.chapter_id
+       JOIN subject s ON s.id = c.subject_id
+       ${whereClause}
+      ORDER BY q.updated_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  return {
+    total: countRows[0]?.n ?? 0,
+    questions: rows.map((r) => ({
+      id: r.id,
+      topicId: r.topic_id,
+      subjectId: r.subject_id,
+      subjectName: r.subject_name,
+      chapterName: r.chapter_name,
+      topicName: r.topic_name,
+      prompt: r.prompt,
+      options: r.options,
+      answerIndex: r.answer_index,
+      explanation: r.explanation,
+      trap: r.trap,
+      difficulty: r.difficulty,
+      estimatedSeconds: r.estimated_seconds,
+      status: r.status,
+      source: r.source,
+      sourceYear: r.source_year,
+      attemptsCount: Number(r.attempts_count),
+      accuracyRate: Number(r.attempts_count) > 0 ? Math.round((Number(r.correct_count) / Number(r.attempts_count)) * 100) : 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    })),
+  };
+}
+
 export async function listQuestionsByTopic(topicId) {
   const { rows } = await query(
     `SELECT q.id,q.topic_id,q.prompt,q.options,q.answer_index,q.explanation,q.trap,
@@ -352,6 +427,21 @@ export async function createQuestion({ topicId, prompt, options, answerIndex, ex
   return id;
 }
 
+const QUESTION_STATUSES = new Set(['DRAFT', 'REVIEWED', 'PUBLISHED', 'ARCHIVED']);
+
+// The Admin Portal's QuestionsView editor was built against a richer
+// status vocabulary (DRAFT/IN_REVIEW/APPROVED/PUBLISHED/REJECTED/ARCHIVED)
+// than question.status actually supports (question_status_ck:
+// DRAFT/REVIEWED/PUBLISHED/ARCHIVED) -- there's no separate "approved"
+// state and no "rejected" state in the schema. Translated honestly rather
+// than widening the CHECK constraint for a distinction the rest of the
+// system doesn't act on: IN_REVIEW/APPROVED -> REVIEWED (the real
+// pre-publish state), REJECTED -> ARCHIVED (rejected content must not stay
+// live, and ARCHIVED is the real "not live" state -- the one real status
+// this collapses into is ambiguous on read, which is disclosed via
+// rejectionReason staying unset rather than a lossless round-trip).
+const QUESTION_STATUS_ALIASES = { IN_REVIEW: 'REVIEWED', APPROVED: 'REVIEWED', REJECTED: 'ARCHIVED' };
+
 export async function updateQuestion(id, { prompt, options, answerIndex, explanation, trap, difficulty, estimatedSeconds, status }) {
   const existing = await getQuestion(id);
   if (!existing) throw new ContentUploadError('QUESTION_NOT_FOUND', `No question ${id}`);
@@ -371,6 +461,14 @@ export async function updateQuestion(id, { prompt, options, answerIndex, explana
   const nextPrompt = prompt ?? existing.prompt;
   const hash = crypto.createHash('sha256').update(normalize(nextPrompt)).digest('hex');
 
+  let nextStatus = existing.status;
+  if (status !== undefined) {
+    nextStatus = QUESTION_STATUS_ALIASES[status] ?? status;
+    if (!QUESTION_STATUSES.has(nextStatus)) {
+      throw new ContentUploadError('INVALID_STATUS', `status must be one of ${[...QUESTION_STATUSES].join(', ')} (or an alias: ${Object.keys(QUESTION_STATUS_ALIASES).join(', ')})`);
+    }
+  }
+
   await query(
     `UPDATE question SET
        prompt = $2, options = $3::jsonb, answer_index = $4, explanation = $5, trap = $6,
@@ -385,7 +483,7 @@ export async function updateQuestion(id, { prompt, options, answerIndex, explana
       trap !== undefined ? trap : existing.trap,
       difficulty ?? existing.difficulty,
       estimatedSeconds ?? existing.estimatedSeconds,
-      status ?? existing.status,
+      nextStatus,
       hash,
     ]
   );

@@ -1,7 +1,7 @@
 # Admin question bank — backend wiring
 
 Date: 6 November 2026
-Migration: V74
+Migration: V75
 
 ## What changed
 
@@ -17,7 +17,7 @@ The nova-ui Admin → Question Bank and Question Review sections now load questi
 
 ## Status and permission rules
 
-V74 expands the question status constraint to support the admin review workflow while retaining legacy `REVIEWED` rows:
+V75 expands the question status constraint to support the admin review workflow while retaining legacy `REVIEWED` rows:
 - `DRAFT`
 - `IN_REVIEW`
 - `REVIEWED` (legacy)
@@ -74,5 +74,5 @@ The lesson authoring routes are also protected against status escalation:
 - Android Vite build: PASS.
 - Question and lesson workflow policy tests: 18 passed; migration version uniqueness: PASS.
 - Content Engine hardening contract: PASS.
-- Migration V74 has not been applied to production by this branch yet. It will run through the normal migration-on-deploy flow after merge; production currently reports V73.
+- Migration V75 has not been applied to production by this branch yet. It will run through the normal migration-on-deploy flow after merge; production currently reports V73.
 - Local PostgreSQL is unavailable in the current development environment. The GitHub disposable-Postgres review E2E now exercises question draft creation, reviewer/publisher separation, lesson approval/publish transitions, and the Content Engine review/versioning flow; the updated run is pending.

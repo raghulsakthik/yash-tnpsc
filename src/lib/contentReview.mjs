@@ -10,11 +10,27 @@ export function mapStagedLessonToLiveFields(lesson) {
   const steps = Array.isArray(primary.steps)
     ? primary.steps.map((step) => String(step).trim()).filter(Boolean)
     : examples.filter((example) => typeof example === 'string' && example.trim()).map((step) => step.trim());
+  const exampleProblem = String(primary.problem ?? '').trim();
+  const exampleAnswer = String(primary.answer ?? '').trim();
+  const revisionNotes = Array.isArray(lesson.revision_notes) ? lesson.revision_notes.map(String).filter(Boolean) : [];
+  const definition = String(lesson.definition ?? '').trim();
+  const explanation = String(lesson.explanation ?? '').trim();
+  const contentMarkdown = [
+    lesson.concept ? `## Concept\n\n${String(lesson.concept).trim()}` : '',
+    definition ? `## Definition\n\n${definition}` : '',
+    explanation ? `## Explanation\n\n${explanation}` : '',
+    exampleProblem ? `## Worked example\n\n**Problem:** ${exampleProblem}\n\n${steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}\n\n**Answer:** ${exampleAnswer}` : '',
+    revisionNotes.length ? `## Revision notes\n\n${revisionNotes.map((note) => `- ${note}`).join('\n')}` : '',
+  ].filter(Boolean).join('\n\n');
   return {
-    exampleProblem: String(primary.problem ?? '').trim(),
+    exampleProblem,
     exampleSteps: steps,
-    exampleAnswer: String(primary.answer ?? '').trim(),
-    tip: String((lesson.revision_notes || [])[0] ?? '').trim(),
+    exampleAnswer,
+    tip: revisionNotes[0] ?? '',
+    description: definition || String(lesson.concept ?? '').trim().slice(0, 280),
+    contentMarkdown,
+    difficulty: 'Beginner',
+    estimatedDurationMinutes: 20,
   };
 }
 
@@ -100,8 +116,12 @@ async function publishLessonVersion(client, lesson, batchId, reviewerId) {
 
   const liveFields = mapStagedLessonToLiveFields(lesson);
   await client.query(`
-    INSERT INTO lesson(topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,formulas,shortcuts,common_mistakes)
-    VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
+    INSERT INTO lesson(
+      topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,
+      formulas,shortcuts,common_mistakes,description,learning_objectives,difficulty,
+      estimated_duration_minutes,content_markdown,status,version
+    )
+    VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,$9,'[]'::jsonb,$10,$11,$12,'PUBLISHED',1)
     ON CONFLICT(topic_id) DO UPDATE SET
       title=EXCLUDED.title,
       concept=EXCLUDED.concept,
@@ -110,8 +130,15 @@ async function publishLessonVersion(client, lesson, batchId, reviewerId) {
       example_steps=EXCLUDED.example_steps,
       example_answer=EXCLUDED.example_answer,
       tip=EXCLUDED.tip,
+      description=EXCLUDED.description,
+      learning_objectives=EXCLUDED.learning_objectives,
+      difficulty=EXCLUDED.difficulty,
+      estimated_duration_minutes=EXCLUDED.estimated_duration_minutes,
+      content_markdown=EXCLUDED.content_markdown,
+      status='PUBLISHED',
+      version=lesson.version+1,
       updated_at=now()`,
-    [lesson.topic_id,lesson.title,lesson.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,lesson.definition || '']
+    [lesson.topic_id,lesson.title,lesson.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,lesson.definition || '',liveFields.description,liveFields.difficulty,liveFields.estimatedDurationMinutes,liveFields.contentMarkdown]
   );
 
   const platformId = lesson.topic_id;
@@ -174,8 +201,12 @@ export async function rollbackLessonVersion({ topicId, versionNumber, reviewerId
 
     const liveFields = mapStagedLessonToLiveFields(target);
     await client.query(`
-      INSERT INTO lesson(topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,formulas,shortcuts,common_mistakes)
-      VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
+      INSERT INTO lesson(
+        topic_id,title,concept,example_problem,example_steps,example_answer,tip,definition,
+        formulas,shortcuts,common_mistakes,description,learning_objectives,difficulty,
+        estimated_duration_minutes,content_markdown,status,version
+      )
+      VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,$9,'[]'::jsonb,$10,$11,$12,'PUBLISHED',1)
       ON CONFLICT(topic_id) DO UPDATE SET
         title=EXCLUDED.title,
         concept=EXCLUDED.concept,
@@ -184,8 +215,15 @@ export async function rollbackLessonVersion({ topicId, versionNumber, reviewerId
         example_steps=EXCLUDED.example_steps,
         example_answer=EXCLUDED.example_answer,
         tip=EXCLUDED.tip,
+        description=EXCLUDED.description,
+        learning_objectives=EXCLUDED.learning_objectives,
+        difficulty=EXCLUDED.difficulty,
+        estimated_duration_minutes=EXCLUDED.estimated_duration_minutes,
+        content_markdown=EXCLUDED.content_markdown,
+        status='PUBLISHED',
+        version=lesson.version+1,
         updated_at=now()`,
-      [topicId,target.title,target.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,target.definition || '']
+      [topicId,target.title,target.concept,liveFields.exampleProblem,JSON.stringify(liveFields.exampleSteps),liveFields.exampleAnswer,liveFields.tip,target.definition || '',liveFields.description,liveFields.difficulty,liveFields.estimatedDurationMinutes,liveFields.contentMarkdown]
     );
 
     await client.query(`UPDATE content_engine_lineage SET status='REJECTED',platform_id=NULL WHERE topic_id=$1 AND content_kind='lesson' AND status='PUBLISHED' AND version_number<>$2`,[topicId,versionNumber]);

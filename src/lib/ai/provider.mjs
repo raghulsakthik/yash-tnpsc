@@ -80,7 +80,10 @@ export async function generateHint(prompt) {
  */
 export async function generateJson(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.error('[generateJson] GEMINI_API_KEY is not set');
+    return null;
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), JSON_TIMEOUT_MS);
@@ -101,18 +104,36 @@ export async function generateJson(prompt) {
       signal: controller.signal,
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => '<unreadable>');
+      // Every failure mode here used to collapse to a silent `return null`,
+      // with the real reason (quota exhausted, rate limited, bad request,
+      // auth failure) thrown away -- every admin-visible error read
+      // identically as "not configured, or no response" regardless of
+      // which of these it actually was, making a real failure
+      // undiagnosable from outside a debugger attached to this exact
+      // function. Logging here doesn't change the return contract (still
+      // null on any failure) -- it just means the real cause reaches
+      // Vercel's logs instead of vanishing.
+      console.error(`[generateJson] Gemini API returned ${res.status}: ${bodyText.slice(0, 500)}`);
+      return null;
+    }
 
     const data = await res.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return null;
+    if (!text) {
+      console.error(`[generateJson] no text in response: ${JSON.stringify(data).slice(0, 500)}`);
+      return null;
+    }
 
     try {
       return JSON.parse(text);
-    } catch {
+    } catch (err) {
+      console.error(`[generateJson] JSON.parse failed: ${err.message}; text started with: ${text.slice(0, 200)}`);
       return null;
     }
-  } catch {
+  } catch (err) {
+    console.error(`[generateJson] fetch threw: ${err.name}: ${err.message}`);
     return null;
   } finally {
     clearTimeout(timeout);

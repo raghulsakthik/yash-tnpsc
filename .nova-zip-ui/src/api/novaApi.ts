@@ -53,6 +53,14 @@ export const novaApi = {
   adminProctoringSessions: () => request<Json>('/api/admin/proctoring/sessions'),
   adminProctoringSession: (testId: string) => request<Json>(`/api/admin/proctoring/sessions/${encodeURIComponent(testId)}`),
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
+  adminUsers: () => request<Json>('/api/admin/users'),
+  adminLessons: () => request<Json>('/api/admin/lessons'),
+  adminSaveLesson: (topicId: string, payload: Json) =>
+    request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  adminSetLessonStatus: (topicId: string, status: string) =>
+    request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  adminDeleteLesson: (topicId: string) =>
+    request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'DELETE' }),
   registerFcmToken: (token: string, deviceInfo?: string) =>
     request<Json>('/api/push/fcm/register', { method: 'POST', body: JSON.stringify({ token, deviceInfo }) }),
   adminBroadcastNotification: (title: string, message: string) =>
@@ -81,9 +89,12 @@ export const novaApi = {
   login: (email: string, password: string) => request<Json>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string, phone?: string) => request<Json>('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, phone }) }),
   bookmark: (questionId: string) => request<Json>('/api/bookmarks', { method: 'POST', body: JSON.stringify({ questionId }) }),
+  unbookmark: (questionId: string) => request<Json>('/api/bookmarks', { method: 'DELETE', body: JSON.stringify({ questionId }) }),
   attempt: (payload: Json) => request<Json>('/api/attempts', { method: 'POST', body: JSON.stringify(payload) }),
   startIntervention: (payload: Json) => request<Json>('/api/learning/interventions/start', { method: 'POST', body: JSON.stringify(payload) }),
   completeCurriculumUnit: (unitId: string, score?: number) => request<Json>('/api/curriculum/complete', { method: 'POST', body: JSON.stringify({ unitId, ...(score == null ? {} : { score }) }) }),
+  completeChapter: (chapterId: string) => request<Json>('/api/curriculum/complete-chapter', { method: 'POST', body: JSON.stringify({ chapterId }) }),
+  completeTopic: (topicId: string, completed: boolean) => request<Json>('/api/curriculum/complete-topic', { method: 'POST', body: JSON.stringify({ topicId, completed }) }),
   resources: () => request<Json>('/api/resources'),
 };
 

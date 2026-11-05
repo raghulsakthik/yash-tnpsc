@@ -1,0 +1,12 @@
+.venv
+.env
+data/
+logs/
+browser-profile/
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+tests/

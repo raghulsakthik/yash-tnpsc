@@ -211,6 +211,28 @@ export function useAppData() {
     );
   };
 
+  // "Complete Module" on the Courses browse screen used to be
+  // onCompleteModule={() => {}} in the Android entry point -- a dead
+  // button with no backend call at all, clicking it changed nothing. The
+  // real backend has no free-form "complete this chapter" path
+  // (/api/curriculum/complete only ever accepts a unit on the learner's
+  // current adaptive day) -- /api/curriculum/complete-chapter is a
+  // deliberate, explicit-override endpoint for this exact case: marking
+  // every unit in a browsed-into chapter complete without touching the
+  // learner's sequential day/week/phase pointer. _courseId is unused here
+  // (moduleId already IS the chapterId -- see buildStructuredCourses,
+  // one module per chapter) but kept for API-shape parity with the other
+  // per-course handlers.
+  const handleCompleteModule = async (_courseId: string, moduleId: string) => {
+    try {
+      await novaApi.completeChapter(moduleId);
+      const fresh = await novaApi.courses();
+      setStructuredCourses(mapStructuredCourses(fresh));
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to complete this module');
+    }
+  };
+
   const [themeToast, setThemeToast] = useState<{ visible: boolean; mode: 'dark' | 'light' } | null>(null);
   const [isGlowActive, setIsGlowActive] = useState(false);
 
@@ -249,44 +271,72 @@ export function useAppData() {
   // The ZIP UI expects one active course object; the backend adapter supplies it.
   const masterclassCourse = courses[0] || EMPTY_COURSE;
 
+  // courses[0] is a synthetic "your current active course" card built fresh
+  // from /api/dashboard + /api/plan/today on every load (see
+  // buildCourseFromBackend) -- it isn't a row anywhere, so bookmarking it
+  // has no backend meaning and stays a local-only toggle. Every other entry
+  // (category 'Saved question', from mapBookmarks) is a real row in
+  // question_bookmark -- toggling those off has to actually delete it, or
+  // it comes right back on the next full reload from /api/bookmarks.
   const handleToggleBookmark = (courseId: string) => {
+    const target = courses.find((c) => c.id === courseId);
+    if (target?.category === 'Saved question') {
+      novaApi.unbookmark(courseId).catch(() => {});
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      return;
+    }
     setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, isBookmarked: !c.isBookmarked } : c)));
   };
 
-  const handleToggleLesson = (lessonId: string) => {
+  // This used to be entirely local state -- toggling a lesson's checkbox
+  // never called the backend, so the "completed" flag was lost on the next
+  // reload, and the XP it granted was never real either (XP is *derived*
+  // from real curriculum progress on every load -- see mapProfile -- not a
+  // stored counter, so bumping it locally had nothing durable underneath
+  // it). course.lessons[].id here is actually a topic_id (see
+  // buildCourseFromBackend / /api/courses), so this now calls the real
+  // /api/curriculum/complete-topic bypass endpoint, then refetches courses
+  // + plan + profile + dashboard so the UI reflects the server's actual
+  // state -- including XP, which naturally updates once it's recomputed
+  // from the real progress this just persisted, not from a local bump.
+  const handleToggleLesson = async (lessonId: string) => {
+    const course = courses.find((c) => c.lessons.some((l) => l.id === lessonId));
+    const lesson = course?.lessons.find((l) => l.id === lessonId);
+    if (!course || !lesson) return;
+    const nextCompleted = !lesson.completed;
+    const wasModalOpenForThisCourse = activeCourseModal?.id === course.id;
+
+    // Optimistic local update for instant feedback -- corrected by the
+    // authoritative refetch below as soon as it resolves.
     setCourses((prev) =>
-      prev.map((course) => {
-        const hasLesson = course.lessons.some((l) => l.id === lessonId);
-        if (!hasLesson) return course;
-
-        const updatedLessons = course.lessons.map((l) => (l.id === lessonId ? { ...l, completed: !l.completed } : l));
+      prev.map((c) => {
+        if (c.id !== course.id) return c;
+        const updatedLessons = c.lessons.map((l) => (l.id === lessonId ? { ...l, completed: nextCompleted } : l));
         const newProgress = calculateCourseProgress(updatedLessons);
-        const updatedCourse = { ...course, lessons: updatedLessons, progress: newProgress };
-
-        if (activeCourseModal && activeCourseModal.id === course.id) {
-          setActiveCourseModal(updatedCourse);
-        }
+        const updatedCourse = { ...c, lessons: updatedLessons, progress: newProgress };
+        if (wasModalOpenForThisCourse) setActiveCourseModal(updatedCourse);
         return updatedCourse;
       })
     );
 
-    setActivities((prev) => {
-      const copy = [...prev];
-      if (copy.length > 0) {
-        const last = { ...copy[copy.length - 1] };
-        last.count += 1;
-        last.level = Math.min(4, last.level + 1);
-        copy[copy.length - 1] = last;
-      }
-      return copy;
-    });
-
-    setProfile((prev) => {
-      if (prev.dailyGoal && prev.dailyGoal.type === 'lessons') {
-        return { ...prev, dailyGoal: { ...prev.dailyGoal, current: prev.dailyGoal.current + 1 } };
-      }
-      return prev;
-    });
+    try {
+      await novaApi.completeTopic(lessonId, nextCompleted);
+      const [freshCourses, freshPlan, freshProfile, freshDashboard] = await Promise.all([
+        novaApi.courses(), novaApi.plan(), novaApi.profile(), novaApi.dashboard(),
+      ]);
+      const rebuilt = buildCourseFromBackend(freshCourses, freshPlan);
+      setCourses((prev) => [rebuilt, ...prev.filter((c) => c.category === 'Saved question')]);
+      if (wasModalOpenForThisCourse) setActiveCourseModal(rebuilt);
+      setProfile(mapProfile(freshProfile, freshDashboard));
+      setActivities(
+        (freshDashboard?.activity?.heatmap || []).map((day: { date: string; count: number }) => {
+          const count = Number(day.count || 0);
+          return { date: day.date, count, level: count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4 };
+        })
+      );
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to save lesson progress');
+    }
   };
 
   const handleUpdateDailyGoal = async (dailyGoal: DailyGoal) => {
@@ -472,7 +522,7 @@ export function useAppData() {
     setDataError,
     toggleDarkMode,
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
-    handleUpdateStructuredLessonStep, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
+    handleUpdateStructuredLessonStep, handleCompleteModule, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
     handlePracticeTopic, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
     handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,

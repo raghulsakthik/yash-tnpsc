@@ -34,7 +34,7 @@ export async function GET(request) {
         [like]
       ),
       query(
-        `SELECT topic_id, title, concept FROM lesson WHERE title ILIKE $1 OR concept ILIKE $1 LIMIT 8`,
+        `SELECT topic_id, title, concept FROM lesson WHERE status = 'PUBLISHED' AND (title ILIKE $1 OR concept ILIKE $1) LIMIT 8`,
         [like]
       ),
       query(

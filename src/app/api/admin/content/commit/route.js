@@ -192,7 +192,7 @@ export async function POST(request) {
              source_question_number, source_year, exam_code, exam_group, paper, subject_id,
              chapter_id, topic_id, content_version, source_hash)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-          ON CONFLICT (question_id) DO NOTHING`,
+          ON CONFLICT (question_id) WHERE question_id IS NOT NULL DO NOTHING`,
           [q.id, body.processingBatchId ?? null, batch.id, body.sourceFileName ?? paper, original?.sourcePage ?? null,
            original?.questionNumber ?? null, sourceYear, examCode, examGroup, paper, place.subject_id ?? null,
            place.chapter_id ?? null, topicId, q.content_version ?? 1, q.normalized_hash]
@@ -211,7 +211,7 @@ export async function POST(request) {
             (resource_id, processing_batch_id, review_batch_id, source_file_name, source_page,
              source_year, exam_code, exam_group, paper, subject_id, chapter_id, topic_id)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-          ON CONFLICT (resource_id) DO NOTHING`,
+          ON CONFLICT (resource_id) WHERE resource_id IS NOT NULL DO NOTHING`,
           [resourceId, body.processingBatchId ?? null, batch, body.sourceFileName ?? paper,
            null, sourceYear, examCode, examGroup, paper, place.subject_id ?? null, place.chapter_id ?? null, topicId]
         );

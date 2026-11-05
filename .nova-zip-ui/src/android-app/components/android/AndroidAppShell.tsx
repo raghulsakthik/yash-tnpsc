@@ -470,7 +470,7 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
           )}
 
           {/* Sub-Views */}
-          {subView === 'journey' && <JourneyView />}
+          {subView === 'journey' && <JourneyView profile={profile} todayUnits={todayUnits} />}
           {subView === 'notes' && (
             <NotesView
               notes={notes}

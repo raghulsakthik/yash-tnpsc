@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Clock, Brain, CheckCircle, RefreshCw, Sparkles, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Clock, Brain, CheckCircle, RefreshCw, Sparkles, ArrowRight, XCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MistakeItem } from '../../types';
+import { novaApi, mapPracticeQuestion } from '../../api/novaApi';
 
 interface MistakesViewProps {
   mistakes: MistakeItem[];
   onAddXp: (amount: number) => void;
 }
 
+type RetryQuestion = NonNullable<ReturnType<typeof mapPracticeQuestion>>;
+
 export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp }) => {
   const [items, setItems] = useState<MistakeItem[]>(mistakes);
   const [selectedType, setSelectedType] = useState<string>('all');
+  // "Practice & Clear" used to mark a mistake resolved with no actual
+  // re-attempt -- a pure local toggle with no backend call at all, so the
+  // mistake would simply reappear (unresolved) on the next real load from
+  // /api/mistakes/next. It now re-fetches the same mistake as a live
+  // question and only clears it once the learner answers it correctly
+  // through the real /api/attempts endpoint.
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [retryQuestion, setRetryQuestion] = useState<RetryQuestion | null>(null);
+  const [retrySelected, setRetrySelected] = useState<number | null>(null);
+  const [retryCorrectIndex, setRetryCorrectIndex] = useState<number | null>(null);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [isSubmittingRetry, setIsSubmittingRetry] = useState(false);
 
   const countByType = {
     CONCEPT_GAP: items.filter((m) => m.mistakeType === 'CONCEPT_GAP').length * 4,
@@ -18,16 +33,56 @@ export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp })
     TIME_PRESSURE: items.filter((m) => m.mistakeType === 'TIME_PRESSURE').length * 5,
   };
 
-  const handleResolve = (id: string) => {
-    setItems((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, resolved: true } : m))
-    );
-    onAddXp(75);
-    confetti({
-      particleCount: 60,
-      spread: 60,
-      origin: { y: 0.6 },
-    });
+  const handleStartRetry = async (id: string) => {
+    setRetryingId(id);
+    setRetryQuestion(null);
+    setRetrySelected(null);
+    setRetryCorrectIndex(null);
+    setRetryError(null);
+    try {
+      const payload = await novaApi.mistake();
+      const mapped = mapPracticeQuestion(payload);
+      if (mapped) {
+        setRetryQuestion(mapped);
+      } else {
+        setRetryError('No live question is available for this mistake right now.');
+      }
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : 'Unable to load this mistake as a question.');
+    }
+  };
+
+  const handleRetrySelect = async (idx: number) => {
+    if (!retryQuestion || retrySelected != null || isSubmittingRetry) return;
+    setRetrySelected(idx);
+    setIsSubmittingRetry(true);
+    try {
+      const result = await novaApi.attempt({
+        attemptId: crypto.randomUUID(),
+        questionId: retryQuestion.id,
+        selectedIndex: idx,
+        timeTakenMs: 0,
+        mode: 'PRACTICE',
+      });
+      setRetryCorrectIndex(Number(result.correctIndex));
+      if (result.correct && retryingId) {
+        setItems((prev) => prev.map((m) => (m.id === retryingId ? { ...m, resolved: true } : m)));
+        onAddXp(75);
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+      }
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : 'Unable to submit your answer.');
+    } finally {
+      setIsSubmittingRetry(false);
+    }
+  };
+
+  const handleCloseRetry = () => {
+    setRetryingId(null);
+    setRetryQuestion(null);
+    setRetrySelected(null);
+    setRetryCorrectIndex(null);
+    setRetryError(null);
   };
 
   const filtered = items.filter((m) => {
@@ -163,7 +218,7 @@ export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp })
                 </span>
               ) : (
                 <button
-                  onClick={() => handleResolve(item.id)}
+                  onClick={() => handleStartRetry(item.id)}
                   className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-orange-600 active:scale-95"
                 >
                   <span>Practice & Clear</span>
@@ -171,6 +226,57 @@ export const MistakesView: React.FC<MistakesViewProps> = ({ mistakes, onAddXp })
                 </button>
               )}
             </div>
+
+            {retryingId === item.id && (
+              <div className="w-full basis-full rounded-2xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-900 dark:bg-orange-950/20">
+                {retryError && (
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-300">{retryError}</p>
+                )}
+                {!retryError && !retryQuestion && (
+                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Loading question…</p>
+                )}
+                {retryQuestion && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-bold text-neutral-900 dark:text-white">{retryQuestion.question}</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {retryQuestion.options.map((opt: string, idx: number) => {
+                        const isSelected = retrySelected === idx;
+                        const isCorrect = retryCorrectIndex === idx;
+                        let cls = 'border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900';
+                        if (retrySelected != null) {
+                          if (isCorrect) cls = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40';
+                          else if (isSelected) cls = 'border-red-500 bg-red-50 dark:bg-red-950/40';
+                          else cls = 'opacity-40 border-neutral-200 dark:border-neutral-800';
+                        }
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleRetrySelect(idx)}
+                            disabled={retrySelected != null}
+                            className={`flex items-center justify-between rounded-xl border p-2.5 text-left text-xs font-medium ${cls}`}
+                          >
+                            <span>{opt}</span>
+                            {retrySelected != null && isCorrect && <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />}
+                            {retrySelected != null && isSelected && !isCorrect && <XCircle className="h-4 w-4 text-red-600 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {retrySelected != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400">{retryQuestion.explanation}</p>
+                        <button
+                          onClick={handleCloseRetry}
+                          className="shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-[10px] font-bold text-white dark:bg-neutral-700"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tnpsc-retrieval-engine
+    runtime: docker
+    rootDir: engines/retrieval
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: TNPSC_BROWSER_HEADLESS
+        value: "1"
+    healthCheckPath: /health

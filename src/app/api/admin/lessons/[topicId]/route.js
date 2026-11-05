@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
-import { getLessonForEdit, upsertLesson, deleteLesson } from '../../../../../lib/adminCrud.mjs';
+import { getLessonForEdit, upsertLesson, deleteLesson, setLessonStatus } from '../../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../../lib/adminContent.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +31,22 @@ export async function PUT(request, { params }) {
   } catch (err) {
     if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'SAVE_FAILED', message: err.message }, { status: 500 });
+  }
+}
+
+/** PATCH -- status-only transition (submit for review / approve / publish / archive), body: { status }. */
+export async function PATCH(request, { params }) {
+  const admin = await requirePermission(request, PERMISSIONS.CONTENT_UPDATE);
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  const { topicId } = await params;
+  try {
+    if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_UPDATE, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
+    const body = await request.json();
+    await setLessonStatus(topicId, body.status);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
+    return NextResponse.json({ code: 'STATUS_UPDATE_FAILED', message: err.message }, { status: 500 });
   }
 }
 

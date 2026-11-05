@@ -69,3 +69,29 @@ export async function POST(request) {
     return NextResponse.json({ code: 'BOOKMARK_FAILED', message: err.message }, { status: 500 });
   }
 }
+
+/** DELETE /api/bookmarks -- body: { questionId }. Idempotent. */
+export async function DELETE(request) {
+  const learnerId = await requireLearnerId(request);
+  if (!learnerId) {
+    return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ code: 'BAD_JSON', message: 'Body is not JSON' }, { status: 400 });
+  }
+
+  if (!body.questionId) {
+    return NextResponse.json({ code: 'MISSING_QUESTION_ID', message: 'questionId is required' }, { status: 400 });
+  }
+
+  try {
+    await query(`DELETE FROM question_bookmark WHERE learner_id = $1 AND question_id = $2`, [learnerId, body.questionId]);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ code: 'UNBOOKMARK_FAILED', message: err.message }, { status: 500 });
+  }
+}

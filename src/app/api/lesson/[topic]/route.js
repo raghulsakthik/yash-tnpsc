@@ -24,10 +24,14 @@ export async function GET(request, { params }) {
     return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   }
 
+  // status = 'PUBLISHED' matters: a lesson an admin has saved as DRAFT,
+  // submitted IN_REVIEW, or ARCHIVED is real content mid-edit or
+  // withdrawn -- it must never reach a learner just because a row exists
+  // for the topic (see db/migrations/V71__lesson_authoring_metadata.sql).
   const { rows: lessonRows } = await query(
     `SELECT title, concept, example_problem, example_steps, example_answer, tip,
-            definition, formulas, shortcuts, common_mistakes
-       FROM lesson WHERE topic_id = $1`,
+            definition, formulas, shortcuts, common_mistakes, content_markdown
+       FROM lesson WHERE topic_id = $1 AND status = 'PUBLISHED'`,
     [topic]
   );
 
@@ -43,13 +47,22 @@ export async function GET(request, { params }) {
       formulas: r.formulas,
       shortcuts: r.shortcuts,
       commonMistakes: r.common_mistakes,
+      contentMarkdown: r.content_markdown || null,
     };
   } else {
     lesson = getHardcodedLesson(topic);
   }
 
+  // Same reasoning as the lesson query above: topic_resource rows start
+  // as DRAFT and only become learner-visible once an admin approves them
+  // through the review queue (see approveBatch/rejectBatch in
+  // contentReview.mjs, which set status to PUBLISHED/ARCHIVED). This
+  // query had no status filter at all, so a rejected (ARCHIVED) or
+  // still-pending (DRAFT) resource was served to every learner the
+  // moment the row existed -- confirmed live: a resource rejected in the
+  // admin review queue was still returned here immediately after.
   const { rows: resourceRows } = await query(
-    `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 ORDER BY created_at DESC`,
+    `SELECT title, body, image_data, created_at FROM topic_resource WHERE topic_id = $1 AND status = 'PUBLISHED' ORDER BY created_at DESC`,
     [topic]
   );
   const resources = resourceRows.map((r) => ({ title: r.title, body: r.body, imageData: r.image_data, addedAt: r.created_at }));

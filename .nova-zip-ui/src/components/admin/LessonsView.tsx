@@ -21,9 +21,22 @@ import {
 import { AdminLesson, AdminRole, LessonStatus } from '../../types/admin';
 import { checkPermission, validateLesson } from '../../utils/adminPermissions';
 
+interface TopicWithoutLesson {
+  topicId: string;
+  topicName: string;
+  chapterName: string;
+  subjectName: string;
+}
+
 interface LessonsViewProps {
   role: AdminRole;
   lessons: AdminLesson[];
+  // Real topics (topic table, via GET /api/admin/lessons) that don't have
+  // a lesson yet -- "create new lesson" picks one of these instead of
+  // free-typing a subject/topic/chapter that wouldn't correspond to a real
+  // topic_id, which is what the content_markdown/worked-example actually
+  // gets saved against.
+  topicsWithoutLesson?: TopicWithoutLesson[];
   assignedSubjects?: string[];
   onSaveLesson: (lesson: AdminLesson, reason?: string) => void;
   onArchiveLesson: (lessonId: string, reason: string) => void;
@@ -33,6 +46,7 @@ interface LessonsViewProps {
 export const LessonsView: React.FC<LessonsViewProps> = ({
   role,
   lessons,
+  topicsWithoutLesson = [],
   assignedSubjects,
   onSaveLesson,
   onArchiveLesson,
@@ -49,13 +63,17 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
   // Form state
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formSubject, setFormSubject] = useState('Indian Polity & Constitution');
-  const [formTopic, setFormTopic] = useState('Historical Evolution & Drafting');
-  const [formChapter, setFormChapter] = useState('Constitutional Architecture');
-  const [formObjectives, setFormObjectives] = useState('Analyze 1935 Act lineage\nDistinguish federal vs unitary balance');
+  // Only used when creating a new lesson -- picks a real topic_id from
+  // topicsWithoutLesson. When editing, the topic is fixed (editingLesson.id
+  // already is the real topic_id) and shown read-only.
+  const [formTopicId, setFormTopicId] = useState('');
+  const [formSubject, setFormSubject] = useState('');
+  const [formTopic, setFormTopic] = useState('');
+  const [formChapter, setFormChapter] = useState('');
+  const [formObjectives, setFormObjectives] = useState('');
   const [formDifficulty, setFormDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Intermediate');
-  const [formDuration, setFormDuration] = useState(35);
-  const [formContentMarkdown, setFormContentMarkdown] = useState('## Conceptual Architecture\nKey provisions adopted from 1935 Act...');
+  const [formDuration, setFormDuration] = useState(30);
+  const [formContentMarkdown, setFormContentMarkdown] = useState('');
 
   const canCreate = checkPermission(role, 'Lesson', 'CREATE').allowed;
   const canPublish = checkPermission(role, 'Lesson', 'PUBLISH').allowed;
@@ -71,6 +89,7 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
 
   const openEditModal = (lesson: AdminLesson) => {
     setEditingLesson(lesson);
+    setFormTopicId(lesson.id);
     setFormTitle(lesson.title);
     setFormDescription(lesson.description);
     setFormSubject(lesson.subjectName);
@@ -87,11 +106,13 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
 
   const openNewModal = () => {
     setEditingLesson(null);
+    const firstTopic = topicsWithoutLesson[0];
+    setFormTopicId(firstTopic?.topicId || '');
     setFormTitle('');
     setFormDescription('');
-    setFormSubject(assignedSubjects?.[0] || 'Indian Polity & Constitution');
-    setFormTopic('');
-    setFormChapter('');
+    setFormSubject(firstTopic?.subjectName || '');
+    setFormTopic(firstTopic?.topicName || '');
+    setFormChapter(firstTopic?.chapterName || '');
     setFormObjectives('');
     setFormDifficulty('Intermediate');
     setFormDuration(30);
@@ -101,7 +122,19 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
     setIsNewModalOpen(true);
   };
 
+  const selectTopic = (topicId: string) => {
+    const t = topicsWithoutLesson.find((x) => x.topicId === topicId);
+    setFormTopicId(topicId);
+    setFormSubject(t?.subjectName || '');
+    setFormTopic(t?.topicName || '');
+    setFormChapter(t?.chapterName || '');
+  };
+
   const handleSave = (targetStatus?: LessonStatus) => {
+    if (!formTopicId) {
+      setValidationErrors(['Pick a topic -- every lesson has to be attached to a real syllabus topic.']);
+      return;
+    }
     // Subject Scope Check
     if (role === 'SUBJECT_ADMIN' && assignedSubjects && assignedSubjects.length > 0) {
       const allowed = assignedSubjects.some(
@@ -152,7 +185,7 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
 
     const updatedLesson: AdminLesson = {
       ...(editingLesson || {
-        id: `lsn-${Date.now()}`,
+        id: formTopicId,
         examId: 'exam-01',
         examName: 'TNPSC Group 2 & 2A Combined',
         subjectId: 'subj-01',
@@ -289,7 +322,11 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
               </p>
 
               <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 text-[11px] text-neutral-400 dark:border-neutral-800">
-                <span>Phase {lsn.phaseNumber} · Day {lsn.dayNumber}</span>
+                {/* phaseNumber/dayNumber aren't tracked per-lesson -- a
+                    topic's curriculum placement lives in Curriculum
+                    Builder, not 1:1 with "a lesson" -- so showing "Phase 0
+                    Day 0" for every real lesson would be a UI lie. */}
+                <span>{lsn.chapterName}</span>
                 <span>{lsn.estimatedDurationMinutes} mins</span>
               </div>
 
@@ -407,36 +444,34 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Subject *
-                  </label>
+              <div>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Topic *
+                </label>
+                {editingLesson ? (
+                  // The topic a lesson belongs to is fixed once created --
+                  // the real content (worked example / markdown) is saved
+                  // against this exact topic_id, so it isn't editable here.
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300">
+                    {formSubject} › {formChapter} › {formTopic}
+                  </div>
+                ) : topicsWithoutLesson.length === 0 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+                    Every syllabus topic already has a lesson. Edit an existing one, or add a new topic in Curriculum Builder first.
+                  </div>
+                ) : (
                   <select
-                    value={formSubject}
-                    onChange={(e) => setFormSubject(e.target.value)}
+                    value={formTopicId}
+                    onChange={(e) => selectTopic(e.target.value)}
                     className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                   >
-                    <option value="Indian Polity & Constitution">Indian Polity & Constitution</option>
-                    <option value="General Studies">General Studies</option>
-                    <option value="Aptitude & Mental Ability">Aptitude & Mental Ability</option>
-                    <option value="History & Culture of Tamil Nadu">History & Culture of Tamil Nadu</option>
-                    <option value="Physics & Chemistry">Physics & Chemistry (Unassigned)</option>
+                    {topicsWithoutLesson.map((t) => (
+                      <option key={t.topicId} value={t.topicId}>
+                        {t.subjectName} › {t.chapterName} › {t.topicName}
+                      </option>
+                    ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Topic Mapping *
-                  </label>
-                  <input
-                    type="text"
-                    value={formTopic}
-                    onChange={(e) => setFormTopic(e.target.value)}
-                    placeholder="e.g. Right to Equality"
-                    className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  />
-                </div>
+                )}
               </div>
 
               <div>

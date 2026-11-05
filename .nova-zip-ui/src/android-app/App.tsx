@@ -30,7 +30,7 @@ export default function AndroidApp() {
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
     toggleDarkMode,
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
-    handleUpdateStructuredLessonStep, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
+    handleUpdateStructuredLessonStep, handleCompleteModule, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
     handlePracticeTopic, handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,
   } = useAppData();
@@ -77,7 +77,7 @@ export default function AndroidApp() {
         onToggleTodayUnit={handleToggleTodayUnit}
         onLaunchTodayUnit={handleLaunchTodayUnit}
         onUpdateLessonStep={handleUpdateStructuredLessonStep}
-        onCompleteModule={() => {}}
+        onCompleteModule={handleCompleteModule}
         onPracticeTopic={handlePracticeTopic}
         onUpdateDailyGoal={handleUpdateDailyGoal}
         onLogGoalProgress={handleLogGoalProgress}

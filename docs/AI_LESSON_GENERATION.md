@@ -8,7 +8,7 @@ The Content Engine can generate one syllabus-topic lesson and 3–10 original fo
 
 Set `GEMINI_API_KEY` as a server-side secret in local `.env.local` or the deployment environment. Do not expose it through a `NEXT_PUBLIC_*` variable, commit it, or paste it into chat. The current provider adapter uses the configured Gemini model in `src/lib/ai/provider.mjs`.
 
-The API also requires the platform database and migrations through V71. The local sample `.env.local` currently points to PostgreSQL at `localhost:5432`; start the database and run the normal migration/seed workflow before using the feature.
+The API also requires the platform database and migrations through V73. The local sample `.env.local` currently points to PostgreSQL at `localhost:5432`; start the database and run the normal migration/seed workflow before using the feature.
 
 ## Source eligibility
 

@@ -6,15 +6,30 @@ import { env } from './env.mjs';
 
 const useS3 = env.objectStorageMode === 's3';
 const LOCAL_ROOT = path.join(process.cwd(), 'storage', 'objects');
-const client = useS3 ? new S3Client({
-  region: env.s3Region,
-  endpoint: env.s3Endpoint || undefined,
-  forcePathStyle: env.s3ForcePathStyle,
-  credentials: { accessKeyId: env.s3AccessKeyId, secretAccessKey: env.s3SecretAccessKey },
-}) : null;
 
+// Lazy on purpose: the AWS SDK's S3Client constructor throws synchronously
+// ("Region is missing") the moment it can't resolve a region -- which an
+// empty env.s3Region always fails to do. objectStorageMode defaults to
+// 's3' in production regardless of whether S3 credentials are actually
+// set (see env.mjs), so constructing this eagerly at module load crashed
+// every route that imports this file -- including ones that never touch
+// object storage -- the instant S3 wasn't configured. Deferring
+// construction to first real use means it's only ever attempted once
+// isObjectStorageConfigured() has already confirmed all four S3 fields
+// are present, which is what every caller here already checks first.
+let client = null;
 function requireS3() {
-  if (!useS3 || !client || !env.s3Bucket) throw new Error('S3 object storage is not configured');
+  if (!useS3 || !env.s3Bucket || !env.s3Region || !env.s3AccessKeyId || !env.s3SecretAccessKey) {
+    throw new Error('S3 object storage is not configured');
+  }
+  if (!client) {
+    client = new S3Client({
+      region: env.s3Region,
+      endpoint: env.s3Endpoint || undefined,
+      forcePathStyle: env.s3ForcePathStyle,
+      credentials: { accessKeyId: env.s3AccessKeyId, secretAccessKey: env.s3SecretAccessKey },
+    });
+  }
 }
 function localPath(key) { return path.join(LOCAL_ROOT, key); }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { getProgressionTier } from '../../../../services/intermediateProgressionService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +12,10 @@ export const dynamic = 'force-dynamic';
  * a calendar date, with each foundation topic's own gate result attached.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const tier = await getProgressionTier(LEARNER_ID);
+    const tier = await getProgressionTier(learner.id);
     return NextResponse.json(tier);
   } catch (err) {
     return NextResponse.json({ code: 'PROGRESSION_TIER_FAILED', message: err.message }, { status: 500 });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { decideNextActionForTopic } from '../../../../../services/adaptiveDecisionService.mjs';
 import { selectDailyTopicForLearner } from '../../../../../services/dailyPlanService.mjs';
 
@@ -12,12 +12,14 @@ export const dynamic = 'force-dynamic';
  * decision engine.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const { selectedTopic } = await selectDailyTopicForLearner(LEARNER_ID);
+    const { selectedTopic } = await selectDailyTopicForLearner(learner.id);
     if (!selectedTopic?.id) {
       return NextResponse.json({ action: null, reason: 'no published learning topic is available yet' });
     }
-    const action = await decideNextActionForTopic(LEARNER_ID, selectedTopic.id);
+    const action = await decideNextActionForTopic(learner.id, selectedTopic.id);
     return NextResponse.json(action);
   } catch (err) {
     return NextResponse.json({ code: 'NEXT_ACTION_FAILED', message: err.message }, { status: 500 });

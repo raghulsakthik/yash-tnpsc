@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { getEffectiveRetention } from '../../../../../services/retentionEngineService.mjs';
 import { NotFoundError } from '../../../../../services/errors.mjs';
 
@@ -15,9 +15,11 @@ export const dynamic = 'force-dynamic';
  * not a replacement for the stored value, a sharper read of it.
  */
 export async function GET(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { topicId } = await params;
   try {
-    const result = await getEffectiveRetention(LEARNER_ID, topicId);
+    const result = await getEffectiveRetention(learner.id, topicId);
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof NotFoundError) {

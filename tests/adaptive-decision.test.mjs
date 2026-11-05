@@ -114,3 +114,15 @@ test('the decision carries every runner-up score, ranked, not just the winner', 
     assert.ok(decision.candidates[i - 1].score >= decision.candidates[i].score);
   }
 });
+
+test('an unattempted prerequisite-blocked topic still selects prerequisite remediation when risk is zero', () => {
+  const context = {
+    ...baseContext,
+    classification: TopicClassification.PREREQUISITE_BLOCKED,
+    prerequisiteRisk: 0,
+    attemptCount: 0,
+  };
+  const decision = decideAdaptiveAction(context);
+  assert.equal(decision.action, AdaptiveAction.PREREQUISITE_LESSON);
+  assert.equal(decision.score, 1);
+});

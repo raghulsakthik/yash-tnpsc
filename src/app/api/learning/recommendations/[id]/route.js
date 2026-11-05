@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../../lib/auth.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { acceptRecommendationForLearner, dismissRecommendationForLearner } from '../../../../../services/recommendationService.mjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request, { params }) {
-  const user = await requireUser();
+  const user = await requireLearner();
   if (!user) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Login required' }, { status: 401 });
   const { id } = await params;
   try {

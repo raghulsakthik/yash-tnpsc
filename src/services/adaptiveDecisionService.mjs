@@ -83,6 +83,8 @@ export async function decideNextActionForTopic(learnerId, topicId) {
     prerequisiteRisk: topicState.prerequisiteRisk,
     revisionDue,
     attemptCount: topicState.attemptCount,
+    weakestPrerequisite: classification?.weakestPrerequisite ?? null,
+    classificationReason: classification?.reason ?? 'No classification evidence is available yet.',
   };
 
   const decision = decideAdaptiveAction(context);

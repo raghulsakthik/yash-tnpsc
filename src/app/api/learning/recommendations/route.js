@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../lib/auth.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { getRecommendationsForLearner, surfaceRecommendation } from '../../../../services/recommendationService.mjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
-  const user = await requireUser();
+  const user = await requireLearner();
   if (!user) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Login required' }, { status: 401 });
   const limit = new URL(request.url).searchParams.get('limit');
   return NextResponse.json({ recommendations: await getRecommendationsForLearner(user.id, limit) });
 }
 
 export async function POST(request) {
-  const user = await requireUser();
+  const user = await requireLearner();
   if (!user) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Login required' }, { status: 401 });
   try {
     const body = await request.json();

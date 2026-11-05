@@ -157,25 +157,28 @@ export function classifyTopics(topics, prerequisiteGraph) {
   const accuracyByTopic = new Map(topics.map((t) => [t.topicId, t.accuracy / 100]));
 
   return topics.map((t) => {
-    if (t.questionCount === 0) {
-      return {
-        topicId: t.topicId,
-        classification: TopicClassification.UNKNOWN,
-        reason: `no evidence gathered on ${t.topicId} yet`,
-        weakestPrerequisite: null,
-      };
-    }
-
     const weakest = weakestPrerequisite(t.topicId, prerequisiteGraph, accuracyByTopic);
     const weakestDto = weakest ? { topicId: weakest.topicId, accuracy: Math.round(weakest.accuracy * 10000) / 100 } : null;
     const prerequisiteBroken = weakestDto !== null && weakestDto.accuracy < PREREQUISITE_BROKEN_THRESHOLD;
 
+    // A learner can be blocked before attempting the dependent topic: an
+    // unattempted prerequisite is intentionally treated as zero evidence by
+    // weakestPrerequisite(), so do not return UNKNOWN before checking it.
     if (prerequisiteBroken) {
       return {
         topicId: t.topicId,
         classification: TopicClassification.PREREQUISITE_BLOCKED,
         reason: `${t.topicId} cannot be safely advanced yet — its prerequisite ${weakestDto.topicId} is at ${weakestDto.accuracy}%, well below the ${PREREQUISITE_BROKEN_THRESHOLD}% floor`,
         weakestPrerequisite: weakestDto,
+      };
+    }
+
+    if (t.questionCount === 0) {
+      return {
+        topicId: t.topicId,
+        classification: TopicClassification.UNKNOWN,
+        reason: `no evidence gathered on ${t.topicId} yet`,
+        weakestPrerequisite: null,
       };
     }
 

@@ -32,6 +32,9 @@ const created = {
   contentReviewerId: null, contentReviewerSessionHash: null,
   subjectExpertId: null, subjectExpertSessionHash: null,
   subjectExpertSubjectId: null,
+  studentId: null, studentSessionHash: null,
+  comparisonStudentId: null, comparisonStudentSessionHash: null,
+  adaptiveDependentTopicId: null, adaptivePrerequisiteTopicId: null,
   publications: [], batches: [], questionIds: [], lessonIds: [],
   manualQuestionIds: [], reviewEvidenceResourceIds: [], lessonWorkflowTopicId: null,
 };
@@ -87,6 +90,47 @@ try {
   await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [subjectExpertId, created.subjectExpertSessionHash]);
   await db.query(`INSERT INTO admin_subject_scope(user_id,subject_id) VALUES ($1,$2)`, [subjectExpertId, created.subjectExpertSubjectId]);
 
+  const studentId = crypto.randomUUID();
+  const studentToken = crypto.randomBytes(32).toString('hex');
+  created.studentId = studentId;
+  created.studentSessionHash = tokenHash(studentToken);
+  await db.query(`INSERT INTO learner(id,name) VALUES ($1,$2)`, [studentId, 'Adaptive Plan E2E Student']);
+  await db.query(`INSERT INTO learner_profile(learner_id,language) VALUES ($1,'en')`, [studentId]);
+  await db.query(`INSERT INTO app_user(id,role,status) VALUES ($1,'STUDENT','ACTIVE')`, [studentId]);
+  await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [studentId, created.studentSessionHash]);
+
+  const comparisonStudentId = crypto.randomUUID();
+  const comparisonStudentToken = crypto.randomBytes(32).toString('hex');
+  created.comparisonStudentId = comparisonStudentId;
+  created.comparisonStudentSessionHash = tokenHash(comparisonStudentToken);
+  await db.query(`INSERT INTO learner(id,name) VALUES ($1,$2)`, [comparisonStudentId, 'Adaptive Plan Comparison Student']);
+  await db.query(`INSERT INTO learner_profile(learner_id,language) VALUES ($1,'en')`, [comparisonStudentId]);
+  await db.query(`INSERT INTO app_user(id,role,status) VALUES ($1,'STUDENT','ACTIVE')`, [comparisonStudentId]);
+  await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [comparisonStudentId, created.comparisonStudentSessionHash]);
+
+  const adaptiveEdge = await db.query(`
+    WITH foundation AS (SELECT id FROM topic WHERE chapter_id='apt.foundation'),
+    candidates AS (
+      SELECT id FROM foundation
+      UNION
+      SELECT DISTINCT tp.topic_id FROM topic_prerequisite tp WHERE tp.prerequisite_topic_id IN (SELECT id FROM foundation)
+    )
+    SELECT tp.topic_id, tp.prerequisite_topic_id
+      FROM topic_prerequisite tp JOIN candidates c ON c.id=tp.topic_id
+     ORDER BY tp.topic_id LIMIT 1
+  `);
+  assert.ok(adaptiveEdge.rows.length, 'an adaptive candidate topic with a prerequisite is required');
+  created.adaptiveDependentTopicId = adaptiveEdge.rows[0].topic_id;
+  created.adaptivePrerequisiteTopicId = adaptiveEdge.rows[0].prerequisite_topic_id;
+  await db.query(`
+    INSERT INTO learner_topic_state(learner_id,topic_id,accuracy_score,attempt_count,correct_count)
+    VALUES ($1,$2,0.1,5,1)
+  `, [studentId, created.adaptivePrerequisiteTopicId]);
+  await db.query(`
+    INSERT INTO learner_topic_state(learner_id,topic_id,accuracy_score,attempt_count,correct_count)
+    VALUES ($1,$2,0.95,5,5)
+  `, [comparisonStudentId, created.adaptivePrerequisiteTopicId]);
+
   const workflowTopic = await db.query(
     `SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id
       WHERE l.topic_id IS NULL AND t.id<>$1 ORDER BY t.id LIMIT 1`,
@@ -110,6 +154,54 @@ try {
   const questionReviewerCookie = `session_token=${questionReviewerToken}`;
   const contentReviewerCookie = `session_token=${contentReviewerToken}`;
   const subjectExpertCookie = `session_token=${subjectExpertToken}`;
+  const studentCookie = `session_token=${studentToken}`;
+  const comparisonStudentCookie = `session_token=${comparisonStudentToken}`;
+
+  // Learner-only adaptive endpoints must bind all data to the authenticated student, never a global seed learner.
+  const anonymousAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`);
+  assert.equal(anonymousAdaptivePlan.status, 401, await anonymousAdaptivePlan.text());
+  const adminAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie } });
+  assert.equal(adminAdaptivePlan.status, 401, await adminAdaptivePlan.text());
+  const studentAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie: studentCookie } });
+  assert.equal(studentAdaptivePlan.status, 200, await studentAdaptivePlan.text());
+  const studentAdaptivePlanBody = await studentAdaptivePlan.json();
+  assert.equal(studentAdaptivePlanBody.learnerId, studentId);
+  assert.ok(studentAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId),
+    'a weak prerequisite should be inserted into the first learner’s roadmap before the dependent topic');
+  const comparisonAdaptivePlan = await fetch(`${baseUrl}/api/learning/adaptive-plan`, { headers: { cookie: comparisonStudentCookie } });
+  assert.equal(comparisonAdaptivePlan.status, 200, await comparisonAdaptivePlan.text());
+  const comparisonAdaptivePlanBody = await comparisonAdaptivePlan.json();
+  assert.equal(comparisonAdaptivePlanBody.learnerId, comparisonStudentId);
+  assert.equal(comparisonAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId), false,
+    'the second learner’s stronger prerequisite must not inherit the first learner’s weakness');
+  const learnerScopedReads = [
+    ['/api/v1/learning/plan', 'legacy weekly plan'],
+    ['/api/v1/learning/next-action', 'legacy adaptive next action'],
+    ['/api/v1/recommendations', 'legacy recommendation list'],
+    ['/api/learning/recommendations', 'recommendation list'],
+    ['/api/learner/summary', 'learner digital-twin summary'],
+    ['/api/interventions', 'intervention history'],
+    ['/api/v1/interventions', 'legacy intervention history'],
+    ['/api/v1/interventions/effectiveness', 'intervention effectiveness'],
+    ['/api/v1/interventions/effectiveness/by-topic', 'topic intervention effectiveness'],
+  ];
+  for (const [path, label] of learnerScopedReads) {
+    const denied = await fetch(`${baseUrl}${path}`, { headers: { cookie } });
+    assert.equal(denied.status, 401, `${label} must reject admin sessions: ${await denied.text()}`);
+    const allowed = await fetch(`${baseUrl}${path}`, { headers: { cookie: studentCookie } });
+    assert.equal(allowed.status, 200, `${label} should work for a student: ${await allowed.text()}`);
+  }
+  const adminInterventionStart = await fetch(`${baseUrl}/api/learning/interventions/start`, {
+    method: 'POST', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),
+  });
+  assert.equal(adminInterventionStart.status, 401, await adminInterventionStart.text());
+  const studentInterventionStart = await fetch(`${baseUrl}/api/learning/interventions/start`, {
+    method: 'POST', headers: { 'content-type': 'application/json', cookie: studentCookie },
+    body: JSON.stringify({ topicId: created.adaptiveDependentTopicId, action: 'PRACTICE' }),
+  });
+  assert.equal(studentInterventionStart.status, 200, await studentInterventionStart.text());
+  console.log('adaptive plan authentication, mistake-based prerequisite remediation, learner isolation and legacy adaptive API auth E2E: PASS');
 
   // Subject experts see and mutate only their explicitly assigned syllabus subjects.
   const scopedTopicsResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie: subjectExpertCookie } });
@@ -380,10 +472,10 @@ try {
     if (created.lessonWorkflowTopicId) await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.lessonWorkflowTopicId]);
     for (const id of created.publications) await db.query('DELETE FROM content_engine_publication WHERE publication_id=$1', [id]);
     for (const id of created.reviewEvidenceResourceIds) await db.query('DELETE FROM topic_resource WHERE id=$1', [id]);
-    for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash, created.subjectExpertSessionHash].filter(Boolean)) {
+    for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash, created.subjectExpertSessionHash, created.studentSessionHash, created.comparisonStudentSessionHash].filter(Boolean)) {
       await db.query('DELETE FROM user_session WHERE token_hash=$1', [hash]);
     }
-    for (const id of [created.adminId, created.questionReviewerId, created.contentReviewerId, created.subjectExpertId].filter(Boolean)) {
+    for (const id of [created.adminId, created.questionReviewerId, created.contentReviewerId, created.subjectExpertId, created.studentId, created.comparisonStudentId].filter(Boolean)) {
       await db.query('DELETE FROM app_user WHERE id=$1', [id]);
       await db.query('DELETE FROM learner WHERE id=$1', [id]);
     }

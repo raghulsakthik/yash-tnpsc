@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { getCompletionVerdict } from '../../../../../services/completionCriteriaService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -13,9 +13,11 @@ export const dynamic = 'force-dynamic';
  * effective retention — nothing recomputed here.
  */
 export async function GET(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { topicId } = await params;
   try {
-    const result = await getCompletionVerdict(LEARNER_ID, topicId);
+    const result = await getCompletionVerdict(learner.id, topicId);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ code: 'COMPLETION_STATUS_FAILED', message: err.message }, { status: 500 });

@@ -59,7 +59,7 @@ export function scoreCandidateActions(context) {
     {
       // The gate itself is the problem — fix the prerequisite, not this topic.
       action: AdaptiveAction.PREREQUISITE_LESSON,
-      score: classification === TopicClassification.CRITICAL || blocked ? prerequisiteRisk : 0,
+      score: blocked ? Math.max(prerequisiteRisk, 1) : classification === TopicClassification.CRITICAL ? prerequisiteRisk : 0,
     },
     {
       // A real conceptual gap on *this* topic, not just low accuracy from

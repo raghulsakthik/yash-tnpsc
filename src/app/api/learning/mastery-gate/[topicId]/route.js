@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { getMasteryGate } from '../../../../../services/masteryGateService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +14,11 @@ export const dynamic = 'force-dynamic';
  * never reads as MASTERED until a real assessment has confirmed it.
  */
 export async function GET(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { topicId } = await params;
   try {
-    const result = await getMasteryGate(LEARNER_ID, topicId);
+    const result = await getMasteryGate(learner.id, topicId);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ code: 'MASTERY_GATE_FAILED', message: err.message }, { status: 500 });

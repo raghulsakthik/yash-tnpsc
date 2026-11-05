@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../../lib/auth.mjs';
 import { acceptRecommendationForLearner } from '../../../../../../services/recommendationService.mjs';
 import { NotFoundError } from '../../../../../../services/errors.mjs';
 
@@ -13,9 +13,11 @@ export const dynamic = 'force-dynamic';
  * so whether it actually worked is measurable later.
  */
 export async function POST(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { id } = await params;
   try {
-    const result = await acceptRecommendationForLearner(LEARNER_ID, id);
+    const result = await acceptRecommendationForLearner(learner.id, id);
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof NotFoundError) {

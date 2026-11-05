@@ -164,6 +164,8 @@ export interface AdminResource {
 
 export interface AdminQuestion {
   id: string;
+  /** Real topic_id this question belongs to (question.topic_id). Required to save against the real backend -- subjectName/chapterName/topicName below are the real, joined-in display names for that same topic, not independent free text. */
+  topicId?: string;
   questionText: string;
   options: Array<{
     id: string;

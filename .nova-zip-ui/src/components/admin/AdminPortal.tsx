@@ -49,7 +49,6 @@ import {
 } from '../../types/admin';
 import {
   initialAdminResources,
-  initialAdminQuestions,
   initialAdminPYQs,
   initialProctoringPolicies,
   initialAdminTests,
@@ -214,10 +213,63 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     novaApi.adminLessons().then((res) => setLessonTopics(res.topics || [])).catch(() => {});
   }, [lessons.length]);
 
-  const [questions, setQuestions] = useState<AdminQuestion[]>(() => {
-    const saved = localStorage.getItem('nova_admin_questions');
-    return saved ? JSON.parse(saved) : initialAdminQuestions;
+  // Real question bank (GET /api/admin/questions -- see
+  // src/lib/adminCrud.mjs listAllQuestions). Previously seeded from
+  // mockAdminData into localStorage. The real question table stores
+  // options as string[] + answer_index, difficulty as a 0..1 float, and
+  // only DRAFT/REVIEWED/PUBLISHED/ARCHIVED statuses (question_status_ck)
+  // -- mapped here to/from the richer vocabulary QuestionsView was built
+  // against (REVIEWED <-> IN_REVIEW, ARCHIVED <-> REJECTED; the server
+  // side of this same mapping lives in adminCrud.mjs's
+  // QUESTION_STATUS_ALIASES, right next to the real CHECK constraint it
+  // has to satisfy).
+  const difficultyToBand = (d: number): 'Easy' | 'Medium' | 'Hard' => (d < 0.35 ? 'Easy' : d < 0.6 ? 'Medium' : 'Hard');
+  const bandToDifficulty: Record<'Easy' | 'Medium' | 'Hard', number> = { Easy: 0.25, Medium: 0.5, Hard: 0.75 };
+  const statusFromDb = (s: string): QuestionStatus => (s === 'REVIEWED' ? 'IN_REVIEW' : s === 'ARCHIVED' ? 'REJECTED' : (s as QuestionStatus));
+
+  const mapQuestionFromApi = (r: any): AdminQuestion => ({
+    id: r.id,
+    topicId: r.topicId,
+    questionText: r.prompt,
+    options: (r.options || []).map((text: string, i: number) => ({ id: `opt-${i}`, text, isCorrect: i === r.answerIndex })),
+    explanation: r.explanation || '',
+    examName: 'TNPSC Group 2 & 2A Combined',
+    subjectName: r.subjectName,
+    chapterName: r.chapterName,
+    topicName: r.topicName,
+    conceptName: r.topicName,
+    difficulty: difficultyToBand(Number(r.difficulty ?? 0.3)),
+    type: 'MCQ',
+    isPYQ: Boolean(r.sourceYear),
+    pyqMetadata: r.sourceYear
+      ? { sourceYear: r.sourceYear, examGroup: 'TNPSC Group 2 & 2A', paperNumber: '', questionNumber: 0, sourcePage: 0, verifiedProvenance: true }
+      : undefined,
+    generationSource: r.sourceYear ? 'OFFICIAL_PAST_PAPER' : r.source === 'ai-generated' ? 'AI_GENERATED' : 'MANUAL_AUTHOR',
+    status: statusFromDb(r.status),
+    authorName: 'Admin Contributor',
+    attemptsCount: Number(r.attemptsCount ?? 0),
+    accuracyRate: Number(r.accuracyRate ?? 0),
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
   });
+
+  const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+
+  const refreshQuestions = React.useCallback((search?: string) => {
+    novaApi
+      .adminQuestionsList({ search, limit: 100 })
+      .then((res: any) => {
+        setQuestions((res.questions || []).map(mapQuestionFromApi));
+        setQuestionsError(null);
+      })
+      .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Could not load questions'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    refreshQuestions();
+  }, [refreshQuestions]);
 
   const [tests, setTests] = useState<AdminTest[]>(() => {
     const saved = localStorage.getItem('nova_admin_tests');
@@ -323,10 +375,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   useEffect(() => {
     localStorage.setItem('nova_admin_subject_scope', activeSubjectScope);
   }, [activeSubjectScope]);
-
-  useEffect(() => {
-    localStorage.setItem('nova_admin_questions', JSON.stringify(questions));
-  }, [questions]);
 
   useEffect(() => {
     localStorage.setItem('nova_admin_tests', JSON.stringify(tests));
@@ -476,15 +524,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     }
   };
 
-  // Question operations
+  // Question operations -- now real writes against POST/PATCH
+  // /api/admin/questions(/:id). QuestionsView.handleSave generates a fake
+  // `q-${Date.now()}` id for a brand-new question (and handleDuplicate for
+  // a copy), which never matches a real row -- that's exactly how "exists"
+  // below tells create from update apart, same as before, just routed to
+  // the real endpoints now.
   const handleSaveQuestion = (updatedQuestion: AdminQuestion, reason?: string) => {
     const exists = questions.some((q) => q.id === updatedQuestion.id);
+    const options = updatedQuestion.options.map((o) => o.text);
+    const answerIndex = updatedQuestion.options.findIndex((o) => o.isCorrect);
+
     if (exists) {
-      setQuestions((prev) => prev.map((q) => (q.id === updatedQuestion.id ? updatedQuestion : q)));
-      recordAudit('QUESTION_UPDATED', 'Question', updatedQuestion.id, reason || 'Updated question');
+      novaApi
+        .adminUpdateQuestion(updatedQuestion.id, {
+          prompt: updatedQuestion.questionText,
+          options,
+          answerIndex,
+          explanation: updatedQuestion.explanation,
+          difficulty: bandToDifficulty[updatedQuestion.difficulty],
+          status: updatedQuestion.status,
+        })
+        .then(() => {
+          recordAudit('QUESTION_UPDATED', 'Question', updatedQuestion.id, reason || 'Updated question');
+          refreshQuestions();
+        })
+        .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Unable to update this question'));
     } else {
-      setQuestions((prev) => [updatedQuestion, ...prev]);
-      recordAudit('QUESTION_CREATED', 'Question', updatedQuestion.id, reason || 'Created MCQ');
+      if (!updatedQuestion.topicId) {
+        setQuestionsError('Unable to create this question: no real topic was selected.');
+        return;
+      }
+      novaApi
+        .adminCreateQuestion({
+          topicId: updatedQuestion.topicId,
+          prompt: updatedQuestion.questionText,
+          options,
+          answerIndex,
+          explanation: updatedQuestion.explanation,
+          difficulty: bandToDifficulty[updatedQuestion.difficulty],
+        })
+        .then((res: any) => {
+          recordAudit('QUESTION_CREATED', 'Question', res.id, reason || 'Created MCQ');
+          refreshQuestions();
+        })
+        .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Unable to create this question'));
     }
   };
 
@@ -493,15 +577,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     status: QuestionStatus,
     reason?: string
   ) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === questionId ? { ...q, status } : q))
-    );
-    recordAudit(
-      status === 'PUBLISHED' ? 'QUESTION_APPROVED' : 'QUESTION_REJECTED',
-      'Question',
-      questionId,
-      reason || `Question transitioned to ${status}`
-    );
+    setQuestions((prev) => prev.map((q) => (q.id === questionId ? { ...q, status } : q)));
+    novaApi
+      .adminUpdateQuestion(questionId, { status })
+      .then(() => {
+        recordAudit(
+          status === 'PUBLISHED' ? 'QUESTION_APPROVED' : 'QUESTION_REJECTED',
+          'Question',
+          questionId,
+          reason || `Question transitioned to ${status}`
+        );
+      })
+      .catch((err) => {
+        refreshQuestions(); // revert the optimistic update to whatever's real
+        setQuestionsError(err instanceof Error ? err.message : 'Unable to update this question');
+      });
   };
 
   // Test builder operations
@@ -819,7 +909,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               lessons, curriculum, and learners are real (GET/POST/PATCH
               against actual API routes) and excluded from the warning
               banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && (
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
@@ -863,6 +953,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <QuestionsView
               role={activeRole}
               questions={questions}
+              topics={lessonTopics as any}
               assignedSubjects={[activeSubjectScope]}
               isReviewQueueMode={false}
               onSaveQuestion={handleSaveQuestion}
@@ -874,6 +965,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <QuestionsView
               role={activeRole}
               questions={questions}
+              topics={lessonTopics as any}
               assignedSubjects={[activeSubjectScope]}
               isReviewQueueMode={true}
               onSaveQuestion={handleSaveQuestion}

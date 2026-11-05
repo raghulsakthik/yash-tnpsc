@@ -5,7 +5,9 @@ import re
 import aiohttp
 from bs4 import BeautifulSoup
 from app.engine.classification.resource import ResourceClassifier
-classifier=ResourceClassifier()
+
+classifier = ResourceClassifier()
+
 
 @dataclass(frozen=True)
 class PublicResult:
@@ -17,47 +19,98 @@ class PublicResult:
     group_name: str | None = None
     resource_type: str | None = None
     subject: str | None = None
+    exam_stage: str | None = None
+    content_kind: str | None = None
+    subject_id: str | None = None
+    chapter_id: str | None = None
+    topic_id: str | None = None
+    language: str | None = None
+    curriculum_id: str | None = None
+    mapping_status: str | None = None
+    review_required: bool = True
+    confidence: float = 0.0
+    topic_candidates: tuple[str, ...] = ()
+
 
 class PublicWebConnector:
-    ALLOWED_SCHEMES = {'http','https'}
-    BLOCKED_EXT = {'.exe','.apk','.dmg','.iso','.bin','.torrent'}
-    TERMS = ('tnpsc','group ii','group 2','group iia','group 2a','previous year','question paper','pyq','mock test','mcq','practice','study material','syllabus')
+    ALLOWED_SCHEMES = {'http', 'https'}
+    BLOCKED_EXT = {'.exe', '.apk', '.dmg', '.iso', '.bin', '.torrent'}
+    TERMS = ('tnpsc', 'group ii', 'group 2', 'group iia', 'group 2a', 'previous year', 'question paper', 'pyq', 'mock test', 'mcq', 'practice', 'study material', 'syllabus')
+
     def normalize(self, url: str) -> str | None:
         try:
-            u, _ = urldefrag(url.strip()); p=urlparse(u)
-            if p.scheme not in self.ALLOWED_SCHEMES or not p.netloc: return None
-            if any(p.path.lower().endswith(x) for x in self.BLOCKED_EXT): return None
+            u, _ = urldefrag(url.strip())
+            p = urlparse(u)
+            if p.scheme not in self.ALLOWED_SCHEMES or not p.netloc:
+                return None
+            if any(p.path.lower().endswith(x) for x in self.BLOCKED_EXT):
+                return None
             return u
-        except Exception: return None
+        except Exception:
+            return None
+
     def score(self, text: str, url: str) -> int:
-        hay=f'{text} {url}'.lower()
+        hay = f'{text} {url}'.lower()
         return sum(1 for t in self.TERMS if t in hay)
+
     async def fetch(self, session: aiohttp.ClientSession, url: str) -> str | None:
         try:
             async with session.get(url, allow_redirects=True) as r:
-                if r.status != 200 or 'text/html' not in r.headers.get('content-type','').lower(): return None
+                if r.status != 200 or 'text/html' not in r.headers.get('content-type', '').lower():
+                    return None
                 return await r.text(errors='replace')
-        except (aiohttp.ClientError, TimeoutError): return None
+        except (aiohttp.ClientError, TimeoutError):
+            return None
+
     async def search(self, query: str, max_results: int = 20) -> list[dict]:
         # Uses public DuckDuckGo HTML results only; no authentication or bypassing.
-        q=' '.join(query.split())
-        endpoint='https://html.duckduckgo.com/html/'
-        timeout=aiohttp.ClientTimeout(total=20)
-        headers={'User-Agent':'TNPSC-Material-Engine/1.0 (local research client)'}
-        out=[]; seen=set()
-        async with aiohttp.ClientSession(timeout=timeout,headers=headers) as s:
+        q = ' '.join(query.split())
+        endpoint = 'https://html.duckduckgo.com/html/'
+        timeout = aiohttp.ClientTimeout(total=20)
+        headers = {'User-Agent': 'TNPSC-Material-Engine/1.0 (local research client)'}
+        out = []
+        seen = set()
+        async with aiohttp.ClientSession(timeout=timeout, headers=headers) as s:
             try:
-                async with s.post(endpoint,data={'q':q},allow_redirects=True) as r:
-                    if r.status != 200: return []
-                    html=await r.text(errors='replace')
-            except (aiohttp.ClientError, TimeoutError): return []
-        soup=BeautifulSoup(html,'html.parser')
+                async with s.post(endpoint, data={'q': q}, allow_redirects=True) as r:
+                    if r.status != 200:
+                        return []
+                    html = await r.text(errors='replace')
+            except (aiohttp.ClientError, TimeoutError):
+                return []
+        soup = BeautifulSoup(html, 'html.parser')
         for a in soup.select('a.result__a'):
-            href=a.get('href'); url=self.normalize(href or '')
-            if not url or url in seen: continue
-            title=a.get_text(' ',strip=True); score=self.score(title,url)
-            if score < 2: continue
-            seen.add(url); c=classifier.classify(title,url)
-            out.append(asdict(PublicResult(url,title,url,score,c.get('exam'),c.get('group_name'),c.get('resource_type'),c.get('subject'))))
-            if len(out)>=max_results: break
+            href = a.get('href')
+            url = self.normalize(href or '')
+            if not url or url in seen:
+                continue
+            title = a.get_text(' ', strip=True)
+            score = self.score(title, url)
+            if score < 2:
+                continue
+            seen.add(url)
+            c = classifier.classify(title, url)
+            out.append(asdict(PublicResult(
+                url=url,
+                title=title,
+                source_url=url,
+                score=score,
+                exam=c.get('exam'),
+                group_name=c.get('group_name'),
+                resource_type=c.get('resource_type'),
+                subject=c.get('subject'),
+                exam_stage=c.get('exam_stage'),
+                content_kind=c.get('content_kind'),
+                subject_id=c.get('subject_id'),
+                chapter_id=c.get('chapter_id'),
+                topic_id=c.get('topic_id'),
+                language=c.get('language'),
+                curriculum_id=c.get('curriculum_id'),
+                mapping_status=c.get('mapping_status'),
+                review_required=c.get('review_required', True),
+                confidence=c.get('confidence', 0.0),
+                topic_candidates=tuple(c.get('topic_candidates') or ()),
+            )))
+            if len(out) >= max_results:
+                break
         return out

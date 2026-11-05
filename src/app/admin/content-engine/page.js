@@ -54,6 +54,49 @@ function ContentEngineBody() {
   const [message, setMessage] = useState(null);
   const [publications, setPublications] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [generationTopics, setGenerationTopics] = useState([]);
+  const [selectedTopicId, setSelectedTopicId] = useState('');
+  const [mcqCount, setMcqCount] = useState(5);
+  const [generating, setGenerating] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState(null);
+  const [generationQuality, setGenerationQuality] = useState(null);
+
+  async function loadGenerationTopics() {
+    try {
+      const res = await fetch('/api/admin/content-engine/generate', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not load generation topics');
+      setGenerationTopics(data.topics ?? []);
+    } catch (error) {
+      setGenerationMessage({ type: 'error', text: error.message });
+    }
+  }
+
+  async function generateTopicContent() {
+    if (!selectedTopicId) return;
+    setGenerating(true);
+    setGenerationMessage(null);
+    setGenerationQuality(null);
+    try {
+      const res = await fetch('/api/admin/content-engine/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topicId: selectedTopicId, mcqCount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Generation failed');
+      setGenerationQuality(data.quality);
+      const text = JSON.stringify(data.package, null, 2);
+      setPackageText(text);
+      setPackageData(normalizePackage(data.package));
+      setFileName('AI-generated topic package');
+      setGenerationMessage({ type: 'success', text: 'Generated content passed structural and source-evidence checks. Review the quality details, then import it into the human review queue.' });
+    } catch (error) {
+      setGenerationMessage({ type: 'error', text: error.message });
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function loadPublications() {
     try {
@@ -66,7 +109,7 @@ function ContentEngineBody() {
     }
   }
 
-  useEffect(() => { loadPublications(); }, []);
+  useEffect(() => { loadPublications(); loadGenerationTopics(); }, []);
 
   function parsePackage(text) {
     setMessage(null);
@@ -133,6 +176,54 @@ function ContentEngineBody() {
           </p>
         </div>
         <Link href="/admin/review" className="btn btn-primary" style={{ textDecoration: 'none' }}>Open review queue</Link>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <span className="eyebrow">AI lesson generation</span>
+        <h2 style={{ marginTop: 8 }}>Generate from approved source material</h2>
+        <p className="muted" style={{ marginTop: 6, fontSize: '0.84rem' }}>
+          Choose a syllabus topic with approved, non-PYQ study resources. The generator creates a beginner-friendly lesson and original MCQs with source evidence. AI-suggested answers remain unverified until an admin checks them.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px auto', gap: 10, marginTop: 14, alignItems: 'end' }}>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+            Syllabus topic
+            <select value={selectedTopicId} onChange={(event) => setSelectedTopicId(event.target.value)}
+              style={{ display: 'block', width: '100%', marginTop: 6, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--paper)' }}>
+              <option value="">Choose a topic…</option>
+              {generationTopics.map((topic) => (
+                <option key={topic.topicId} value={topic.topicId} disabled={topic.approvedSourceCount === 0}>
+                  {topic.subjectName} · {topic.chapterName} · {topic.topicName} ({topic.approvedSourceCount} sources)
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+            MCQ count
+            <select value={mcqCount} onChange={(event) => setMcqCount(Number(event.target.value))}
+              style={{ display: 'block', width: '100%', marginTop: 6, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--paper)' }}>
+              {[3, 5, 8, 10].map((count) => <option key={count} value={count}>{count}</option>)}
+            </select>
+          </label>
+          <button type="button" className="btn btn-primary" disabled={!selectedTopicId || generating} onClick={generateTopicContent}>
+            {generating ? 'Generating…' : 'Generate lesson + MCQs'}
+          </button>
+        </div>
+        {generationMessage && (
+          <div className="card-sunk" style={{ marginTop: 12, background: generationMessage.type === 'error' ? 'var(--warm-tint)' : 'var(--paper)' }}>
+            <p>{generationMessage.text}</p>
+          </div>
+        )}
+        {generationQuality && (
+          <div className="stat-row" style={{ marginTop: 12 }}>
+            <Stat value={generationQuality.lessonCount} label="lesson" />
+            <Stat value={generationQuality.mcqCount} label="MCQs" />
+            <Stat value={generationQuality.sourceCount} label="approved sources" />
+            <Stat value="Human check" label="answer verification" />
+          </div>
+        )}
+        <p className="muted" style={{ marginTop: 10, fontSize: '0.78rem' }}>
+          Generation does not publish. The generated package is placed in the import panel below and must be imported into the review queue before an authorised reviewer can approve it.
+        </p>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

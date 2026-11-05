@@ -28,11 +28,10 @@ def resources(status:str|None=None, limit:int=50):
 @router.get('/resources/{resource_id}/file')
 def resource_file(resource_id: int):
     with db().connection() as c:
-        row = c.execute('SELECT id,title,local_path,status,mime_type FROM resources WHERE id=?', (resource_id,)).fetchone()
+        row = c.execute('SELECT id,title,local_path,status,mime_type,actual_size FROM resources WHERE id=?', (resource_id,)).fetchone()
     if not row or row['status'] != 'complete' or not row['local_path']:
         raise HTTPException(status_code=404, detail='Resource is not available for analysis')
-    from pathlib import Path
-    path = Path(row['local_path'])
-    if not path.is_absolute(): path = (Path(DB_PATH).parent / path).resolve()
-    if not path.exists() or not path.is_file(): raise HTTPException(status_code=404, detail='Downloaded resource file is missing')
+    from app.engine.integrity.path_resolver import resolve_resource_path
+    path = resolve_resource_path(row['local_path'], row['actual_size'])
+    if path is None: raise HTTPException(status_code=404, detail='Downloaded resource file is missing or its size does not match the database record')
     return FileResponse(path, media_type=row['mime_type'] or 'application/octet-stream', filename=path.name)

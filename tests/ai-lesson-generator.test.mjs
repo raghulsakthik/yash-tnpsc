@@ -77,3 +77,58 @@ test('refuses to generate when no approved source evidence is supplied', async (
     else process.env.GEMINI_API_KEY = previous;
   }
 });
+
+test('creates a source-linked review-only package and never auto-publishes generated content', async () => {
+  const previous = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = 'test-placeholder';
+  const sourceId = '11111111-1111-4111-8111-111111111111';
+  const packageEvidence = [{ ...evidence[0], id: sourceId, title: 'TNPSC approved notes', source: 'polity-notes.pdf', page: 4 }];
+  const output = structuredClone(valid);
+  output.lesson.sourceIds = [sourceId];
+  output.mcqs[0].sourceIds = [sourceId];
+  output.mcqs[0].answerEvidence.sourceId = sourceId;
+  let prompt;
+  try {
+    const result = await generateTopicPackage({
+      topic: { id: 'tnpsc.polity.constitution', name: 'Constitution basics', subject_name: 'Indian Polity', chapter_name: 'Constitution' },
+      evidence: packageEvidence,
+      mcqCount: 1,
+      generateJsonFn: async (value) => { prompt = value; return output; },
+    });
+    assert.match(prompt.user, /APPROVED SOURCE EXCERPTS/);
+    assert.match(prompt.system, /verbatim answerEvidence quote/);
+    assert.equal(result.publication.items.length, 2);
+    assert.equal(result.publication.items[0].kind, 'lesson');
+    assert.equal(result.publication.items[0].topic_id, 'tnpsc.polity.constitution');
+    assert.deepEqual(result.publication.items[0].payload.sourceIds, [sourceId]);
+    assert.equal(result.publication.items[1].kind, 'mcq');
+    assert.equal(result.publication.items[1].topic_id, 'tnpsc.polity.constitution');
+    assert.match(result.publication.items[1].payload.explanation, /independently verify before approval/);
+    assert.equal(result.quality.status, 'REVIEW_REQUIRED');
+    assert.equal(result.quality.answerVerification, 'UNVERIFIED_HUMAN_CHECK_REQUIRED');
+    assert.equal(result.quality.autoPublished, 0);
+  } finally {
+    if (previous === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previous;
+  }
+});
+
+test('does not stage a package when the provider is unavailable or output fails validation', async () => {
+  const previous = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = 'test-placeholder';
+  try {
+    await assert.rejects(
+      generateTopicPackage({ topic: { id: 'topic-1', name: 'Topic' }, evidence, mcqCount: 1, generateJsonFn: async () => null }),
+      (error) => error instanceof LessonGenerationError && error.code === 'AI_GENERATION_UNAVAILABLE',
+    );
+    const invalid = structuredClone(valid);
+    invalid.mcqs[0].answerEvidence.quote = 'This quote is not in the source text.';
+    await assert.rejects(
+      generateTopicPackage({ topic: { id: 'topic-1', name: 'Topic' }, evidence, mcqCount: 1, generateJsonFn: async () => invalid }),
+      (error) => error instanceof LessonGenerationError && error.code === 'AI_OUTPUT_FAILED_VALIDATION' && error.issues.includes('MCQ_1_ANSWER_EVIDENCE_NOT_FOUND'),
+    );
+  } finally {
+    if (previous === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previous;
+  }
+});

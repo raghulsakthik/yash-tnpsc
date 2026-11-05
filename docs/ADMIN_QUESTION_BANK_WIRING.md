@@ -67,12 +67,12 @@ The lesson authoring routes are also protected against status escalation:
 
 ## Validation and rollout
 
-- Root Node test suite: 405 passed, 0 failed.
+- Root Node test suite: 407 passed, 0 failed.
 - Next.js production build and TypeScript: PASS (46 static pages).
 - nova-ui TypeScript check (`npm run lint`): PASS.
 - nova-ui desktop Vite build: PASS.
 - Android Vite build: PASS.
-- Question and lesson workflow policy tests: 19 passed; AI lesson generator validation tests: PASS; migration version uniqueness: PASS.
+- Question and lesson workflow policy tests: 19 passed; AI lesson generator tests: 8 passed; migration version uniqueness: PASS.
 - Content Engine hardening contract: PASS.
 - V74 is now used by the main branch for learner suspension metadata; this branch's question review status migration is V75. Verify the production migration ledger before deployment; V75 is pending production rollout.
 - Local PostgreSQL is unavailable in the current development environment. The GitHub disposable-Postgres review E2E now also exercises subject-expert subject scoping, cross-subject question denial, filtered lesson/topic-map lists, and AI-generation permission denial; the updated run is pending.

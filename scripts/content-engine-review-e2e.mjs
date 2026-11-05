@@ -26,7 +26,13 @@ function tokenHash(token) { return crypto.createHash('sha256').update(token).dig
 const db = new Client({ connectionString: databaseUrl });
 await db.connect();
 let server;
-const created = { adminId: null, sessionHash: null, publications: [], batches: [], questionIds: [], lessonIds: [] };
+const created = {
+  adminId: null, sessionHash: null,
+  questionReviewerId: null, questionReviewerSessionHash: null,
+  contentReviewerId: null, contentReviewerSessionHash: null,
+  publications: [], batches: [], questionIds: [], lessonIds: [],
+  manualQuestionIds: [], lessonWorkflowTopicId: null,
+};
 
 try {
   const topicResult = await db.query(`SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id ORDER BY (l.topic_id IS NULL) DESC,t.id LIMIT 1`);
@@ -41,6 +47,30 @@ try {
   await db.query(`INSERT INTO app_user(id, role, status, admin_role) VALUES ($1,'ADMIN','ACTIVE','super_admin')`, [adminId]);
   await db.query(`INSERT INTO user_session(user_id, token_hash, expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [adminId, created.sessionHash]);
 
+  const questionReviewerId = crypto.randomUUID();
+  const questionReviewerToken = crypto.randomBytes(32).toString('hex');
+  created.questionReviewerId = questionReviewerId;
+  created.questionReviewerSessionHash = tokenHash(questionReviewerToken);
+  await db.query(`INSERT INTO learner(id,name) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [questionReviewerId, 'Question Reviewer E2E']);
+  await db.query(`INSERT INTO app_user(id,role,status,admin_role) VALUES ($1,'ADMIN','ACTIVE','question_reviewer')`, [questionReviewerId]);
+  await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [questionReviewerId, created.questionReviewerSessionHash]);
+
+  const contentReviewerId = crypto.randomUUID();
+  const contentReviewerToken = crypto.randomBytes(32).toString('hex');
+  created.contentReviewerId = contentReviewerId;
+  created.contentReviewerSessionHash = tokenHash(contentReviewerToken);
+  await db.query(`INSERT INTO learner(id,name) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [contentReviewerId, 'Content Reviewer E2E']);
+  await db.query(`INSERT INTO app_user(id,role,status,admin_role) VALUES ($1,'ADMIN','ACTIVE','content_reviewer')`, [contentReviewerId]);
+  await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [contentReviewerId, created.contentReviewerSessionHash]);
+
+  const workflowTopic = await db.query(
+    `SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id
+      WHERE l.topic_id IS NULL AND t.id<>$1 ORDER BY t.id LIMIT 1`,
+    [topicId]
+  );
+  assert.ok(workflowTopic.rows.length, 'a second lesson-free topic is required for lesson workflow tests');
+  created.lessonWorkflowTopicId = workflowTopic.rows[0].id;
+
   server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', String(port)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_ENV: 'test' } });
   let output = '';
   server.stdout.on('data', (chunk) => { output += chunk.toString(); });
@@ -53,6 +83,119 @@ try {
   if (!ready) throw new Error(`Next server did not become ready. Output: ${output}`);
 
   const cookie = `session_token=${token}`;
+  const questionReviewerCookie = `session_token=${questionReviewerToken}`;
+  const contentReviewerCookie = `session_token=${contentReviewerToken}`;
+
+  // Admin Question Bank: syllabus topics, draft creation, review and publish RBAC.
+  const topicListResponse = await fetch(`${baseUrl}/api/admin/topics`, { headers: { cookie } });
+  assert.equal(topicListResponse.status, 200, await topicListResponse.text());
+  const topicList = await topicListResponse.json();
+  assert.ok(topicList.topics.some((topic) => topic.topicId === topicId));
+
+  const manualQuestionResponse = await fetch(`${baseUrl}/api/admin/questions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({
+      topicId,
+      prompt: `CI manual question ${crypto.randomUUID()}?`,
+      options: ['Option A', 'Option B', 'Option C', 'Option D'],
+      answerIndex: 1,
+      explanation: 'Option B is supported by the reviewed study material.',
+      difficulty: 0.4,
+      estimatedSeconds: 35,
+    }),
+  });
+  const manualQuestionText = await manualQuestionResponse.text();
+  assert.equal(manualQuestionResponse.status, 201, manualQuestionText);
+  const manualQuestion = JSON.parse(manualQuestionText);
+  created.manualQuestionIds.push(manualQuestion.id);
+  assert.equal(manualQuestion.status, 'DRAFT');
+  assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [manualQuestion.id])).rows[0].status, 'DRAFT');
+
+  const questionListResponse = await fetch(`${baseUrl}/api/admin/questions?topic=${encodeURIComponent(topicId)}`, { headers: { cookie } });
+  assert.equal(questionListResponse.status, 200, await questionListResponse.text());
+  assert.ok((await questionListResponse.json()).questions.some((question) => question.id === manualQuestion.id));
+
+  const submitQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ status: 'IN_REVIEW' }),
+  });
+  assert.equal(submitQuestionResponse.status, 200, await submitQuestionResponse.text());
+
+  const reviewQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
+    body: JSON.stringify({ status: 'REVIEWED' }),
+  });
+  assert.equal(reviewQuestionResponse.status, 200, await reviewQuestionResponse.text());
+
+  const blockedQuestionPublish = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
+    body: JSON.stringify({ status: 'PUBLISHED' }),
+  });
+  assert.equal(blockedQuestionPublish.status, 403, await blockedQuestionPublish.text());
+
+  const reviewerEditWithoutTransition = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: questionReviewerCookie },
+    body: JSON.stringify({ explanation: 'Reviewer correction while retaining REVIEWED status.', status: 'REVIEWED' }),
+  });
+  assert.equal(reviewerEditWithoutTransition.status, 200, await reviewerEditWithoutTransition.text());
+
+  const publishQuestionResponse = await fetch(`${baseUrl}/api/admin/questions/${manualQuestion.id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ status: 'PUBLISHED' }),
+  });
+  assert.equal(publishQuestionResponse.status, 200, await publishQuestionResponse.text());
+  assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [manualQuestion.id])).rows[0].status, 'PUBLISHED');
+
+  // Lesson workflow: reviewers approve, publishers publish; no skipped approval.
+  const lessonWorkflowTopicId = created.lessonWorkflowTopicId;
+  const lessonDraftResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PUT', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({
+      title: 'CI lesson workflow',
+      concept: 'A controlled lesson publication lifecycle.',
+      definition: 'A lesson must be reviewed before publication.',
+      explanation: 'Author, reviewer and publisher are separate workflow steps.',
+      examples: [], revisionNotes: ['Review before publish.'],
+      contentMarkdown: '## Workflow\n\nReview before publication.',
+      status: 'DRAFT',
+    }),
+  });
+  assert.equal(lessonDraftResponse.status, 200, await lessonDraftResponse.text());
+
+  const skippedApprovalResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
+    body: JSON.stringify({ status: 'APPROVED' }),
+  });
+  assert.equal(skippedApprovalResponse.status, 409, await skippedApprovalResponse.text());
+
+  const submitLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ status: 'IN_REVIEW' }),
+  });
+  assert.equal(submitLessonResponse.status, 200, await submitLessonResponse.text());
+
+  const approveLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
+    body: JSON.stringify({ status: 'APPROVED' }),
+  });
+  assert.equal(approveLessonResponse.status, 200, await approveLessonResponse.text());
+
+  const blockedLessonPublish = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie: contentReviewerCookie },
+    body: JSON.stringify({ status: 'PUBLISHED' }),
+  });
+  assert.equal(blockedLessonPublish.status, 403, await blockedLessonPublish.text());
+
+  const publishLessonResponse = await fetch(`${baseUrl}/api/admin/lessons/${encodeURIComponent(lessonWorkflowTopicId)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ status: 'PUBLISHED' }),
+  });
+  assert.equal(publishLessonResponse.status, 200, await publishLessonResponse.text());
+  assert.equal((await db.query(`SELECT status FROM lesson WHERE topic_id=$1`, [lessonWorkflowTopicId])).rows[0].status, 'PUBLISHED');
+
+  console.log('admin question bank + lesson review/publish RBAC E2E: PASS');
+
   async function importPublication(label, title = `Review ${label}`) {
     const lessonId = `ci-review-lesson-${label}-${crypto.randomUUID()}`;
     const questionId = `ci-review-mcq-${label}-${crypto.randomUUID()}`;
@@ -140,9 +283,16 @@ try {
     for (const id of created.batches) await db.query('DELETE FROM content_review_batch WHERE id=$1', [id]);
     for (const id of created.lessonIds) await db.query('DELETE FROM content_engine_lesson_staging WHERE id=$1', [id]);
     for (const id of created.questionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
+    for (const id of created.manualQuestionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
+    if (created.lessonWorkflowTopicId) await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.lessonWorkflowTopicId]);
     for (const id of created.publications) await db.query('DELETE FROM content_engine_publication WHERE publication_id=$1', [id]);
-    if (created.sessionHash) await db.query('DELETE FROM user_session WHERE token_hash=$1', [created.sessionHash]);
-    if (created.adminId) await db.query('DELETE FROM app_user WHERE id=$1', [created.adminId]);
+    for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash].filter(Boolean)) {
+      await db.query('DELETE FROM user_session WHERE token_hash=$1', [hash]);
+    }
+    for (const id of [created.adminId, created.questionReviewerId, created.contentReviewerId].filter(Boolean)) {
+      await db.query('DELETE FROM app_user WHERE id=$1', [id]);
+      await db.query('DELETE FROM learner WHERE id=$1', [id]);
+    }
   } finally {
     if (server) { server.kill('SIGTERM'); await sleep(500); }
     await db.end();

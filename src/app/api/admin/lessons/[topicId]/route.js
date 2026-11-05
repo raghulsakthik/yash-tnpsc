@@ -3,7 +3,7 @@ import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
 import { getLessonForEdit, upsertLesson, deleteLesson, setLessonStatus } from '../../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../../lib/adminContent.mjs';
-import { isLessonStatus, lessonTransitionPermission } from '../../../../../lib/adminLessonWorkflow.mjs';
+import { isLessonStatus, isAllowedLessonTransition, lessonTransitionPermission } from '../../../../../lib/adminLessonWorkflow.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +34,11 @@ export async function PUT(request, { params }) {
     }
     const body = await request.json();
     const nextStatus = body.status ?? existing?.status ?? 'DRAFT';
-    if (!isLessonStatus(nextStatus) || (!existing && nextStatus === 'ARCHIVED')) {
-      return NextResponse.json({ code: 'INVALID_STATUS', message: 'Unsupported initial or lesson status' }, { status: 400 });
+    if (!isLessonStatus(nextStatus) || (!existing && !['DRAFT', 'IN_REVIEW'].includes(nextStatus))) {
+      return NextResponse.json({ code: 'INVALID_STATUS', message: 'A new lesson must start as DRAFT or IN_REVIEW.' }, { status: 400 });
+    }
+    if (existing && !isAllowedLessonTransition(existing.status, nextStatus)) {
+      return NextResponse.json({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot move a lesson from ${existing.status} to ${nextStatus}.` }, { status: 409 });
     }
     const transitionPermission = lessonTransitionPermission(existing?.status, nextStatus);
     if (transitionPermission && (!(await requirePermission(request, transitionPermission)) ||
@@ -61,6 +64,9 @@ export async function PATCH(request, { params }) {
     if (!existing) return NextResponse.json({ code: 'LESSON_NOT_FOUND', message: `No lesson for ${topicId}` }, { status: 404 });
     const body = await request.json();
     if (!isLessonStatus(body.status)) return NextResponse.json({ code: 'INVALID_STATUS', message: 'Unsupported lesson status' }, { status: 400 });
+    if (!isAllowedLessonTransition(existing.status, body.status)) {
+      return NextResponse.json({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot move a lesson from ${existing.status} to ${body.status}.` }, { status: 409 });
+    }
     const transitionPermission = lessonTransitionPermission(existing.status, body.status);
     if (transitionPermission && (!(await requirePermission(request, transitionPermission)) ||
         !(await canActOnTopic(admin, transitionPermission, topicId)))) {

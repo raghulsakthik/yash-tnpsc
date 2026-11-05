@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PERMISSIONS, hasPermission } from '../src/lib/permissions.mjs';
-import { LESSON_STATUSES, isLessonStatus, lessonStatusPermission, lessonTransitionPermission } from '../src/lib/adminLessonWorkflow.mjs';
+import { LESSON_STATUSES, isLessonStatus, isAllowedLessonTransition, lessonStatusPermission, lessonTransitionPermission } from '../src/lib/adminLessonWorkflow.mjs';
 
 const admin = (adminRole) => ({ role: 'ADMIN', adminRole });
 
@@ -49,4 +49,20 @@ test('content admin can create, review and publish lessons', () => {
   assert.equal(hasPermission(adminUser, PERMISSIONS.CONTENT_UPDATE), true);
   assert.equal(hasPermission(adminUser, PERMISSIONS.REVIEW_CONTENT), true);
   assert.equal(hasPermission(adminUser, PERMISSIONS.CONTENT_PUBLISH), true);
+});
+
+test('lesson state machine prevents skipping human approval before publication', () => {
+  assert.equal(isAllowedLessonTransition('DRAFT', 'IN_REVIEW'), true);
+  assert.equal(isAllowedLessonTransition('DRAFT', 'APPROVED'), false);
+  assert.equal(isAllowedLessonTransition('IN_REVIEW', 'APPROVED'), true);
+  assert.equal(isAllowedLessonTransition('IN_REVIEW', 'PUBLISHED'), false);
+  assert.equal(isAllowedLessonTransition('APPROVED', 'PUBLISHED'), true);
+  assert.equal(isAllowedLessonTransition('PUBLISHED', 'DRAFT'), true);
+  assert.equal(isAllowedLessonTransition('ARCHIVED', 'DRAFT'), true);
+  assert.equal(isAllowedLessonTransition('PUBLISHED', 'ARCHIVED'), true);
+});
+
+test('withdrawal and archive require stronger permissions than ordinary editing', () => {
+  assert.equal(lessonTransitionPermission('PUBLISHED', 'DRAFT'), PERMISSIONS.CONTENT_PUBLISH);
+  assert.equal(lessonTransitionPermission('IN_REVIEW', 'ARCHIVED'), PERMISSIONS.CONTENT_DELETE);
 });

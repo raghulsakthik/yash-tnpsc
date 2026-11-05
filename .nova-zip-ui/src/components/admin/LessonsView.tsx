@@ -557,7 +557,7 @@ export const LessonsView: React.FC<LessonsViewProps> = ({
                   </button>
                 )}
 
-                {canPublish && (
+                {canPublish && editingLesson?.status === 'APPROVED' && (
                   <button
                     type="button"
                     onClick={() => handleSave('PUBLISHED')}

@@ -22,7 +22,22 @@ export function lessonStatusPermission(status) {
   }
 }
 
+const ALLOWED_TRANSITIONS = Object.freeze({
+  DRAFT: ['IN_REVIEW', 'ARCHIVED'],
+  IN_REVIEW: ['APPROVED', 'DRAFT', 'ARCHIVED'],
+  APPROVED: ['PUBLISHED', 'DRAFT', 'ARCHIVED'],
+  PUBLISHED: ['DRAFT', 'ARCHIVED'],
+  ARCHIVED: ['DRAFT'],
+});
+
+export function isAllowedLessonTransition(currentStatus, nextStatus) {
+  if (currentStatus === nextStatus) return true;
+  return Boolean(ALLOWED_TRANSITIONS[currentStatus]?.includes(nextStatus));
+}
+
 export function lessonTransitionPermission(currentStatus, nextStatus) {
   if (nextStatus === undefined || nextStatus === null || nextStatus === currentStatus) return null;
+  if (nextStatus === 'ARCHIVED') return PERMISSIONS.CONTENT_DELETE;
+  if (currentStatus === 'PUBLISHED' && nextStatus === 'DRAFT') return PERMISSIONS.CONTENT_PUBLISH;
   return lessonStatusPermission(nextStatus);
 }

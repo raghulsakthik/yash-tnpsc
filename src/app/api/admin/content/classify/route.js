@@ -4,6 +4,8 @@ import { getSyllabusTree } from '../../../../../lib/adminContent.mjs';
 import { extractText, ExtractError } from '../../../../../lib/documentExtract.mjs';
 import { renderPdfDiagramToPng } from '../../../../../lib/pdfRender.mjs';
 import { classifyContent, ClassifyError } from '../../../../../lib/ai/contentClassifier.mjs';
+import { detectPyqSource } from '../../../../../lib/pyqSource.mjs';
+import { evaluateClassifiedContent } from '../../../../../lib/contentQuality.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,9 +43,26 @@ export async function POST(request) {
   try {
     const buffer = Buffer.from(body.fileBase64, 'base64');
     const { pages, isPdf } = await extractText(buffer, body.fileName ?? '');
+    const sourceText = pages.map((page) => page.text).join('\n');
+    const pyqSource = detectPyqSource(body.fileName ?? '', sourceText);
+    if (pyqSource.isPyq) {
+      return NextResponse.json({
+        mcqs: [],
+        resources: [],
+        truncated: false,
+        chunkCount: 0,
+        sourceClassification: {
+          kind: 'PYQ_SOURCE',
+          ...pyqSource,
+          publishableAsNormalContent: false,
+          message: 'This document appears to be a previous-year or official question paper. Keep it in the PYQ evidence library; do not convert its questions into ordinary learner MCQs or generated notes.',
+        },
+      });
+    }
 
     const syllabusTree = await getSyllabusTree();
-    const result = await classifyContent(pages, syllabusTree);
+    const classified = await classifyContent(pages, syllabusTree);
+    const result = evaluateClassifiedContent({ pages, result: classified, syllabusTree });
 
     if (isPdf) {
       // Cropped per item, not cached per page: two questions sharing a

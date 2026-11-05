@@ -1,20 +1,20 @@
 [Unit]
-Description=TNPSC Retrieval Engine local API
+Description=TNPSC Material Engine local API
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/yash/tnpsc/engines/retrieval
-EnvironmentFile=-/home/yash/tnpsc/engines/retrieval/.env
-ExecStart=/home/yash/tnpsc/engines/retrieval/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8787
+WorkingDirectory=/home/yash/tnpsc-material-engine
+EnvironmentFile=-/home/yash/tnpsc-material-engine/.env
+ExecStart=/home/yash/tnpsc-material-engine/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8787
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=false
-ReadWritePaths=/home/yash/tnpsc/engines/retrieval/data /home/yash/tnpsc/engines/retrieval/logs
+ReadWritePaths=/home/yash/tnpsc-material-engine/data /home/yash/tnpsc-material-engine/logs
 
 [Install]
 WantedBy=default.target

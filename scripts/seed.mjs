@@ -247,6 +247,18 @@ try {
       WHERE id IN ('general-studies', 'aptitude-mental-ability', 'language-en', 'language-ta')
      ON CONFLICT (curriculum_id, subject_id) DO UPDATE SET section_id = EXCLUDED.section_id, sort_order = EXCLUDED.sort_order`
   );
+  // Group IIA Mains (code 583) is a separate curriculum with its own subject
+  // ids. It remains DRAFT until its learning phases and content are approved.
+  await client.query(
+    `INSERT INTO curriculum_subject (curriculum_id, section_id, subject_id, sort_order)
+     SELECT 'tnpsc-group-2a-mains-583',
+            CASE WHEN id = 'mains-583.general-studies' THEN 'tnpsc583.general-studies'
+                 WHEN id = 'mains-583.general-intelligence' THEN 'tnpsc583.general-intelligence' END,
+            id, sort_order
+       FROM subject
+      WHERE id IN ('mains-583.general-studies', 'mains-583.general-intelligence')
+     ON CONFLICT (curriculum_id, subject_id) DO UPDATE SET section_id = EXCLUDED.section_id, sort_order = EXCLUDED.sort_order`
+  );
 
   // V35's real learning_week/learning_day/learning_unit rows (db/migrations
   // is schema-only; the orientation+foundation week-1 units reference the

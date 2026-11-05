@@ -133,9 +133,11 @@ export default function PdfClassifyPanel() {
       setProposal({
         processingBatchId: queued.batchId,
         sourceFileName: file.name,
-        mcqs: (data.mcqs ?? []).map((m) => ({ ...m, included: true })),
-        resources: (data.resources ?? []).map((r) => ({ ...r, included: true })),
+        mcqs: (data.mcqs ?? []).map((m) => ({ ...m, included: m.quality?.status !== 'BLOCKED' })),
+        resources: (data.resources ?? []).map((r) => ({ ...r, included: r.quality?.status !== 'BLOCKED' })),
         truncated: data.truncated,
+        qualitySummary: data.qualitySummary ?? null,
+        sourceClassification: data.sourceClassification ?? null,
       });
     } catch (err) {
       setError(err.message);
@@ -283,13 +285,35 @@ export default function PdfClassifyPanel() {
 
       {proposal && (
         <>
+          {proposal.sourceClassification?.kind === 'PYQ_SOURCE' && (
+            <div className="card" style={{ background: 'var(--warm-tint)' }}>
+              <strong>Previous-year question paper detected</strong>
+              <p style={{ marginTop: 6 }}>{proposal.sourceClassification.message}</p>
+              <p className="muted" style={{ marginTop: 6, fontSize: '0.8rem' }}>
+                Detection: {proposal.sourceClassification.reason}. This upload is not eligible for ordinary MCQ or study-note publication.
+              </p>
+            </div>
+          )}
+
+          {proposal.qualitySummary && proposal.qualitySummary.total > 0 && (
+            <div className="card">
+              <strong>Content quality check</strong>
+              <p className="muted" style={{ marginTop: 6, fontSize: '0.84rem' }}>
+                {proposal.qualitySummary.total} candidates · {proposal.qualitySummary.blocked} blocked · {proposal.qualitySummary.reviewRequired} need human review · {proposal.qualitySummary.sourceKeyMatched} source answer keys matched · {proposal.qualitySummary.humanAnswerVerificationRequired} answers unverified.
+              </p>
+              <p style={{ marginTop: 6, fontSize: '0.8rem', fontWeight: 600 }}>
+                Nothing is auto-published. Check every answer before committing.
+              </p>
+            </div>
+          )}
+
           {proposal.truncated && (
             <div className="card" style={{ background: 'var(--warm-tint)' }}>
               <p>This file was extremely large -- only the first ~40 batches of content were analyzed. Split it into smaller files and upload the rest separately to get everything.</p>
             </div>
           )}
 
-          {proposal.mcqs.length === 0 && proposal.resources.length === 0 && (
+          {!proposal.sourceClassification && proposal.mcqs.length === 0 && proposal.resources.length === 0 && (
             <div className="card"><p className="muted">No usable questions or study notes were found in this PDF.</p></div>
           )}
 
@@ -321,11 +345,23 @@ export default function PdfClassifyPanel() {
                       )}
                       <ul style={{ marginTop: 6, paddingLeft: 20, fontSize: '0.88rem' }}>
                         {m.options.map((o, oi) => (
-                          <li key={oi} style={{ fontWeight: oi === m.answerIndex ? 700 : 400, color: oi === m.answerIndex ? 'var(--success)' : 'inherit' }}>
+                          <li key={oi} style={{ fontWeight: oi === m.answerIndex && m.quality?.answerVerification === 'SOURCE_KEY_MATCH' ? 700 : 400, color: oi === m.answerIndex && m.quality?.answerVerification === 'SOURCE_KEY_MATCH' ? 'var(--success)' : 'inherit' }}>
                             {o}
                           </li>
                         ))}
                       </ul>
+                      <p className="muted" style={{ marginTop: 6, fontSize: '0.8rem' }}>
+                        {m.quality?.answerVerification === 'SOURCE_KEY_MATCH'
+                          ? 'Answer key matched against the source document.'
+                          : m.quality?.answerVerification === 'SOURCE_KEY_CONFLICT'
+                            ? 'Answer conflicts with the source key. Do not include until corrected.'
+                            : 'Suggested answer is not verified by a source answer key. Human verification is required.'}
+                      </p>
+                      {m.quality?.issues?.length > 0 && (
+                        <p style={{ marginTop: 4, fontSize: '0.78rem', color: 'var(--warm)' }}>
+                          Quality review: {m.quality.issues.join(', ')}
+                        </p>
+                      )}
                       <TopicPicker item={m} topics={topics} onChange={(next) => updateMcq(i, next)} />
                     </div>
                   </label>
@@ -354,6 +390,11 @@ export default function PdfClassifyPanel() {
                           />
                           <span className="muted" style={{ fontSize: '0.78rem' }}>Captured from page {r.sourcePage}.</span>
                         </div>
+                      )}
+                      {r.quality?.issues?.length > 0 && (
+                        <p style={{ marginTop: 4, fontSize: '0.78rem', color: 'var(--warm)' }}>
+                          Quality review: {r.quality.issues.join(', ')}
+                        </p>
                       )}
                       <TopicPicker item={r} topics={topics} onChange={(next) => updateResource(i, next)} />
                     </div>

@@ -13,6 +13,11 @@
 # The validator reports coverage; it does not fail the build on it.
 
 exam: tnpsc-prelims-495
+curriculum_id: tnpsc-prelims-495
+exam_group: TNPSC_GROUP_2_2A
+exam_stage: PRELIMS
+source_reference: TNPSC Group II/IIA Preliminary Syllabus, code 495, dated 12.12.2024
+status: ACTIVE
 code: 495
 dated: 2024-12-12
 total_questions: 200
@@ -27,22 +32,64 @@ subjects:
         name: General Science
         sort_order: 1
         question_count: 5
-        transcribed: false
-        topics: []
+        transcribed: true
+        topics:
+          - { id: science.scientific-temperament, name: "Scientific knowledge and scientific temper" }
+          - { id: science.scientific-reasoning, name: "Power of reasoning and conceptual learning" }
+          - { id: science.universe-laws, name: "Nature of the universe and general scientific laws" }
+          - { id: science.mechanics, name: "Mechanics: force, motion, energy and properties of matter" }
+          - { id: science.electricity-magnetism, name: "Electricity and magnetism" }
+          - { id: science.light-sound-heat, name: "Light, sound and heat" }
+          - { id: science.nuclear-electronics, name: "Nuclear physics, lasers, electronics and communication" }
+          - { id: science.chemistry, name: "Elements, compounds, acids, bases and salts" }
+          - { id: science.petroleum-fertilizers, name: "Petroleum products, fertilizers and pesticides" }
+          - { id: science.life-science, name: "Life science and classification of living organisms" }
+          - { id: science.evolution-genetics, name: "Evolution and genetics" }
+          - { id: science.physiology-nutrition, name: "Physiology, nutrition, health and hygiene" }
+          - { id: science.human-diseases, name: "Human diseases" }
+          - { id: science.environment-ecology, name: "Environment and ecology" }
+          - { id: science.inventions-technology, name: "Latest inventions in science and technology" }
 
       - id: gs.geography-india
         name: Geography of India
         sort_order: 2
         question_count: 5
-        transcribed: false
-        topics: []
+        transcribed: true
+        topics:
+          - { id: geography.location-physical-features, name: "Location and physical features of India" }
+          - { id: geography.monsoon-climate, name: "Monsoon, rainfall, weather and climate" }
+          - { id: geography.water-rivers, name: "Water resources and rivers in India" }
+          - { id: geography.soil-minerals, name: "Soil, minerals and natural resources" }
+          - { id: geography.forests-wildlife, name: "Forests and wildlife" }
+          - { id: geography.agriculture, name: "Agricultural patterns" }
+          - { id: geography.transport-communication, name: "Transport and communication" }
+          - { id: geography.population, name: "Population density and distribution" }
+          - { id: geography.racial-linguistic-tribal-groups, name: "Racial and linguistic groups and major tribes" }
+          - { id: geography.disaster-management, name: "Natural calamities and disaster management" }
+          - { id: geography.pollution-climate-change, name: "Environmental pollution, climate change and preventive measures" }
+          - { id: geography.green-energy, name: "Green energy" }
+          - { id: geography.landmarks, name: "Geographical landmarks" }
 
       - id: gs.history-culture-national-movement
         name: History, Culture of India, and Indian National Movement
         sort_order: 3
         question_count: 10
-        transcribed: false
-        topics: []
+        transcribed: true
+        topics:
+          - { id: history.indus-valley, name: "Indus Valley Civilization" }
+          - { id: history.gupta-sultanate-mughal-maratha, name: "Guptas, Delhi Sultans, Mughals and Marathas" }
+          - { id: history.vijayanagara-bahmani, name: "Vijayanagara and Bahmani kingdoms" }
+          - { id: history.south-indian-history, name: "South Indian history" }
+          - { id: history.national-renaissance, name: "National Renaissance" }
+          - { id: history.early-anti-british-uprisings, name: "Early uprisings against British rule" }
+          - { id: history.indian-national-congress, name: "Indian National Congress and the national movement" }
+          - { id: history.freedom-movement-leaders, name: "Leaders of the freedom movement and their contributions" }
+          - { id: history.satyagraha-militant-movements, name: "Satyagraha and militant movements" }
+          - { id: history.communalism-partition, name: "Communalism and Partition" }
+          - { id: history.socio-cultural-change, name: "Change and continuity in India's socio-cultural history" }
+          - { id: history.indian-culture-unity-diversity, name: "Indian culture, unity in diversity, race, language and customs" }
+          - { id: history.secularism-social-harmony, name: "India as a secular state and social harmony" }
+          - { id: history.prominent-personalities, name: "Prominent personalities in arts, science, literature and philosophy" }
 
       - id: gs.indian-polity
         name: Indian Polity
@@ -75,15 +122,50 @@ subjects:
         name: Indian Economy and Development Administration in Tamil Nadu
         sort_order: 5
         question_count: 20
-        transcribed: false
-        topics: []
+        transcribed: true
+        topics:
+          - { id: economy.indian-economy, name: "Nature and structure of the Indian economy" }
+          - { id: economy.planning-niti-aayog, name: "Five-year plans, Planning Commission and NITI Aayog" }
+          - { id: economy.revenue-rbi-finance, name: "Sources of revenue, RBI and Finance Commission" }
+          - { id: economy.fiscal-monetary-policy-gst, name: "Fiscal policy, monetary policy and Goods and Services Tax" }
+          - { id: economy.union-state-resource-sharing, name: "Resource sharing between Union and State Governments" }
+          - { id: economy.employment-generation, name: "Employment generation and economic development" }
+          - { id: economy.land-reforms-agriculture, name: "Land reforms and agriculture" }
+          - { id: economy.science-technology-agriculture, name: "Application of science and technology in agriculture" }
+          - { id: economy.industrial-growth, name: "Industrial growth" }
+          - { id: economy.rural-welfare, name: "Rural welfare-oriented programmes" }
+          - { id: economy.social-problems, name: "Population, education, health, employment and poverty" }
+          - { id: economy.human-development-tamil-nadu, name: "Human Development Indicators in Tamil Nadu and national comparison" }
+          - { id: economy.social-reform-impact, name: "Impact of social reform movements on Tamil Nadu's socio-economic development" }
+          - { id: economy.political-parties-welfare, name: "Political parties and welfare schemes for different sections" }
+          - { id: economy.reservation-social-resources, name: "Reservation policy and access to social resources" }
+          - { id: economy.tamil-nadu-economic-trends, name: "Economic trends in Tamil Nadu" }
+          - { id: economy.social-welfare-schemes, name: "Role and impact of social welfare schemes" }
+          - { id: economy.social-justice-harmony, name: "Social justice and social harmony" }
+          - { id: economy.education-health-systems, name: "Education and health systems in Tamil Nadu" }
+          - { id: economy.tn-geography-economic-growth, name: "Geography of Tamil Nadu and its impact on economic growth" }
+          - { id: economy.tn-achievements, name: "Achievements of Tamil Nadu in various fields" }
+          - { id: economy.egovernance-administration, name: "E-Governance, public awareness and general administration" }
+          - { id: economy.public-delivery-systems, name: "Welfare schemes, public delivery systems and implementation problems" }
+          - { id: economy.current-socio-economic-issues, name: "Current socio-economic issues" }
 
       - id: gs.tn-history-culture-movements
         name: History, Culture, Heritage and Socio-Political Movements in Tamil Nadu
         sort_order: 6
         question_count: 20
-        transcribed: false
-        topics: []
+        transcribed: true
+        topics:
+          - { id: tnhistory.tamil-society-archaeology, name: "History of Tamil society and archaeological discoveries" }
+          - { id: tnhistory.tamil-literature, name: "Tamil literature from Sangam age to contemporary times" }
+          - { id: tnhistory.thirukkural, name: "Thirukkural: secular literature, universal values and everyday relevance" }
+          - { id: tnhistory.thirukkural-social-political, name: "Thirukkural and socio-political-economic affairs" }
+          - { id: tnhistory.tamilnadu-freedom-struggle, name: "Role of Tamil Nadu in the freedom struggle" }
+          - { id: tnhistory.early-agitations, name: "Early agitations against British rule" }
+          - { id: tnhistory.women-freedom-struggle, name: "Role of women in the freedom struggle" }
+          - { id: tnhistory.nineteenth-twentieth-movements, name: "Nineteenth- and twentieth-century socio-political movements" }
+          - { id: tnhistory.justice-party-rationalism, name: "Justice Party and growth of rationalism" }
+          - { id: tnhistory.self-respect-dravidian, name: "Self-Respect Movement and Dravidian Movement" }
+          - { id: tnhistory.periyar-anna, name: "Contributions of Thanthai Periyar and Perarignar Anna" }
 
   # ------------------------------------------------------------- 25 questions
   - id: aptitude-mental-ability
@@ -145,26 +227,26 @@ subjects:
     sort_order: 3
     language: en
     chapters:
-      - { id: en.grammar,               name: Grammar,               sort_order: 1, question_count: 25, transcribed: false, topics: [] }
-      - { id: en.vocabulary,            name: Vocabulary,            sort_order: 2, question_count: 15, transcribed: false, topics: [] }
-      - { id: en.writing-skills,        name: Writing Skills,        sort_order: 3, question_count: 10, transcribed: false, topics: [] }
-      - { id: en.technical-terms,       name: Technical Terms,       sort_order: 4, question_count: 10, transcribed: false, topics: [] }
-      - { id: en.reading-comprehension, name: Reading Comprehension, sort_order: 5, question_count: 20, transcribed: false, topics: [] }
-      - { id: en.translation,           name: Translation,           sort_order: 6, question_count: 5,  transcribed: false, topics: [] }
-      - { id: en.literary-works,        name: Literary Works,        sort_order: 7, question_count: 15, transcribed: false, topics: [] }
+      - { id: en.grammar,               name: Grammar,               sort_order: 1, question_count: 25, transcribed: true, topics: [ { id: english.grammar.parts-of-speech, name: "Parts of speech" }, { id: english.grammar.concord, name: "Concord and subject-verb agreement" }, { id: english.grammar.tense, name: "Tenses" }, { id: english.grammar.active-passive, name: "Active voice and passive voice" }, { id: english.grammar.sentence-types, name: "Types of sentences: statements, interrogatives, imperatives and exclamations" }, { id: english.grammar.sentence-transformation, name: "Sentence transformation" }, { id: english.grammar.verbs, name: "Main verbs, auxiliary verbs, regular and irregular verbs" }, { id: english.grammar.infinitives-gerunds-participles, name: "Infinitives, gerunds and participles" }, { id: english.grammar.question-tags, name: "Question tags" }, { id: english.grammar.sentence-patterns, name: "Sentence patterns" }, { id: english.grammar.phrases-clauses, name: "Phrases and clauses" }, { id: english.grammar.degrees-comparison, name: "Degrees of comparison" }, { id: english.grammar.direct-indirect, name: "Direct and indirect speech" }, { id: english.grammar.synthesis-punctuation, name: "Synthesis of sentences and punctuation" } ] }
+      - { id: en.vocabulary,            name: Vocabulary,            sort_order: 2, question_count: 15, transcribed: true, topics: [ { id: english.vocabulary.synonyms-antonyms, name: "Synonyms and antonyms" }, { id: english.vocabulary.homonyms-homophones, name: "Homonyms and homophones" }, { id: english.vocabulary.collocations, name: "Collocations" }, { id: english.vocabulary.idioms-phrases, name: "Idioms and phrases" }, { id: english.vocabulary.phrasal-verbs, name: "Phrasal verbs" }, { id: english.vocabulary.spelling-usage, name: "Spelling and correct usage of words" }, { id: english.vocabulary.one-word-substitution, name: "One-word substitution" }, { id: english.vocabulary.word-creation-derivatives, name: "Word creation and derivatives" }, { id: english.vocabulary.singular-plural, name: "Singular and plural forms, including zero plurals" }, { id: english.vocabulary.abbreviations, name: "Abbreviations" }, { id: english.vocabulary.british-american, name: "British and American English" }, { id: english.vocabulary.compound-words, name: "Compound words" }, { id: english.vocabulary.figures-of-speech, name: "Figures of speech" } ] }
+      - { id: en.writing-skills,        name: Writing Skills,        sort_order: 3, question_count: 10, transcribed: true, topics: [ { id: english.writing.letter-writing, name: "Formal and informal letter writing" }, { id: english.writing.jumbled-sentences, name: "Jumbled sentences and sentence ordering" }, { id: english.writing.queries, name: "Making queries" }, { id: english.writing.inferences, name: "Inferences" }, { id: english.writing.blanks, name: "Fill in the blanks" }, { id: english.writing.substitutions, name: "Sentence and word substitutions" } ] }
+      - { id: en.technical-terms,       name: Technical Terms,       sort_order: 4, question_count: 10, transcribed: true, topics: [ { id: english.technical.administrative, name: "Administrative terms" }, { id: english.technical.departmental, name: "Department-related terms" }, { id: english.technical.general-official, name: "General and official terms" }, { id: english.technical.correspondence, name: "Basics of official correspondence" } ] }
+      - { id: en.reading-comprehension, name: Reading Comprehension, sort_order: 5, question_count: 20, transcribed: true, topics: [ { id: english.reading.unseen-passages, name: "Unseen passages" }, { id: english.reading.news-headlines-editorials, name: "Newspapers, headlines and editorials" }, { id: english.reading.government-news, name: "Government-related news" }, { id: english.reading.question-types, name: "Comprehension question types and sentence completion" }, { id: english.reading.fact-ascertainment, name: "Ascertainment of facts and choosing the best response" } ] }
+      - { id: en.translation,           name: Translation,           sort_order: 6, question_count: 5,  transcribed: true, topics: [ { id: english.translation.word, name: "Word translation" }, { id: english.translation.sentence, name: "Sentence translation" }, { id: english.translation.tense, name: "Tense-related translation" }, { id: english.translation.voice, name: "Voice-related translation" } ] }
+      - { id: en.literary-works,        name: Literary Works,        sort_order: 7, question_count: 15, transcribed: true, topics: [ { id: english.literature.figures-of-speech, name: "Figures of speech" }, { id: english.literature.poetry-appreciation, name: "Appreciation and analysis of poetry" }, { id: english.literature.poems-authors, name: "Prescribed poems, poets and lines of significance" }, { id: english.literature.prose-authors, name: "Prescribed prose lessons and authors" }, { id: english.literature.drama, name: "Drama and prescribed literary extracts" } ] }
 
   - id: language-ta
     name: பொதுத் தமிழ்
     sort_order: 3
     language: ta
     chapters:
-      - { id: ta.ilakkanam,       name: இலக்கணம்,                  sort_order: 1, question_count: 25, transcribed: false, topics: [] }
-      - { id: ta.sollakarathi,    name: சொல்லகராதி,                sort_order: 2, question_count: 15, transcribed: false, topics: [] }
-      - { id: ta.ezhuthum-thiran, name: எழுதும் திறன்,              sort_order: 3, question_count: 15, transcribed: false, topics: [] }
-      - { id: ta.kalai-sorkal,    name: கலைச் சொற்கள்,              sort_order: 4, question_count: 10, transcribed: false, topics: [] }
-      - { id: ta.vasithal,        name: வாசித்தல் – புரிந்து கொள்ளும் திறன், sort_order: 5, question_count: 15, transcribed: false, topics: [] }
-      - { id: ta.mozhipeyarppu,   name: எளிய மொழி பெயர்ப்பு,        sort_order: 6, question_count: 5,  transcribed: false, topics: [] }
-      - { id: ta.ilakkiyam,       name: இலக்கியம், தமிழ் அறிஞர்கள், தமிழ்த்தொண்டு, sort_order: 7, question_count: 15, transcribed: false, topics: [] }
+      - { id: ta.ilakkanam,       name: இலக்கணம்,                  sort_order: 1, question_count: 25, transcribed: true, topics: [ { id: tamil.grammar.split-join, name: "Splitting and joining words" }, { id: tamil.grammar.sandhi, name: "Sandhi errors" }, { id: tamil.grammar.short-long-vowels, name: "Short and long vowel distinctions" }, { id: tamil.grammar.letter-distinctions, name: "Letter distinctions: லகர, ளகர, ழகர; னகர, ணகர; ரகர, றகர" }, { id: tamil.grammar.pronoun-question-letters, name: "Demonstrative and interrogative letters" }, { id: tamil.grammar.singular-plural, name: "Singular and plural forms" }, { id: tamil.grammar.compound-words, name: "Compound words and word formation" }, { id: tamil.grammar.verb-forms, name: "Verb forms, verbal participles and related noun forms" }, { id: tamil.grammar.spelling, name: "Spelling and orthographic errors" } ] }
+      - { id: ta.sollakarathi,    name: சொல்லகராதி,                sort_order: 2, question_count: 15, transcribed: true, topics: [ { id: tamil.vocabulary.antonyms, name: "Antonyms" }, { id: tamil.vocabulary.single-letter-words, name: "One-letter words and single-word meanings" }, { id: tamil.vocabulary.synonyms, name: "Words with similar meanings" }, { id: tamil.vocabulary.multiple-meanings, name: "One word with multiple meanings" }, { id: tamil.vocabulary.alphabetical-order, name: "Alphabetical ordering of words" }, { id: tamil.vocabulary.spoken-written, name: "Spoken and written Tamil" }, { id: tamil.vocabulary.word-meaning, name: "Selecting the correct word and meaning" }, { id: tamil.vocabulary.error-correction, name: "Word and sentence error correction" }, { id: tamil.vocabulary.word-combination, name: "Combining words to form new words" } ] }
+      - { id: ta.ezhuthum-thiran, name: எழுதும் திறன்,              sort_order: 3, question_count: 15, transcribed: true, topics: [ { id: tamil.writing.sentence-order, name: "Arranging words and sentences" }, { id: tamil.writing.sentence-types, name: "Sentence types and voice" }, { id: tamil.writing.thinai-pal, name: "Thinai and pal grammatical agreement" }, { id: tamil.writing.tense, name: "Tense and correct sentence usage" }, { id: tamil.writing.young-ones-sound, name: "Names of young ones and sound conventions" }, { id: tamil.writing.word-usage, name: "Verb, compound and usage conventions" }, { id: tamil.writing.punctuation, name: "Punctuation marks and their usage" } ] }
+      - { id: ta.kalai-sorkal,    name: கலைச் சொற்கள்,              sort_order: 4, question_count: 10, transcribed: true, topics: [ { id: tamil.technical.science, name: "Scientific technical terms" }, { id: tamil.technical.education-medicine, name: "Education and medical technical terms" }, { id: tamil.technical.agriculture-geography, name: "Agriculture and geography technical terms" }, { id: tamil.technical.technology-media-it, name: "Technology, media and information technology terms" }, { id: tamil.technical.administration, name: "Administrative and official technical terms" } ] }
+      - { id: ta.vasithal,        name: வாசித்தல் – புரிந்து கொள்ளும் திறன், sort_order: 5, question_count: 15, transcribed: true, topics: [ { id: tamil.reading.newspaper-editorial, name: "Newspaper, editorial and headline reading" }, { id: tamil.reading.government-news, name: "Government-related news" }, { id: tamil.reading.passage-understanding, name: "Reading and understanding passages" }, { id: tamil.reading.simile-idiom-proverb, name: "Meaning of similes, idioms and proverbs" }, { id: tamil.reading.document-comprehension, name: "Understanding document contents" } ] }
+      - { id: ta.mozhipeyarppu,   name: எளிய மொழி பெயர்ப்பு,        sort_order: 6, question_count: 5,  transcribed: true, topics: [ { id: tamil.translation.english-to-tamil, name: "English-to-Tamil word translation" }, { id: tamil.translation.other-languages, name: "Equivalent Tamil words for other-language terms" }, { id: tamil.translation.loanwords, name: "Tamil equivalents for commonly used English words" }, { id: tamil.translation.documents, name: "Understanding titles, files, letters and petitions" } ] }
+      - { id: ta.ilakkiyam,       name: இலக்கியம், தமிழ் அறிஞர்கள், தமிழ்த்தொண்டு, sort_order: 7, question_count: 15, transcribed: true, topics: [ { id: tamil.literature.thirukkural, name: "Thirukkural: prescribed twenty chapters" }, { id: tamil.literature.ethical-texts, name: "Ethical literature and moral texts" }, { id: tamil.literature.antiquity, name: "Antiquity and special features of Tamil" }, { id: tamil.literature.dravidian-languages, name: "Dravidian languages" }, { id: tamil.literature.scholars, name: "Tamil scholars and their contributions" }, { id: tamil.literature.tamil-service, name: "Tamil service, lexicography and literary contributions" } ] }
 
 # Weighted directed edges, only where the dependency is real. An empty graph is
 # better than a fictional one: for recall subjects the engine falls back to

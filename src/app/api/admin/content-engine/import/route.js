@@ -15,9 +15,10 @@ function safeEqualHex(a, b) {
   const left = Buffer.from(a, 'utf8'); const right = Buffer.from(b, 'utf8');
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(request) {
-  const admin = await requirePermission(request, PERMISSIONS.CONTENT_CREATE);
+  const admin = await requirePermission(request, PERMISSIONS.CONTENT_CREATE) || await requirePermission(request, PERMISSIONS.AI_GENERATE);
   if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Content import permission required' }, { status: 403 });
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ code: 'BAD_JSON', message: 'Body is not JSON' }, { status: 400 }); }
@@ -40,7 +41,30 @@ export async function POST(request) {
       if (!item || !['lesson','mcq'].includes(item.kind) || !item.content_id || !item.topic_id || !item.payload) throw new Error('INVALID_ITEM');
       const payload = item.payload;
       if (payload.isPyq === true || payload.isPYQ === true || payload.pyq === true || payload.contentType === 'pyq' || payload.content_type === 'pyq') throw new Error(`PYQ_CONTENT_BLOCKED:${item.content_id}`);
-      if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_CREATE, item.topic_id))) throw new Error(`FORBIDDEN_TOPIC:${item.topic_id}`);
+      if (publicationId.startsWith('ai-')) {
+        const sourceIds = Array.isArray(payload.sourceIds) ? [...new Set(payload.sourceIds.map(String))] : [];
+        if (!sourceIds.length || sourceIds.some((id) => !UUID_PATTERN.test(id))) throw new Error(`MISSING_PROVENANCE:${item.content_id}`);
+        const { rows: approvedSources } = await client.query(`
+          SELECT r.id::text AS id,r.body
+            FROM topic_resource r
+            JOIN content_lineage l ON l.resource_id=r.id
+           WHERE r.id::text=ANY($1::text[]) AND r.topic_id=$2 AND r.status='PUBLISHED'
+             AND COALESCE(r.source,'') NOT ILIKE '%pyq%'
+             AND l.source_year IS NULL AND l.exam_code IS NULL AND l.exam_group IS NULL AND l.paper IS NULL
+             AND COALESCE(l.source_file_name,'') !~* '(pyq|previous[ _-]?year|question[ _-]?(paper|booklet))'
+        `, [sourceIds, item.topic_id]);
+        if (approvedSources.length !== sourceIds.length) throw new Error(`INVALID_SOURCE_PROVENANCE:${item.content_id}`);
+        if (item.kind === 'mcq') {
+          const anchor = payload.answerEvidence;
+          const source = approvedSources.find((row) => row.id === anchor?.sourceId);
+          if (!source || typeof anchor.quote !== 'string' || anchor.quote.trim().length < 24 || !String(source.body || '').includes(anchor.quote.trim())) {
+            throw new Error(`INVALID_ANSWER_EVIDENCE:${item.content_id}`);
+          }
+        }
+      }
+      const mayCreate = await canActOnTopic(admin, PERMISSIONS.CONTENT_CREATE, item.topic_id);
+      const mayGenerate = await canActOnTopic(admin, PERMISSIONS.AI_GENERATE, item.topic_id);
+      if (!mayCreate && !mayGenerate) throw new Error(`FORBIDDEN_TOPIC:${item.topic_id}`);
       if (!groups.has(item.topic_id)) groups.set(item.topic_id, { questions: [], lessons: [] });
       groups.get(item.topic_id)[item.kind === 'mcq' ? 'questions' : 'lessons'].push(item);
     }

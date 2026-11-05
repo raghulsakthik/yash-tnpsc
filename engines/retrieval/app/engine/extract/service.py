@@ -15,7 +15,11 @@ class ExtractionService:
             row=c.execute('SELECT * FROM resources WHERE id=?',(resource_id,)).fetchone()
         if not row or not row['local_path']:
             return {'status':'skipped','reason':'resource-not-found-or-no-local-file','count':0}
-        questions=self.extractor.extract_file(row['local_path'])
+        from app.engine.integrity.path_resolver import resolve_resource_path
+        local_path = resolve_resource_path(row['local_path'], row['actual_size'])
+        if local_path is None:
+            return {'status':'skipped','reason':'resource-file-missing-or-size-mismatch','count':0}
+        questions=self.extractor.extract_file(str(local_path))
         # Fingerprints are calculated from the canonical MCQ fields below.
         clean=[]; seen=set()
         from .mcq import MCQ

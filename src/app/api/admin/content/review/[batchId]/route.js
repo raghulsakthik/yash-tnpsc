@@ -18,11 +18,19 @@ export async function POST(request, { params }) {
   }
 
   const { batchId } = await params;
-  const { rows: batchRows } = await query(`SELECT topic_id FROM content_review_batch WHERE id = $1`, [batchId]);
+  const { rows: batchRows } = await query(`SELECT topic_id,question_ids,resource_ids,lesson_ids,generation_source FROM content_review_batch WHERE id = $1`, [batchId]);
   if (!batchRows.length) return NextResponse.json({ code: 'NOT_FOUND', message: 'Review batch not found' }, { status: 404 });
-  if (!(await canActOnTopic(admin, PERMISSIONS.REVIEW_CONTENT, batchRows[0].topic_id)) && !(await canActOnTopic(admin, PERMISSIONS.REVIEW_QUESTION, batchRows[0].topic_id))) {
-    return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this review batch' }, { status: 403 });
+  const batch = batchRows[0];
+  const hasQuestions = Array.isArray(batch.question_ids) && batch.question_ids.length > 0;
+  const hasContent = (Array.isArray(batch.resource_ids) && batch.resource_ids.length > 0) ||
+    (Array.isArray(batch.lesson_ids) && batch.lesson_ids.length > 0);
+  if (hasQuestions && !(await canActOnTopic(admin, PERMISSIONS.REVIEW_QUESTION, batch.topic_id))) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Question review permission and topic scope are required for this batch' }, { status: 403 });
   }
+  if (hasContent && !(await canActOnTopic(admin, PERMISSIONS.REVIEW_CONTENT, batch.topic_id))) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'Content review permission and topic scope are required for this batch' }, { status: 403 });
+  }
+  if (!hasQuestions && !hasContent) return NextResponse.json({ code: 'EMPTY_BATCH', message: 'This review batch has no reviewable content' }, { status: 400 });
   let body;
   try {
     body = await request.json();
@@ -32,6 +40,13 @@ export async function POST(request, { params }) {
 
   if (body.decision !== 'approve' && body.decision !== 'reject') {
     return NextResponse.json({ code: 'INVALID_DECISION', message: 'decision must be "approve" or "reject"' }, { status: 400 });
+  }
+  const aiQuestionCheck = hasQuestions
+    ? await query(`SELECT EXISTS(SELECT 1 FROM question WHERE id=ANY($1::text[]) AND generation_source='ai') AS found`, [batch.question_ids])
+    : { rows: [{ found: false }] };
+  const requiresHumanVerification = batch.generation_source === 'ai' || aiQuestionCheck.rows[0].found;
+  if (body.decision === 'approve' && requiresHumanVerification && body.humanVerified !== true) {
+    return NextResponse.json({ code: 'HUMAN_VERIFICATION_REQUIRED', message: 'An authorised reviewer must explicitly confirm that AI answers and lesson content were checked against the source evidence.' }, { status: 400 });
   }
 
   try {

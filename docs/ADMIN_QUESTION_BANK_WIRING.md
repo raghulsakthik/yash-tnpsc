@@ -43,6 +43,7 @@ The API rechecks topic subject scope for topic listing, question listing, editin
 - The client-side "Simulate Role" dropdown and localStorage role override have been removed. The visible role is read-only and mirrors the session.
 - Unknown or unassigned admin roles show no privileged sections; a Super Admin must assign a role.
 - UI navigation/action visibility is a usability layer only. Every sensitive API still performs server-side permission and subject-scope checks.
+- The review queue requires `REVIEW_QUESTION` and/or `REVIEW_CONTENT`; reviewers see only batches for which they hold permission for every item type. Subject experts and support users cannot inspect the global queue.
 
 ## Lesson workflow permission alignment
 

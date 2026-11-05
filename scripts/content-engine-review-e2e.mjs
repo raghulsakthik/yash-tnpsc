@@ -33,7 +33,7 @@ const created = {
   subjectExpertId: null, subjectExpertSessionHash: null,
   subjectExpertSubjectId: null,
   publications: [], batches: [], questionIds: [], lessonIds: [],
-  manualQuestionIds: [], lessonWorkflowTopicId: null,
+  manualQuestionIds: [], reviewEvidenceResourceIds: [], lessonWorkflowTopicId: null,
 };
 
 try {
@@ -145,6 +145,8 @@ try {
   assert.equal(blockedGeneration.status, 403, await blockedGeneration.text());
   const blockedPublications = await fetch(`${baseUrl}/api/admin/content-engine/publications`, { headers: { cookie: subjectExpertCookie } });
   assert.equal(blockedPublications.status, 403, await blockedPublications.text());
+  const blockedReviewQueue = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: subjectExpertCookie } });
+  assert.equal(blockedReviewQueue.status, 403, await blockedReviewQueue.text());
   console.log('subject expert subject-scope and AI-generation boundary E2E: PASS');
 
   // Admin Question Bank: syllabus topics, draft creation, review and publish RBAC.
@@ -261,9 +263,19 @@ try {
     const lessonId = `ci-review-lesson-${label}-${crypto.randomUUID()}`;
     const questionId = `ci-review-mcq-${label}-${crypto.randomUUID()}`;
     const publicationId = `ci-review-${label}-${crypto.randomUUID()}`;
+    const evidenceResourceId = crypto.randomUUID();
+    created.reviewEvidenceResourceIds.push(evidenceResourceId);
+    await db.query(
+      `INSERT INTO topic_resource(id,topic_id,title,body,source,status) VALUES($1,$2,$3,$4,$5,'PUBLISHED')`,
+      [evidenceResourceId, topicId, `CI evidence ${label}`, `The CI review source supports this answer for ${label}. This approved study excerpt is used to verify source evidence rendering in the review queue.`, `ci-review-${label}.txt`]
+    );
+    await db.query(
+      `INSERT INTO content_lineage(resource_id,source_file_name,source_page,topic_id) VALUES($1,$2,1,$3)`,
+      [evidenceResourceId, `ci-review-${label}.txt`, topicId]
+    );
     const items = [
-      { kind: 'lesson', content_id: lessonId, topic_id: topicId, payload: { title, concept: `Review concept ${label}`, definition: `Review definition ${label}`, explanation: `Review explanation ${label}`, examples: [`Example ${label}`], revisionNotes: [`Note ${label}`], sourceIds: ['review-evidence-1'], version: 1 } },
-      { kind: 'mcq', content_id: questionId, topic_id: topicId, payload: { question: `Which option is correct for ${label}?`, options: ['A','B','C','D'], answerIndex: 0, explanation: 'A is correct.', difficulty: 'easy', sourceIds: ['review-evidence-1'] } },
+      { kind: 'lesson', content_id: lessonId, topic_id: topicId, payload: { title, concept: `Review concept ${label}`, definition: `Review definition ${label}`, explanation: `Review explanation ${label}`, examples: [`Example ${label}`], revisionNotes: [`Note ${label}`], sourceIds: [evidenceResourceId], version: 1 } },
+      { kind: 'mcq', content_id: questionId, topic_id: topicId, payload: { question: `Which option is correct for ${label}?`, options: ['A','B','C','D'], answerIndex: 0, explanation: 'A is correct.', difficulty: 'easy', sourceIds: [evidenceResourceId], answerEvidence: { sourceId: evidenceResourceId, quote: `The CI review source supports this answer for ${label}.` } } },
     ];
     const response = await fetch(`${baseUrl}/api/admin/content-engine/import`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ publicationId, manifestHash: manifestHash(publicationId, items), items }) });
     const responseText = await response.text();
@@ -274,13 +286,33 @@ try {
     const importedLineage = await db.query(`SELECT content_id,content_kind,status,publication_id,source_ids FROM content_engine_lineage WHERE publication_id=$1 ORDER BY content_kind`, [publicationId]);
     assert.equal(importedLineage.rows.length, 2);
     assert.deepEqual(importedLineage.rows.map((x) => x.status), ['IMPORTED', 'IMPORTED']);
-    assert.ok(importedLineage.rows.every((x) => x.source_ids.includes('review-evidence-1')));
+    assert.ok(importedLineage.rows.every((x) => x.source_ids.includes(evidenceResourceId)));
     assert.equal((await db.query(`SELECT status FROM question WHERE id=$1`, [questionId])).rows[0].status, 'DRAFT');
     assert.equal((await db.query(`SELECT status FROM content_engine_lesson_staging WHERE id=$1`, [lessonId])).rows[0].status, 'PENDING');
-    return { publicationId, batchId: body.reviewBatchIds[0], questionId, lessonId };
+    return { publicationId, batchId: body.reviewBatchIds[0], questionId, lessonId, evidenceResourceId };
   }
 
   const approve = await importPublication('approve', 'Version One');
+  const pendingEvidenceResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie } });
+  assert.equal(pendingEvidenceResponse.status, 200, await pendingEvidenceResponse.text());
+  const pendingEvidenceBody = await pendingEvidenceResponse.json();
+  const pendingEvidenceBatch = pendingEvidenceBody.batches.find((batch) => batch.id === approve.batchId);
+  assert.ok(pendingEvidenceBatch, 'new AI-style review batch should be visible');
+  assert.equal(pendingEvidenceBatch.questions[0].sourceEvidence[0].id, approve.evidenceResourceId);
+  assert.match(pendingEvidenceBatch.questions[0].sourceEvidence[0].body, /supports this answer/);
+  assert.equal(pendingEvidenceBatch.lessons[0].sourceEvidence[0].id, approve.evidenceResourceId);
+
+  const questionReviewerQueueResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: questionReviewerCookie } });
+  assert.equal(questionReviewerQueueResponse.status, 200, await questionReviewerQueueResponse.text());
+  const questionReviewerQueue = await questionReviewerQueueResponse.json();
+  assert.equal(questionReviewerQueue.batches.some((batch) => batch.id === approve.batchId), false);
+
+  const contentReviewerQueueResponse = await fetch(`${baseUrl}/api/admin/content/review`, { headers: { cookie: contentReviewerCookie } });
+  assert.equal(contentReviewerQueueResponse.status, 200, await contentReviewerQueueResponse.text());
+  const contentReviewerQueue = await contentReviewerQueueResponse.json();
+  assert.equal(contentReviewerQueue.batches.some((batch) => batch.id === approve.batchId), false);
+  console.log('review queue filters batches by question/content review permission: PASS');
+  console.log('question and lesson source evidence is available to human reviewers: PASS');
   const unverifiedResponse = await fetch(`${baseUrl}/api/admin/content/review/${approve.batchId}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ decision: 'approve' }) });
   assert.equal(unverifiedResponse.status, 400, await unverifiedResponse.text());
   assert.equal((await db.query(`SELECT status FROM content_review_batch WHERE id=$1`, [approve.batchId])).rows[0].status, 'PENDING');
@@ -347,6 +379,7 @@ try {
     for (const id of created.manualQuestionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
     if (created.lessonWorkflowTopicId) await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.lessonWorkflowTopicId]);
     for (const id of created.publications) await db.query('DELETE FROM content_engine_publication WHERE publication_id=$1', [id]);
+    for (const id of created.reviewEvidenceResourceIds) await db.query('DELETE FROM topic_resource WHERE id=$1', [id]);
     for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash, created.subjectExpertSessionHash].filter(Boolean)) {
       await db.query('DELETE FROM user_session WHERE token_hash=$1', [hash]);
     }

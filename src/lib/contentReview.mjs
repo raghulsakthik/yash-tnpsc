@@ -1,4 +1,5 @@
 import { query, pool } from './db.mjs';
+import { PERMISSIONS, canActOnTopic } from './permissions.mjs';
 
 export class ContentReviewError extends Error {
   constructor(code, message) { super(message); this.code = code; }
@@ -45,7 +46,8 @@ export async function createReviewBatch({ topicId, generationSource, questionIds
   return batchId;
 }
 
-export async function listPendingBatches() {
+export async function listPendingBatches({ admin, canReviewQuestions, canReviewContent } = {}) {
+  if (!admin || (!canReviewQuestions && !canReviewContent)) return [];
   const { rows: batches } = await query(`
     SELECT b.id,b.topic_id,t.name AS topic_name,b.generation_source,b.question_ids,b.resource_ids,b.lesson_ids,
            b.avg_quality_score::float8 AS avg_quality_score,b.created_at
@@ -53,13 +55,34 @@ export async function listPendingBatches() {
      WHERE b.status='PENDING' ORDER BY b.created_at DESC`);
   const out=[];
   for (const b of batches) {
+    const questionIds = Array.isArray(b.question_ids) ? b.question_ids : [];
+    const resourceIds = Array.isArray(b.resource_ids) ? b.resource_ids : [];
+    const lessonIds = Array.isArray(b.lesson_ids) ? b.lesson_ids : [];
+    const hasQuestions = questionIds.length > 0;
+    const hasContent = resourceIds.length > 0 || lessonIds.length > 0;
+    if (!hasQuestions && !hasContent) continue;
+    if (hasQuestions && (!canReviewQuestions || !(await canActOnTopic(admin, PERMISSIONS.REVIEW_QUESTION, b.topic_id)))) continue;
+    if (hasContent && (!canReviewContent || !(await canActOnTopic(admin, PERMISSIONS.REVIEW_CONTENT, b.topic_id)))) continue;
+
     const { rows: questions } = await query(
       `SELECT id,prompt,options,answer_index,explanation,shortcut,common_mistake,difficulty::float8 AS difficulty,
               quality_score::float8 AS quality_score,source,source_year,exam_code,exam_group,paper,question_number,source_page,generation_source
          FROM question WHERE id=ANY($1::text[])`, [b.question_ids]);
-    const resourceIds=Array.isArray(b.resource_ids)?b.resource_ids:[];
+    const { rows: questionLineage } = await query(
+      `SELECT content_id,source_ids FROM content_engine_lineage WHERE content_kind='mcq' AND content_id=ANY($1::text[])`,
+      [questionIds]
+    );
+    const questionSourceIds = [...new Set(questionLineage.flatMap((lineage) => Array.isArray(lineage.source_ids) ? lineage.source_ids : []))];
+    const { rows: questionSources } = await query(
+      `SELECT id::text AS id,title,source,body FROM topic_resource WHERE id::text=ANY($1::text[])`,
+      [questionSourceIds]
+    );
+    const questionsWithEvidence = questions.map((question) => {
+      const lineage = questionLineage.find((item) => item.content_id === question.id);
+      const sourceIds = Array.isArray(lineage?.source_ids) ? lineage.source_ids : [];
+      return { ...question, sourceEvidence: questionSources.filter((source) => sourceIds.includes(source.id)) };
+    });
     const { rows: resources } = await query(`SELECT id,title,body,source,status FROM topic_resource WHERE id=ANY($1::uuid[])`, [resourceIds]);
-    const lessonIds=Array.isArray(b.lesson_ids)?b.lesson_ids:[];
     const { rows: lessons } = await query(`SELECT id,topic_id,title,concept,definition,explanation,examples,revision_notes,source_ids FROM content_engine_lesson_staging WHERE id=ANY($1::text[])`, [lessonIds]);
     const lessonSourceIds = [...new Set(lessons.flatMap((lesson) => Array.isArray(lesson.source_ids) ? lesson.source_ids : []))];
     const { rows: lessonSources } = await query(
@@ -70,7 +93,7 @@ export async function listPendingBatches() {
       ...lesson,
       sourceEvidence: lessonSources.filter((source) => (lesson.source_ids || []).includes(source.id)),
     }));
-    out.push({id:b.id,topicId:b.topic_id,topicName:b.topic_name,generationSource:b.generation_source,avgQualityScore:b.avg_quality_score,createdAt:b.created_at,questions,resources,lessons:lessonsWithEvidence});
+    out.push({id:b.id,topicId:b.topic_id,topicName:b.topic_name,generationSource:b.generation_source,avgQualityScore:b.avg_quality_score,createdAt:b.created_at,questions:questionsWithEvidence,resources,lessons:lessonsWithEvidence});
   }
   return out;
 }

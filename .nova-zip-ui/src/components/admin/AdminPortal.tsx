@@ -51,10 +51,8 @@ import {
   initialAdminResources,
   initialAdminPYQs,
   initialProctoringPolicies,
-  initialProctoringReviews,
   initialAdaptiveRules,
   initialAdminMilestones,
-  initialAuditLogs,
   initialAIContentProposals,
 } from '../../data/mockAdminData';
 import {
@@ -332,15 +330,89 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     return saved ? JSON.parse(saved) : initialProctoringPolicies;
   });
 
-  const [proctoringReviews, setProctoringReviews] = useState<ProctoringAttemptReview[]>(() => {
-    const saved = localStorage.getItem('nova_admin_proctoring_reviews');
-    return saved ? JSON.parse(saved) : initialProctoringReviews;
-  });
+  // Real proctoring sessions (GET /api/admin/proctoring/sessions -- the
+  // same real endpoint the already-wired Proctoring Reports panel uses),
+  // mapped onto the richer ProctoringAttemptReview shape Dashboard and
+  // ProctoringHubView's review list were built against. The real schema
+  // (proctoring_session.status: RECORDING/COMPLETED/ABANDONED) has no
+  // FLAGGED/SUSPICIOUS/INVALIDATED concept -- there's no admin decision
+  // workflow backing those in the database at all -- so those are derived
+  // honestly from real signals instead of invented: FLAGGED means the
+  // session actually recorded proctoring_event rows (real suspicious-
+  // activity telemetry, matching the UI copy "flagged for suspicious tab
+  // switching or camera telemetry" almost exactly), INVALIDATED means the
+  // real session status is ABANDONED. riskScore/riskLevel are a simple,
+  // disclosed heuristic on event count, not a real ML risk engine.
+  const mapProctoringReviewFromApi = (s: any): ProctoringAttemptReview => {
+    const eventCount = Number(s.eventCount || 0);
+    const riskScore = Math.min(100, eventCount * 20);
+    const status: ProctoringAttemptReview['status'] =
+      s.status === 'ABANDONED' ? 'INVALIDATED' : eventCount > 0 ? 'FLAGGED' : 'COMPLETED';
+    return {
+      id: s.testId,
+      attemptId: s.testId,
+      learnerId: s.learnerId || '',
+      learnerName: s.learnerName,
+      learnerEmail: s.learnerEmail || '',
+      testId: s.testId,
+      testTitle: s.templateName || 'Weekly Test',
+      startedAt: s.startedAt,
+      submittedAt: s.endedAt || s.startedAt,
+      score: Number(s.score ?? 0),
+      totalMarks: Number(s.questionCount ?? 0),
+      percentage: Number(s.score ?? 0),
+      riskScore,
+      riskLevel: riskScore >= 60 ? 'HIGH' : riskScore >= 20 ? 'MEDIUM' : 'LOW',
+      status,
+      violationsCount: eventCount,
+      // Individual event detail isn't returned by the bulk sessions list --
+      // only by GET /api/admin/proctoring/sessions/:testId, which
+      // ProctoringRecordingsPanel already fetches on demand per session.
+      // Left honestly empty here rather than fetched N+1 for every row.
+      events: [],
+    };
+  };
 
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
-    const saved = localStorage.getItem('nova_admin_audit_logs');
-    return saved ? JSON.parse(saved) : initialAuditLogs;
-  });
+  const [proctoringReviews, setProctoringReviews] = useState<ProctoringAttemptReview[]>([]);
+  useEffect(() => {
+    novaApi
+      .adminProctoringSessions()
+      .then((res: any) => setProctoringReviews((res.sessions || []).map(mapProctoringReviewFromApi)))
+      .catch(() => {});
+  }, []);
+
+  // Real admin activity trail (GET/POST /api/admin/audit-log -- see
+  // src/lib/adminCrud.mjs recordAdminAudit/listAdminAudit). Every call site
+  // below this used to only ever touch local React state -- the Admin
+  // Portal's recordAudit() helper already assumed a real audit trail
+  // existed; now it does.
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const refreshAuditLogs = React.useCallback(() => {
+    novaApi
+      .adminAuditLog(100)
+      .then((res: any) => {
+        const mapped: AuditLogEntry[] = (res.entries || []).map((e: any) => ({
+          id: e.id,
+          actorId: e.actorId || '',
+          actorName: e.actorEmail,
+          actorRole: (e.actorRole || activeRole) as AdminRole,
+          action: e.action,
+          entity: e.entity,
+          entityId: e.entityId || '',
+          timestamp: e.createdAt,
+          ipAddress: '—',
+          beforeSnapshot: e.beforeSnapshot,
+          afterSnapshot: e.afterSnapshot,
+          reason: e.reason,
+          result: e.result,
+        }));
+        setAuditLogs(mapped);
+      })
+      .catch(() => {});
+  }, [activeRole]);
+  useEffect(() => {
+    refreshAuditLogs();
+  }, [refreshAuditLogs]);
 
   const [aiProposals, setAiProposals] = useState<AIContentProposal[]>(() => {
     const saved = localStorage.getItem('nova_admin_ai_proposals');
@@ -432,14 +504,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   }, [policies]);
 
   useEffect(() => {
-    localStorage.setItem('nova_admin_proctoring_reviews', JSON.stringify(proctoringReviews));
-  }, [proctoringReviews]);
-
-  useEffect(() => {
-    localStorage.setItem('nova_admin_audit_logs', JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
     localStorage.setItem('nova_admin_ai_proposals', JSON.stringify(aiProposals));
   }, [aiProposals]);
 
@@ -452,6 +516,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   }, [notifications]);
 
   // Append audit entry helper
+  // Real write: POST /api/admin/audit-log, fire-and-forget (the real
+  // action this describes has already succeeded by the time recordAudit is
+  // called -- a failure here must never surface as if the real action
+  // failed). Optimistic local prepend for instant UI feedback, corrected
+  // by the next refreshAuditLogs() (e.g. on reload).
   const recordAudit = (
     action: string,
     entity: AuditLogEntry['entity'],
@@ -469,13 +538,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
       entity,
       entityId,
       timestamp: new Date().toISOString(),
-      ipAddress: '127.0.0.1 (Local Session)',
+      ipAddress: '—',
       reason,
       beforeSnapshot: before,
       afterSnapshot: after,
       result: 'SUCCESS',
     };
     setAuditLogs((prev) => [newEntry, ...prev]);
+    novaApi
+      .adminRecordAudit({ action, entity, entityId, reason, beforeSnapshot: before, afterSnapshot: after, result: 'SUCCESS' })
+      .catch(() => {});
   };
 
   // Learner operations -- status updates and creation now reach the real
@@ -988,7 +1060,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               lessons, curriculum, and learners are real (GET/POST/PATCH
               against actual API routes) and excluded from the warning
               banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'tests' && (
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'tests' && currentSectionSlug !== 'dashboard' && currentSectionSlug !== 'audit-logs' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>

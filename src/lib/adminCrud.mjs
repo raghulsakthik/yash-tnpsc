@@ -615,3 +615,52 @@ export async function updateQuicklabMode(modeKey, { displayName, description, en
   );
   if (rows.length === 0) throw new ContentUploadError('MODE_NOT_FOUND', `No quick lab mode ${modeKey}`);
 }
+
+// ----------------------------------------------------------- admin audit log
+
+/**
+ * The Admin Portal's recordAudit() call sites (learner suspend, question
+ * create/update, test create/publish, lesson save, notification broadcast,
+ * ...) all assumed a real audit trail existed -- it didn't; this is that
+ * trail. actorId is nullable (ON DELETE SET NULL) rather than required, so
+ * a deleted admin's history doesn't vanish or block the delete.
+ */
+export async function recordAdminAudit({ actorId, actorRole, action, entity, entityId, reason, beforeSnapshot, afterSnapshot, result }) {
+  await query(
+    `INSERT INTO admin_audit_log (actor_id, actor_role, action, entity, entity_id, reason, before_snapshot, after_snapshot, result)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)`,
+    [
+      actorId ?? null, actorRole ?? null, action, entity, entityId ?? null, reason ?? null,
+      beforeSnapshot ? JSON.stringify(beforeSnapshot) : null,
+      afterSnapshot ? JSON.stringify(afterSnapshot) : null,
+      result ?? 'SUCCESS',
+    ]
+  );
+}
+
+export async function listAdminAudit(limit = 100) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
+  const { rows } = await query(
+    `SELECT al.id, al.actor_id, COALESCE(u.email, 'unknown') AS actor_email, al.actor_role, al.action, al.entity,
+            al.entity_id, al.reason, al.before_snapshot, al.after_snapshot, al.result, al.created_at
+       FROM admin_audit_log al
+       LEFT JOIN app_user u ON u.id = al.actor_id
+      ORDER BY al.created_at DESC
+      LIMIT $1`,
+    [safeLimit]
+  );
+  return rows.map((r) => ({
+    id: String(r.id),
+    actorId: r.actor_id,
+    actorEmail: r.actor_email,
+    actorRole: r.actor_role,
+    action: r.action,
+    entity: r.entity,
+    entityId: r.entity_id,
+    reason: r.reason,
+    beforeSnapshot: r.before_snapshot,
+    afterSnapshot: r.after_snapshot,
+    result: r.result,
+    createdAt: r.created_at,
+  }));
+}

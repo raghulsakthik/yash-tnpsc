@@ -51,6 +51,29 @@ class MCQExtractorTests(unittest.TestCase):
         self.assertFalse(items[0]["answer_verified"])
         self.assertTrue(items[0]["needs_review"])
 
+    def test_pdf_file_extraction_can_be_bounded_to_first_pages(self):
+        import tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        import shutil
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf = Path(tmp) / "sample.pdf"
+            pdf.write_bytes(b"%PDF-test")
+            with patch.object(shutil, "which", return_value="/usr/bin/pdftotext"), patch.object(
+                subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0, stdout="1. Question?\\n(A) One\\n(B) Two\\n"),
+            ) as run:
+                self.extractor.extract_file(str(pdf), max_pages=12)
+        command = run.call_args.args[0]
+        self.assertIn("-f", command)
+        self.assertIn("1", command)
+        self.assertIn("-l", command)
+        self.assertIn("12", command)
+
     def test_reads_explicit_answer_marker(self):
         items = self.extractor.extract_text(
             "1. Question?\n(A) Alpha\n(B) Beta\n(C) Gamma\n(D) Delta\nAnswer: C\n"

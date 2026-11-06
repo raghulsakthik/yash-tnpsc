@@ -118,7 +118,7 @@ class MCQExtractor:
                 i = max(j, i + 1)
         return out
 
-    def extract_file(self, path: str) -> list[dict]:
+    def extract_file(self, path: str, *, max_pages: int | None = None) -> list[dict]:
         from pathlib import Path
         import shutil
         import subprocess
@@ -131,8 +131,12 @@ class MCQExtractor:
         if source.suffix.lower() == ".pdf":
             if not shutil.which("pdftotext"):
                 return []
+            command = ["pdftotext", "-layout"]
+            if max_pages is not None:
+                command.extend(["-f", "1", "-l", str(max(1, min(100, max_pages)))])
+            command.extend([str(source), "-"])
             result = subprocess.run(
-                ["pdftotext", "-layout", str(source), "-"],
+                command,
                 capture_output=True,
                 text=True,
                 timeout=180,

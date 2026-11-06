@@ -12,6 +12,8 @@ function Body() {
   const [message, setMessage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [previewBusy, setPreviewBusy] = useState(null);
+  const [mcqPreview, setMcqPreview] = useState(null);
+  const [mcqPreviewBusy, setMcqPreviewBusy] = useState(null);
 
   async function load() {
     setLoading(true); setError(null);
@@ -34,6 +36,17 @@ function Body() {
       setPreview({ ...data, title: resource.title });
     } catch (err) { setMessage({ ok: false, text: err.message }); }
     finally { setPreviewBusy(null); }
+  }
+
+  async function openMcqPreview(resource) {
+    setMcqPreviewBusy(resource.id); setMcqPreview(null);
+    try {
+      const response = await fetch('/api/admin/retrieval/resources/' + resource.id + '/mcq-preview', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Could not extract MCQ candidates');
+      setMcqPreview({ ...data, title: resource.title });
+    } catch (err) { setMessage({ ok: false, text: err.message }); }
+    finally { setMcqPreviewBusy(null); }
   }
 
   async function analyze(resource) {
@@ -76,10 +89,44 @@ function Body() {
           <p className="muted" style={{ fontSize: '.7rem', marginTop: 4, overflowWrap: 'anywhere' }}>SHA-256 {r.sha256 || 'pending'}</p></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn" disabled={previewBusy === r.id} onClick={() => openPreview(r)}>{previewBusy === r.id ? 'Extracting…' : 'Preview text'}</button>
+          <button className="btn" disabled={mcqPreviewBusy === r.id} onClick={() => openMcqPreview(r)}>{mcqPreviewBusy === r.id ? 'Reading questions…' : 'Preview MCQs'}</button>
           <button className="btn btn-primary" disabled={busy.has(r.id)} onClick={() => analyze(r)}>{busy.has(r.id) ? 'Analysing…' : 'Analyse & label'}</button>
         </div>
       </div>)}
       {!resources.length && !error && <div className="card-sunk muted">No completed non-PYQ resources found for this group.</div>}
+    </div>}
+    {mcqPreview && <div role="dialog" aria-modal="true" aria-labelledby="retrieval-mcq-title"
+      onClick={(event) => { if (event.target === event.currentTarget) setMcqPreview(null); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1001, background: 'rgba(0,0,0,.62)', display: 'grid', placeItems: 'center', padding: 16 }}>
+      <section className="card" style={{ width: 'min(1100px, 100%)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 20px 80px rgba(0,0,0,.35)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
+          <div><span className="eyebrow">READ-ONLY QUESTION EXTRACTION · NOT PUBLISHED</span><h2 id="retrieval-mcq-title" style={{ marginTop: 6 }}>{mcqPreview.title}</h2></div>
+          <button className="btn" onClick={() => setMcqPreview(null)} aria-label="Close MCQ preview">Close</button>
+        </div>
+        <div className="stat-row">
+          <div className="stat"><div className="num">{mcqPreview.candidate_count}</div><div className="label">question candidates</div></div>
+          <div className="stat"><div className="num">{mcqPreview.answerless_count}</div><div className="label">without printed answer marker</div></div>
+          <div className="stat"><div className="num">{mcqPreview.pages_requested}</div><div className="label">pages scanned (maximum)</div></div>
+          <div className="stat"><div className="num">Required</div><div className="label">human verification</div></div>
+        </div>
+        <p className="muted" style={{ fontSize: '.78rem' }}>These are extraction candidates, not approved questions. Printed answer markers, if present, are unverified. No rows were saved or published.</p>
+        {mcqPreview.truncated && <p className="muted">Only the first 100 candidates are shown.</p>}
+        <div style={{ overflow: 'auto', display: 'grid', gap: 10, paddingRight: 4 }}>
+          {mcqPreview.candidates.map((candidate, index) => <article className="card-sunk" key={candidate.source_page + '-' + candidate.question_number + '-' + index} style={{ fontFamily: 'Noto Sans Tamil, Latha, Noto Sans, sans-serif' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <strong>Q{candidate.question_number || index + 1}</strong>
+              <span className="muted" style={{ fontSize: '.75rem' }}>Page {candidate.source_page} · Review required</span>
+            </div>
+            <p style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{candidate.question}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 }}>
+              {candidate.options.map((option) => <div key={option.label} className="muted" style={{ fontSize: '.84rem' }}><strong>{option.label}.</strong> {option.text}</div>)}
+            </div>
+            {candidate.answer_marker_present && <p className="muted" style={{ marginTop: 8, fontSize: '.78rem' }}>Printed answer marker: {candidate.answer_marker} (unverified)</p>}
+          </article>)}
+          {!mcqPreview.candidates.length && <div className="card-sunk muted">No MCQ candidates were extracted from the first {mcqPreview.pages_requested} pages.</div>}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="btn btn-primary" onClick={() => setMcqPreview(null)}>Done reviewing</button></div>
+      </section>
     </div>}
     {preview && <div role="dialog" aria-modal="true" aria-labelledby="retrieval-preview-title"
       onClick={(event) => { if (event.target === event.currentTarget) setPreview(null); }}

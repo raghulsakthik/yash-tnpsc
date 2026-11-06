@@ -36,13 +36,14 @@ const created = {
   comparisonStudentId: null, comparisonStudentSessionHash: null,
   adaptiveDependentTopicId: null, adaptivePrerequisiteTopicId: null, revisionTopicId: null,
   publications: [], batches: [], questionIds: [], lessonIds: [],
-  manualQuestionIds: [], reviewEvidenceResourceIds: [], lessonWorkflowTopicId: null,
+  manualQuestionIds: [], reviewEvidenceResourceIds: [], lessonWorkflowTopicId: null, contentEngineTopicId: null,
 };
 
 try {
   const topicResult = await db.query(`SELECT t.id FROM topic t LEFT JOIN lesson l ON l.topic_id=t.id ORDER BY (l.topic_id IS NULL) DESC,t.id LIMIT 1`);
   assert.ok(topicResult.rows.length, 'a topic is required');
   const topicId = topicResult.rows[0].id;
+  created.contentEngineTopicId = topicId;
 
   const adminId = crypto.randomUUID();
   const token = crypto.randomBytes(32).toString('hex');
@@ -509,6 +510,10 @@ try {
     for (const id of created.questionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
     for (const id of created.manualQuestionIds) await db.query('DELETE FROM question WHERE id=$1', [id]);
     if (created.lessonWorkflowTopicId) await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.lessonWorkflowTopicId]);
+    if (created.contentEngineTopicId) {
+      await db.query('DELETE FROM lesson WHERE topic_id=$1', [created.contentEngineTopicId]);
+      await db.query('DELETE FROM content_engine_lesson_version WHERE topic_id=$1', [created.contentEngineTopicId]);
+    }
     for (const id of created.publications) await db.query('DELETE FROM content_engine_publication WHERE publication_id=$1', [id]);
     for (const id of created.reviewEvidenceResourceIds) await db.query('DELETE FROM topic_resource WHERE id=$1', [id]);
     for (const hash of [created.sessionHash, created.questionReviewerSessionHash, created.contentReviewerSessionHash, created.subjectExpertSessionHash, created.studentSessionHash, created.comparisonStudentSessionHash].filter(Boolean)) {

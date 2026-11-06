@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { execFileSync } from 'node:child_process';
+import pg from 'pg';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const walk = async (dir) => {
   let entries; try { entries = await readdir(dir, { withFileTypes: true }); } catch { return []; }
@@ -19,6 +20,47 @@ for (const file of await walk(path.join(ROOT, 'content/questions'))) {
   const key = `${doc.topic}::${doc.language ?? 'unknown'}`;
   questionCounts.set(key, (questionCounts.get(key) ?? 0) + (doc.questions?.length ?? 0));
 }
+const dbCoverage = new Map();
+let databaseSnapshot = null;
+if (process.env.DATABASE_URL) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const result = await client.query(`
+      SELECT t.id,
+             COALESCE(q.published_questions,0)::int AS published_questions,
+             COALESCE(q.draft_questions,0)::int AS draft_questions,
+             COALESCE(l.published_lessons,0)::int AS published_lessons,
+             COALESCE(l.draft_lessons,0)::int AS draft_lessons,
+             COALESCE(r.published_resources,0)::int AS published_resources,
+             COALESCE(r.draft_resources,0)::int AS draft_resources
+        FROM topic t
+        LEFT JOIN (SELECT topic_id,
+                          COUNT(*) FILTER (WHERE status='PUBLISHED') AS published_questions,
+                          COUNT(*) FILTER (WHERE status='DRAFT') AS draft_questions
+                     FROM question GROUP BY topic_id) q ON q.topic_id=t.id
+        LEFT JOIN (SELECT topic_id,
+                          COUNT(*) FILTER (WHERE status='PUBLISHED') AS published_lessons,
+                          COUNT(*) FILTER (WHERE status<>'PUBLISHED') AS draft_lessons
+                     FROM lesson GROUP BY topic_id) l ON l.topic_id=t.id
+        LEFT JOIN (SELECT topic_id,
+                          COUNT(*) FILTER (WHERE status='PUBLISHED') AS published_resources,
+                          COUNT(*) FILTER (WHERE status='DRAFT') AS draft_resources
+                     FROM topic_resource GROUP BY topic_id) r ON r.topic_id=t.id
+    `);
+    for (const row of result.rows) dbCoverage.set(row.id, row);
+    databaseSnapshot = { connected: true, topics: result.rowCount,
+      topics_with_published_questions: result.rows.filter(x => x.published_questions > 0).length,
+      topics_with_published_lessons: result.rows.filter(x => x.published_lessons > 0).length,
+      topics_with_published_resources: result.rows.filter(x => x.published_resources > 0).length,
+      published_questions: result.rows.reduce((n, x) => n + x.published_questions, 0),
+      draft_questions: result.rows.reduce((n, x) => n + x.draft_questions, 0),
+      published_lessons: result.rows.reduce((n, x) => n + x.published_lessons, 0),
+      draft_lessons: result.rows.reduce((n, x) => n + x.draft_lessons, 0),
+      published_resources: result.rows.reduce((n, x) => n + x.published_resources, 0),
+      draft_resources: result.rows.reduce((n, x) => n + x.draft_resources, 0) };
+  } finally { await client.end(); }
+}
 const rows = [];
 for (const file of (await readdir(path.join(ROOT, 'content/syllabus'))).filter(x => /\.ya?ml$/i.test(x)).sort()) {
   const curriculum = YAML.parse(await readFile(path.join(ROOT, 'content/syllabus', file), 'utf8')) ?? {};
@@ -26,7 +68,16 @@ for (const file of (await readdir(path.join(ROOT, 'content/syllabus'))).filter(x
     const en = questionCounts.get(`${topic.id}::en`) ?? 0;
     const ta = questionCounts.get(`${topic.id}::ta`) ?? 0;
     const other = [...questionCounts].filter(([k]) => k.startsWith(`${topic.id}::`) && !k.endsWith('::en') && !k.endsWith('::ta')).reduce((s, [,v]) => s + v, 0);
-    rows.push({ curriculum_id: curriculum.curriculum_id, exam_stage: curriculum.exam_stage ?? 'PRELIMS', subject_id: subject.id, subject: subject.name, chapter_id: chapter.id, chapter: chapter.name, topic_id: topic.id, topic: topic.name, syllabus_transcribed: chapter.transcribed === true, authored_questions_en: en, authored_questions_ta: ta, authored_questions_other: other, study_notes_status: 'UNKNOWN_DB_OFFLINE', structured_lesson_status: 'UNKNOWN_DB_OFFLINE', retrieval_topic_link_status: 'NOT_VERIFIED', publication_status: 'NOT_VERIFIED' });
+    const db = dbCoverage.get(topic.id);
+    rows.push({ curriculum_id: curriculum.curriculum_id, exam_stage: curriculum.exam_stage ?? 'PRELIMS', subject_id: subject.id, subject: subject.name, chapter_id: chapter.id, chapter: chapter.name, topic_id: topic.id, topic: topic.name, syllabus_transcribed: chapter.transcribed === true, authored_questions_en: en, authored_questions_ta: ta, authored_questions_other: other,
+      database_topic_exists: databaseSnapshot ? Boolean(db) : 'UNKNOWN',
+      published_questions_db: db?.published_questions ?? null, draft_questions_db: db?.draft_questions ?? null,
+      study_notes_status: databaseSnapshot ? (db?.published_resources ? 'PUBLISHED' : db?.draft_resources ? 'DRAFT_REVIEW' : 'MISSING') : 'UNKNOWN_DB_OFFLINE',
+      published_study_notes_db: db?.published_resources ?? null, draft_study_notes_db: db?.draft_resources ?? null,
+      structured_lesson_status: databaseSnapshot ? (db?.published_lessons ? 'PUBLISHED' : db?.draft_lessons ? 'DRAFT_REVIEW' : 'MISSING') : 'UNKNOWN_DB_OFFLINE',
+      published_lessons_db: db?.published_lessons ?? null, draft_lessons_db: db?.draft_lessons ?? null,
+      retrieval_topic_link_status: databaseSnapshot ? (db?.published_resources ? 'PUBLISHED_TOPIC_RESOURCE' : db?.draft_resources ? 'DRAFT_TOPIC_RESOURCE' : 'NO_TOPIC_RESOURCE') : 'NOT_VERIFIED',
+      publication_status: databaseSnapshot ? ((db?.published_questions || db?.published_resources || db?.published_lessons) ? 'HAS_PUBLISHED_CONTENT' : 'NO_PUBLISHED_CONTENT') : 'NOT_VERIFIED' });
   }
 }
 let retrieval = {};
@@ -36,13 +87,15 @@ try {
 } catch (e) { retrieval = { unavailable: e.message }; }
 const totalQ = rows.reduce((s,r) => s+r.authored_questions_en+r.authored_questions_ta+r.authored_questions_other, 0);
 const covered = rows.filter(r => r.authored_questions_en+r.authored_questions_ta+r.authored_questions_other > 0).length;
-const summary = { generated_at: '2026-11-06', topics: rows.length, topics_with_authored_questions: covered, authored_questions: totalQ, retrieval_inventory: retrieval, notes: 'Study notes, structured lessons, topic-resource links and publication are UNKNOWN while PostgreSQL is offline. Retrieval inventory is not treated as learner-published content.' };
+const summary = { generated_at: '2026-11-06', topics: rows.length, topics_with_authored_questions: covered, authored_questions: totalQ, database_snapshot: databaseSnapshot ?? { connected: false }, retrieval_inventory: retrieval, notes: databaseSnapshot ? 'Database counts are a point-in-time snapshot of the DATABASE_URL target. Retrieval inventory is not treated as learner-published content.' : 'Study notes, structured lessons, topic-resource links and publication are UNKNOWN while PostgreSQL is offline. Retrieval inventory is not treated as learner-published content.' };
 const csvFields = Object.keys(rows[0] ?? {});
 const csvEscape = v => `"${String(v ?? '').replaceAll('"','""')}"`;
 const csv = [csvFields.map(csvEscape).join(','), ...rows.map(r => csvFields.map(k => csvEscape(r[k])).join(','))].join('\n')+'\n';
 await writeFile(path.join(ROOT,'docs/topic-content-coverage-2026-11-06.csv'), '\ufeff'+csv);
-await writeFile(path.join(ROOT,'docs/topic-content-coverage-2026-11-06.json'), JSON.stringify({ summary, limitations: ['PostgreSQL is offline; notes, lessons, topic-resource links and publication are unknown.', 'Retrieval downloads are not assumed to be learner-published topic content.', 'No resource is assigned to a topic based only on title similarity.'], topics: rows }, null, 2)+'\n');
-const md = `# Topic-level content coverage matrix — 6 November 2026\n\n## Summary\n- Syllabus topics: **${rows.length}**\n- Topics with authored questions: **${covered}/${rows.length} (${(covered/rows.length*100).toFixed(1)}%)**\n- Authored questions: **${totalQ}**\n- Retrieval inventory (separate from learner publication): \`${JSON.stringify(retrieval)}\`\n- Study notes, structured lessons, topic-resource links and publication: **not verifiable while PostgreSQL is offline**.\n\n## Interpretation\n- Zero authored questions means the topic has no authored question-bank coverage in the YAML source.\n- English and Tamil are counted independently.\n- Syllabus chapter \`transcribed\` means topic nodes exist; it does not prove learner notes or lessons exist.\n- A topic only counts as lesson/note-covered after database-backed learner visibility confirms approved, published content.\n\n## Outputs\n- \`docs/topic-content-coverage-2026-11-06.csv\` — spreadsheet-ready per-topic matrix.\n- \`docs/topic-content-coverage-2026-11-06.json\` — machine-readable matrix and limitations.\n`;
+await writeFile(path.join(ROOT,'docs/topic-content-coverage-2026-11-06.json'), JSON.stringify({ summary, limitations: [databaseSnapshot ? 'Database counts are a point-in-time snapshot of the DATABASE_URL target and must not be mistaken for production state.' : 'PostgreSQL is offline; notes, lessons, topic-resource links and publication are unknown.', 'Retrieval downloads are not assumed to be learner-published topic content.', 'No resource is assigned to a topic based only on title similarity.'], topics: rows }, null, 2)+'\n');
+const md = `# Topic-level content coverage matrix — 6 November 2026\n\n## Summary\n- Syllabus topics: **${rows.length}**\n- Topics with authored questions: **${covered}/${rows.length} (${(covered/rows.length*100).toFixed(1)}%)**\n- Authored questions: **${totalQ}**\n- Retrieval inventory (separate from learner publication): \`${JSON.stringify(retrieval)}\`\n- Database snapshot: **${databaseSnapshot ? JSON.stringify(databaseSnapshot) : 'not connected; DB-backed states remain unknown'}**.
+- Database counts describe only the DATABASE_URL target; they are not production counts unless the production database was explicitly supplied.\n\n## Interpretation\n- Zero authored questions means the topic has no authored question-bank coverage in the YAML source.\n- English and Tamil are counted independently.\n- Syllabus chapter \`transcribed\` means topic nodes exist; it does not prove learner notes or lessons exist.\n- A topic only counts as lesson/note-covered after database-backed learner visibility confirms approved, published content.\n\n## Outputs\n- \`docs/topic-content-coverage-2026-11-06.csv\` — spreadsheet-ready per-topic matrix.\n- \`docs/topic-content-coverage-2026-11-06.json\` — machine-readable matrix and limitations.\n`;
 await writeFile(path.join(ROOT,'docs/topic-content-coverage-2026-11-06.md'), md);
 console.log(`TOPIC_COVERAGE topics=${rows.length} topics_with_questions=${covered} (${(covered/rows.length*100).toFixed(1)}%) authored_questions=${totalQ}`);
+console.log(`DATABASE ${JSON.stringify(databaseSnapshot)}`);
 console.log(`RETRIEVAL ${JSON.stringify(retrieval)}`);

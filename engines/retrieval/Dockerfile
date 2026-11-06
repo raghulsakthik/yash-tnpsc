@@ -6,6 +6,17 @@ FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 
 WORKDIR /app
 
+# tesseract-ocr-tam is the real fix for TNPSC study material, which is
+# routinely bilingual Tamil/English -- without it, document_text.py's OCR
+# fallback (used whenever a PDF has no extractable native text layer, e.g.
+# a scanned page) only ever had English language data available and fell
+# back to an "OCR output requires human verification" + "Tamil OCR
+# language data not installed" warning on every Tamil page instead of
+# actually reading it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-eng tesseract-ocr-tam \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

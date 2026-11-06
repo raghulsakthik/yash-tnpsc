@@ -45,9 +45,11 @@ def extract_document_text(
 ) -> DocumentText:
     """Extract a bounded text sample for classification, not full ingestion.
 
-    Native PDF text is preferred. OCR is a fallback for English scans only
-    when English Tesseract data is installed. OCR output is always flagged for
-    review; it is never treated as trusted MCQ or lesson content.
+    Native PDF text is preferred. OCR is a fallback when English Tesseract
+    data is installed -- Tamil runs alongside it (combined -l tam+eng) when
+    the Tamil traineddata is also installed, English-only otherwise. OCR
+    output is always flagged for review; it is never treated as trusted
+    MCQ or lesson content.
     """
     source = Path(path)
     if not source.is_file():
@@ -108,6 +110,17 @@ def extract_document_text(
             warnings.append("english-ocr-language-data-missing")
             return DocumentText(native_text, "native_text_low", page_count, last_page, tuple(warnings))
 
+        # TNPSC study material is routinely bilingual Tamil/English -- use
+        # combined-language OCR when the Tamil traineddata is actually
+        # installed (see the Dockerfile's tesseract-ocr-tam), English-only
+        # otherwise. Tesseract's own "+"-joined -l syntax runs both language
+        # models over the same page rather than requiring a separate pass
+        # or a pre-detection step.
+        has_tamil = bool(re.search(r"(?m)^tam$", langs))
+        ocr_lang = "tam+eng" if has_tamil else "eng"
+        if not has_tamil:
+            warnings.append("tamil-ocr-language-data-not-installed")
+
         with tempfile.TemporaryDirectory(prefix="tnpsc-classify-") as tmp:
             prefix = Path(tmp) / "page"
             ocr_last = min(page_count or ocr_pages, ocr_pages)
@@ -126,7 +139,7 @@ def extract_document_text(
             chunks = []
             for image in images:
                 result = subprocess.run(
-                    ["tesseract", str(image), "stdout", "-l", "eng"],
+                    ["tesseract", str(image), "stdout", "-l", ocr_lang],
                     capture_output=True,
                     text=True,
                     timeout=timeout_seconds,
@@ -139,7 +152,6 @@ def extract_document_text(
                 warnings.append("ocr-produced-no-text")
                 return DocumentText(native_text, "native_text_low", page_count, last_page, tuple(warnings))
             warnings.append("ocr-output-requires-human-verification")
-            warnings.append("tamil-ocr-language-data-not-installed")
             return DocumentText(ocr_text[:500_000], "ocr", page_count, len(images), tuple(warnings))
     except (OSError, subprocess.TimeoutExpired) as exc:
         warnings.append(f"ocr-error:{type(exc).__name__}")

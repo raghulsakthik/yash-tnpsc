@@ -29,6 +29,17 @@ class ResourceClassifierTests(unittest.TestCase):
         self.assertIsNone(result["topic_id"])
         self.assertTrue(result["review_required"])
 
+    def test_current_affairs_body_terms_do_not_create_spurious_topic_candidates(self):
+        result = self.classifier.classify(
+            "TNPSC Daily Current Affairs October 17 2026 English.pdf",
+            text="The average volume of rainfall increased across several districts."
+        )
+        self.assertEqual(result["resource_type"], "current_affairs")
+        self.assertEqual(result["subject_id"], "general-studies")
+        self.assertEqual(result["topic_candidates"], ())
+        self.assertIsNone(result["topic_id"])
+        self.assertTrue(result["review_required"])
+
     def test_group_iia_mains_maps_to_its_own_curriculum(self):
         result = self.classifier.classify(
             "TNPSC Group IIA Mains Material.pdf",

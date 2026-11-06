@@ -34,3 +34,64 @@ class OcrLanguageSelectionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ZipDocumentExtractionTests(unittest.TestCase):
+    def test_zip_with_text_material_returns_bounded_reviewable_archive_text(self):
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        from app.engine.extract.document_text import extract_document_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / "course-materials.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("notes/topic.md", "Topic: Fundamental Rights\\nConstitutional protections and duties.")
+                archive.writestr("ignored.bin", b"binary payload")
+            result = extract_document_text(archive_path)
+        self.assertEqual(result.method, "archive")
+        self.assertIn("Fundamental Rights", result.text)
+        self.assertIn("archive-extraction-requires-human-verification", result.warnings)
+
+    def test_zip_with_no_supported_documents_is_not_silently_accepted(self):
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        from app.engine.extract.document_text import extract_document_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / "unsupported.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("payload.bin", b"not a document")
+            result = extract_document_text(archive_path)
+        self.assertEqual(result.method, "unsupported")
+        self.assertIn("archive-has-no-supported-documents", result.warnings)
+
+    def test_zip_rejects_archives_with_too_many_entries(self):
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        from app.engine.extract.document_text import extract_document_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / "too-many.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                for index in range(41):
+                    archive.writestr(f"notes/{index}.txt", "short note")
+            result = extract_document_text(archive_path)
+        self.assertEqual(result.method, "failed")
+        self.assertIn("archive-entry-limit-exceeded", result.warnings)
+
+    def test_zip_rejects_excessive_declared_uncompressed_size(self):
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        from app.engine.extract.document_text import extract_document_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / "oversized.zip"
+            with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr("notes/oversized.txt", b"x" * (26 * 1024 * 1024))
+            result = extract_document_text(archive_path)
+        self.assertEqual(result.method, "failed")
+        self.assertIn("archive-uncompressed-size-limit-exceeded", result.warnings)

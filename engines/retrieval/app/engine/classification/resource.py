@@ -308,10 +308,10 @@ class ResourceClassifier:
                 topic_matches = self._match_topic(title_url, match_curriculum_id)
                 if topic_matches:
                     reasons.append("title-topic-match")
-            if not topic_matches and text:
-                # Body-only matching is allowed only when it produces one
-                # unique topic; a broad document mentioning many concepts is
-                # deliberately left unmapped.
+            if not topic_matches and text and resource_type != "current_affairs":
+                # Body-only matching is useful for focused notes, but broad
+                # current-affairs articles mention many syllabus terms in
+                # passing. Do not turn incidental words into topic candidates.
                 topic_matches = self._match_topic(text[:12000], match_curriculum_id)
                 if topic_matches:
                     reasons.append("body-topic-match")

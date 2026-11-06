@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import zipfile
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,93 @@ def _select_ocr_language(language_hint: str | None, installed_languages: set[str
     return None, "ocr-language-data-missing"
 
 
+def _extract_zip_archive(
+    source: Path,
+    *,
+    max_pages: int,
+    ocr_pages: int,
+    timeout_seconds: int,
+    language_hint: str | None,
+) -> DocumentText:
+    """Extract a bounded set of PDF/text files from a ZIP without unpacking paths."""
+    max_entries = 40
+    max_total_bytes = 25 * 1024 * 1024
+    max_entry_bytes = 8 * 1024 * 1024
+    allowed = {".pdf", ".txt", ".md", ".html", ".htm"}
+    warnings = ["archive-extraction-requires-human-verification"]
+    chunks: list[str] = []
+    total_pages = 0
+    pages_examined = 0
+    saw_pdf = False
+
+    try:
+        with zipfile.ZipFile(source) as archive:
+            entries = [item for item in archive.infolist() if not item.is_dir()]
+            if len(entries) > max_entries:
+                return DocumentText("", "failed", None, 0, ("archive-entry-limit-exceeded",))
+            if sum(item.file_size for item in entries) > max_total_bytes:
+                return DocumentText("", "failed", None, 0, ("archive-uncompressed-size-limit-exceeded",))
+
+            supported = [item for item in entries if Path(item.filename).suffix.casefold() in allowed]
+            if not supported:
+                return DocumentText("", "unsupported", None, 0, ("archive-has-no-supported-documents",))
+
+            for item in supported:
+                if item.file_size > max_entry_bytes:
+                    warnings.append(f"archive-entry-too-large:{Path(item.filename).name}")
+                    continue
+                suffix = Path(item.filename).suffix.casefold()
+                payload = archive.read(item)
+                if len(payload) > max_entry_bytes:
+                    warnings.append(f"archive-entry-too-large:{Path(item.filename).name}")
+                    continue
+
+                if suffix == ".pdf":
+                    saw_pdf = True
+                    with tempfile.TemporaryDirectory(prefix="tnpsc-archive-") as tmp:
+                        child = Path(tmp) / ("document" + suffix)
+                        child.write_bytes(payload)
+                        extracted = extract_document_text(
+                            child,
+                            max_pages=min(max_pages, 6),
+                            ocr_pages=min(ocr_pages, 2),
+                            timeout_seconds=timeout_seconds,
+                            language_hint=language_hint,
+                        )
+                    if extracted.text.strip():
+                        chunks.append(f"\n\n===== {Path(item.filename).name} =====\n{extracted.text}")
+                    if extracted.page_count is not None:
+                        total_pages += extracted.page_count
+                    pages_examined += extracted.pages_examined
+                    warnings.extend(extracted.warnings)
+                else:
+                    text = payload.decode("utf-8-sig", errors="replace")
+                    if text.strip():
+                        chunks.append(f"\n\n===== {Path(item.filename).name} =====\n{text[:100000]}")
+
+    except (OSError, zipfile.BadZipFile, RuntimeError, NotImplementedError):
+        return DocumentText("", "failed", None, 0, ("archive-read-failed",))
+
+    combined = "\n".join(chunks).strip()
+    if not combined:
+        return DocumentText("", "unsupported", None, pages_examined, tuple(dict.fromkeys(warnings + ["archive-produced-no-text"])))
+    if saw_pdf and total_pages == 0:
+        page_count = None
+    elif saw_pdf:
+        page_count = total_pages
+    else:
+        page_count = None
+    if len(combined) > 500000:
+        warnings.append("archive-text-truncated-at-safety-limit")
+    return DocumentText(
+        combined[:500000],
+        "archive",
+        page_count,
+        pages_examined,
+        tuple(dict.fromkeys(warnings)),
+    )
+
+
 def extract_document_text(
     path: str | Path,
     *,
@@ -76,6 +164,15 @@ def extract_document_text(
         return DocumentText("", "missing", None, 0, ("source-file-missing",))
 
     suffix = source.suffix.casefold()
+    if suffix == ".zip":
+        return _extract_zip_archive(
+            source,
+            max_pages=max_pages,
+            ocr_pages=ocr_pages,
+            timeout_seconds=timeout_seconds,
+            language_hint=language_hint,
+        )
+
     if suffix in {".txt", ".md", ".html", ".htm"}:
         try:
             text = source.read_text(encoding="utf-8", errors="replace")[:500_000]

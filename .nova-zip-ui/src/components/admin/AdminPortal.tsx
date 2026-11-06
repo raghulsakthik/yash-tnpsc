@@ -50,7 +50,6 @@ import {
 import {
   initialAdminResources,
   initialAdminPYQs,
-  initialProctoringPolicies,
   initialAdaptiveRules,
   initialAdminMilestones,
   initialAIContentProposals,
@@ -325,29 +324,60 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     refreshTests();
   }, [refreshTests]);
 
-  const [policies, setPolicies] = useState<ProctoringPolicy[]>(() => {
-    const saved = localStorage.getItem('nova_admin_policies');
-    return saved ? JSON.parse(saved) : initialProctoringPolicies;
-  });
+  // Real security policies (GET /api/admin/proctoring/policies -- see
+  // db/migrations/V79__proctoring_hub.sql). Previously seeded from
+  // mockAdminData into localStorage. Same three policies, same ids, seeded
+  // for real in the migration -- there's no "create policy" control
+  // anywhere in the UI, only edits to existing rows.
+  const [policies, setPolicies] = useState<ProctoringPolicy[]>([]);
+  const refreshPolicies = React.useCallback(() => {
+    novaApi
+      .adminProctoringPolicies()
+      .then((res: any) => setPolicies(res.policies || []))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshPolicies();
+  }, [refreshPolicies]);
 
   // Real proctoring sessions (GET /api/admin/proctoring/sessions -- the
   // same real endpoint the already-wired Proctoring Reports panel uses),
   // mapped onto the richer ProctoringAttemptReview shape Dashboard and
   // ProctoringHubView's review list were built against. The real schema
-  // (proctoring_session.status: RECORDING/COMPLETED/ABANDONED) has no
-  // FLAGGED/SUSPICIOUS/INVALIDATED concept -- there's no admin decision
-  // workflow backing those in the database at all -- so those are derived
-  // honestly from real signals instead of invented: FLAGGED means the
-  // session actually recorded proctoring_event rows (real suspicious-
-  // activity telemetry, matching the UI copy "flagged for suspicious tab
-  // switching or camera telemetry" almost exactly), INVALIDATED means the
-  // real session status is ABANDONED. riskScore/riskLevel are a simple,
-  // disclosed heuristic on event count, not a real ML risk engine.
-  const mapProctoringReviewFromApi = (s: any): ProctoringAttemptReview => {
+  // (proctoring_session.status: RECORDING/COMPLETED/ABANDONED) had no
+  // FLAGGED/SUSPICIOUS/INVALIDATED concept and no admin decision workflow
+  // at all until V79 (proctoring_session.decision, see proctoring.mjs
+  // recordDecision) -- so status prefers a real recorded decision when one
+  // exists, and only falls back to a signal-derived guess (real
+  // proctoring_event rows -> FLAGGED, real ABANDONED status -> INVALIDATED)
+  // for sessions nobody has reviewed yet. riskScore/riskLevel stay a
+  // simple, disclosed heuristic on event count, not a real ML risk engine.
+  const DECISION_TO_STATUS: Record<string, ProctoringAttemptReview['status']> = {
+    INVALIDATE: 'INVALIDATED', FLAG: 'FLAGGED', WARNING: 'SUSPICIOUS', CLEAR: 'COMPLETED', REVIEW_REQUIRED: 'FLAGGED',
+  };
+  const mapProctoringReviewFromApi = (s: any, eventsByTestId: Map<string, any[]>): ProctoringAttemptReview => {
     const eventCount = Number(s.eventCount || 0);
     const riskScore = Math.min(100, eventCount * 20);
     const status: ProctoringAttemptReview['status'] =
-      s.status === 'ABANDONED' ? 'INVALIDATED' : eventCount > 0 ? 'FLAGGED' : 'COMPLETED';
+      (s.decision && DECISION_TO_STATUS[s.decision]) ||
+      (s.status === 'ABANDONED' ? 'INVALIDATED' : eventCount > 0 ? 'FLAGGED' : 'COMPLETED');
+    const events = (eventsByTestId.get(s.testId) || []).map((e: any) => ({
+      id: e.id,
+      attemptId: s.testId,
+      learnerId: s.learnerId || '',
+      learnerName: s.learnerName,
+      testId: s.testId,
+      testTitle: s.templateName || 'Weekly Test',
+      timestamp: e.timestamp,
+      eventType: e.eventType,
+      severity: e.severity,
+      evidenceDetails: `${e.eventType.replace(/_/g, ' ')} recorded during the attempt`,
+      // Real telemetry (browser/OS/IP/screen resolution) isn't captured by
+      // the real event-logging write path (see proctoring.mjs
+      // listRecentEvents) -- disclosed as not collected rather than faked.
+      deviceMetadata: { browser: 'Not collected', os: 'Not collected', ipMasked: 'Not collected', screenResolution: 'Not collected' },
+      reviewState: 'UNREVIEWED' as const,
+    }));
     return {
       id: s.testId,
       attemptId: s.testId,
@@ -365,21 +395,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
       riskLevel: riskScore >= 60 ? 'HIGH' : riskScore >= 20 ? 'MEDIUM' : 'LOW',
       status,
       violationsCount: eventCount,
-      // Individual event detail isn't returned by the bulk sessions list --
-      // only by GET /api/admin/proctoring/sessions/:testId, which
-      // ProctoringRecordingsPanel already fetches on demand per session.
-      // Left honestly empty here rather than fetched N+1 for every row.
-      events: [],
+      events,
+      decision: s.decision || undefined,
+      decisionReason: s.decisionReason || undefined,
+      decidedAt: s.decidedAt || undefined,
     };
   };
 
   const [proctoringReviews, setProctoringReviews] = useState<ProctoringAttemptReview[]>([]);
-  useEffect(() => {
-    novaApi
-      .adminProctoringSessions()
-      .then((res: any) => setProctoringReviews((res.sessions || []).map(mapProctoringReviewFromApi)))
+  const [proctoringError, setProctoringError] = useState<string | null>(null);
+  const refreshProctoringReviews = React.useCallback(() => {
+    Promise.all([novaApi.adminProctoringSessions(), novaApi.adminProctoringEvents(200)])
+      .then(([sessionsRes, eventsRes]: any[]) => {
+        const eventsByTestId = new Map<string, any[]>();
+        for (const e of eventsRes.events || []) {
+          if (!eventsByTestId.has(e.testId)) eventsByTestId.set(e.testId, []);
+          eventsByTestId.get(e.testId)!.push(e);
+        }
+        setProctoringReviews((sessionsRes.sessions || []).map((s: any) => mapProctoringReviewFromApi(s, eventsByTestId)));
+      })
       .catch(() => {});
   }, []);
+  useEffect(() => {
+    refreshProctoringReviews();
+  }, [refreshProctoringReviews]);
 
   // Real admin activity trail (GET/POST /api/admin/audit-log -- see
   // src/lib/adminCrud.mjs recordAdminAudit/listAdminAudit). Every call site
@@ -498,10 +537,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   useEffect(() => {
     localStorage.setItem('nova_admin_subject_scope', activeSubjectScope);
   }, [activeSubjectScope]);
-
-  useEffect(() => {
-    localStorage.setItem('nova_admin_policies', JSON.stringify(policies));
-  }, [policies]);
 
   useEffect(() => {
     localStorage.setItem('nova_admin_ai_proposals', JSON.stringify(aiProposals));
@@ -764,43 +799,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
       });
   };
 
-  // Proctoring operations
+  // Proctoring operations -- real writes against
+  // PATCH /api/admin/proctoring/policies/:id and
+  // POST /api/admin/proctoring/sessions/:testId/decision.
   const handleSavePolicy = (policy: ProctoringPolicy, reason?: string) => {
+    const previous = policies.find((p) => p.id === policy.id);
     setPolicies((prev) => prev.map((p) => (p.id === policy.id ? policy : p)));
-    recordAudit(
-      'PROCTORING_POLICY_CHANGED',
-      'ProctoringPolicy',
-      policy.id,
-      reason || 'Updated proctoring threshold'
-    );
+    // updatePolicy() server-side only ever writes the real boolean toggle
+    // fields it recognizes (see POLICY_COLUMNS in proctoring.mjs) -- safe
+    // to send the whole updated object, non-toggle fields are ignored.
+    novaApi
+      .adminUpdateProctoringPolicy(policy.id, policy)
+      .then(() => recordAudit('PROCTORING_POLICY_CHANGED', 'ProctoringPolicy', policy.id, reason || 'Updated proctoring threshold'))
+      .catch((err) => {
+        if (previous) setPolicies((prev) => prev.map((p) => (p.id === policy.id ? previous : p)));
+        setProctoringError(err instanceof Error ? err.message : 'Unable to update this policy');
+      });
   };
 
+  // attemptId here is actually testId (see mapProctoringReviewFromApi --
+  // ProctoringAttemptReview.attemptId is set to the real test id, there is
+  // no separate "attempt" concept in the schema).
   const handleDecideAttempt = (attemptId: string, decision: ProctoringDecision, reason: string) => {
+    const statusFromDecision: ProctoringAttemptReview['status'] =
+      decision === 'INVALIDATE' ? 'INVALIDATED' : decision === 'CLEAR' ? 'COMPLETED' : decision === 'WARNING' ? 'SUSPICIOUS' : 'FLAGGED';
     setProctoringReviews((prev) =>
       prev.map((r) =>
         r.attemptId === attemptId
-          ? {
-              ...r,
-              decision,
-              decisionReason: reason,
-              decisionBy: `${activeRole} Officer`,
-              decidedAt: new Date().toISOString(),
-              status:
-                decision === 'INVALIDATE'
-                  ? 'INVALIDATED'
-                  : decision === 'CLEAR'
-                  ? 'COMPLETED'
-                  : 'FLAGGED',
-            }
+          ? { ...r, decision, decisionReason: reason, decisionBy: `${activeRole} Officer`, decidedAt: new Date().toISOString(), status: statusFromDecision }
           : r
       )
     );
-    recordAudit(
-      decision === 'INVALIDATE' ? 'ATTEMPT_INVALIDATED' : 'PROCTORING_VERDICT_ISSUED',
-      'ProctoringReport',
-      attemptId,
-      reason
-    );
+    novaApi
+      .adminDecideAttempt(attemptId, decision, reason)
+      .then(() => {
+        recordAudit(
+          decision === 'INVALIDATE' ? 'ATTEMPT_INVALIDATED' : 'PROCTORING_VERDICT_ISSUED',
+          'ProctoringReport',
+          attemptId,
+          reason
+        );
+      })
+      .catch((err) => {
+        refreshProctoringReviews(); // revert the optimistic update to whatever's real
+        setProctoringError(err instanceof Error ? err.message : 'Unable to record this decision');
+      });
   };
 
   // AI Content operations
@@ -1060,7 +1103,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               lessons, curriculum, and learners are real (GET/POST/PATCH
               against actual API routes) and excluded from the warning
               banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'tests' && currentSectionSlug !== 'dashboard' && currentSectionSlug !== 'audit-logs' && (
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'tests' && currentSectionSlug !== 'dashboard' && currentSectionSlug !== 'audit-logs' && currentSectionSlug !== 'proctoring' && currentSectionSlug !== 'proctoring-events' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>

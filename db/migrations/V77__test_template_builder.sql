@@ -11,6 +11,14 @@
 -- Builder UI ever actually sets (DRAFT when false, PUBLISHED when true) --
 -- the richer READY_FOR_REVIEW/APPROVED/ARCHIVED states in the frontend
 -- type are never set by any button in the UI, so no new status column.
+--
+-- Written defensively idempotent (DO blocks guarding each ADD CONSTRAINT,
+-- CREATE TABLE IF NOT EXISTS): concurrent deploys racing the same
+-- production DATABASE_URL left this schema partially applied under an
+-- earlier migration number before this file's own schema_migration row
+-- ever got recorded, so a plain ADD CONSTRAINT failed on "already exists"
+-- every subsequent retry. Safe to run against a column/constraint that's
+-- already there.
 
 ALTER TABLE test_template
     ADD COLUMN IF NOT EXISTS subject_name TEXT,
@@ -20,18 +28,30 @@ ALTER TABLE test_template
     ADD COLUMN IF NOT EXISTS negative_marks NUMERIC(5, 2) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS passing_threshold_percent NUMERIC(5, 2) NOT NULL DEFAULT 40,
     ADD COLUMN IF NOT EXISTS proctoring_policy_id TEXT,
-    ADD COLUMN IF NOT EXISTS proctoring_policy_name TEXT,
-    ADD CONSTRAINT test_template_duration_ck CHECK (duration_minutes > 0),
-    ADD CONSTRAINT test_template_marks_ck CHECK (marks_per_question > 0),
-    ADD CONSTRAINT test_template_negative_marks_ck CHECK (negative_marks >= 0),
-    ADD CONSTRAINT test_template_passing_ck CHECK (passing_threshold_percent >= 0 AND passing_threshold_percent <= 100);
+    ADD COLUMN IF NOT EXISTS proctoring_policy_name TEXT;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'test_template_duration_ck') THEN
+        ALTER TABLE test_template ADD CONSTRAINT test_template_duration_ck CHECK (duration_minutes > 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'test_template_marks_ck') THEN
+        ALTER TABLE test_template ADD CONSTRAINT test_template_marks_ck CHECK (marks_per_question > 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'test_template_negative_marks_ck') THEN
+        ALTER TABLE test_template ADD CONSTRAINT test_template_negative_marks_ck CHECK (negative_marks >= 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'test_template_passing_ck') THEN
+        ALTER TABLE test_template ADD CONSTRAINT test_template_passing_ck CHECK (passing_threshold_percent >= 0 AND passing_threshold_percent <= 100);
+    END IF;
+END $$;
 
 -- An explicit, hand-picked question list -- an alternative to
 -- test_template_topic's topic-weighted random generation, not a
 -- replacement for it: a template with rows here is served verbatim by
 -- /api/tests (POST), in sort_order; a template with only test_template_topic
 -- rows keeps generating fresh questions per attempt exactly as before.
-CREATE TABLE test_template_question (
+CREATE TABLE IF NOT EXISTS test_template_question (
     template_id  UUID NOT NULL REFERENCES test_template (id) ON DELETE CASCADE,
     question_id  TEXT NOT NULL REFERENCES question (id) ON DELETE CASCADE,
     sort_order   INTEGER NOT NULL DEFAULT 0,

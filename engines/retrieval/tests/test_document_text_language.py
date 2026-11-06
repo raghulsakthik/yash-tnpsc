@@ -1,6 +1,8 @@
 import unittest
+import os
+from unittest.mock import patch
 
-from app.engine.extract.document_text import _select_ocr_language
+from app.engine.extract.document_text import _select_ocr_language, _tesseract_data_args
 
 
 class OcrLanguageSelectionTests(unittest.TestCase):
@@ -20,6 +22,14 @@ class OcrLanguageSelectionTests(unittest.TestCase):
 
     def test_unknown_language_is_flagged_even_when_english_ocr_is_used(self):
         self.assertEqual(_select_ocr_language(None, {'eng', 'osd'}), ('eng', 'ocr-language-not-confirmed'))
+
+    def test_configured_tessdata_directory_is_passed_to_tesseract(self):
+        with patch.dict(os.environ, {'TNPSC_TESSDATA_DIR': '/usr/share/tesseract-ocr/5/tessdata'}):
+            self.assertEqual(_tesseract_data_args(), ['--tessdata-dir', '/usr/share/tesseract-ocr/5/tessdata'])
+
+    def test_missing_tessdata_override_uses_system_default(self):
+        with patch.dict(os.environ, {'TNPSC_TESSDATA_DIR': '/tmp/does-not-exist'}):
+            self.assertEqual(_tesseract_data_args(), [])
 
 
 if __name__ == '__main__':

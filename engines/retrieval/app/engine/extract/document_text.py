@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import os
 import shutil
 import subprocess
 import tempfile
@@ -36,6 +37,14 @@ def _page_count(path: Path) -> int | None:
     return None
 
 
+def _tesseract_data_args() -> list[str]:
+    """Use an explicitly configured, deployment-managed trained-data directory."""
+    configured = os.getenv("TNPSC_TESSDATA_DIR", "").strip()
+    if configured and Path(configured).is_dir():
+        return ["--tessdata-dir", configured]
+    return []
+
+
 def _select_ocr_language(language_hint: str | None, installed_languages: set[str]) -> tuple[str | None, str | None]:
     """Choose only installed OCR data; never run English OCR over known Tamil scans."""
     if language_hint == "ta":
@@ -57,9 +66,10 @@ def extract_document_text(
 ) -> DocumentText:
     """Extract a bounded text sample for classification, not full ingestion.
 
-    Native PDF text is preferred. OCR is a fallback for English scans only
-    when English Tesseract data is installed. OCR output is always flagged for
-    review; it is never treated as trusted MCQ or lesson content.
+    Native PDF text is preferred. OCR uses the detected language only when
+    matching Tesseract trained data is installed. Set TNPSC_TESSDATA_DIR to a
+    managed directory containing the required traineddata files. OCR output is
+    always flagged for review; it is never trusted as published content.
     """
     source = Path(path)
     if not source.is_file():
@@ -110,7 +120,7 @@ def extract_document_text(
 
     try:
         langs = subprocess.run(
-            ["tesseract", "--list-langs"],
+            ["tesseract", *_tesseract_data_args(), "--list-langs"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -141,7 +151,7 @@ def extract_document_text(
             chunks = []
             for image in images:
                 result = subprocess.run(
-                    ["tesseract", str(image), "stdout", "-l", ocr_language],
+                    ["tesseract", *_tesseract_data_args(), str(image), "stdout", "-l", ocr_language],
                     capture_output=True,
                     text=True,
                     timeout=timeout_seconds,

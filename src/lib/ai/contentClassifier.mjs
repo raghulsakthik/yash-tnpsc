@@ -35,7 +35,7 @@ Your job: split the text into individual MCQs and individual study-note chunks, 
 the single best-matching existing topic id. Only propose a brand new topic when nothing in the existing list is
 a reasonable match -- reusing an existing topic is always preferred over inventing one.
 
-For each numbered question, preserve its printed question number in questionNumber; if the source has no reliable number, use null.
+For each numbered question, preserve its printed question number in questionNumber; if the source has no reliable number, use null. Never solve a question or infer its correct answer. Set answerIndex to null when the source does not explicitly provide an answer key.
 
 CRITICAL -- be exhaustive, not a representative sample: extract EVERY numbered question in the document
 (worked examples AND "practice questions" sections both count), not just the first few or one per section.
@@ -52,8 +52,7 @@ page number (from the "=== PAGE N ===" marker) that question appears on, so the 
 captured and attached later. Still extract the question, options and the stated answer exactly as given (look
 for "Ans:" or "Solution:" markers) even when you can't verify the reasoning yourself -- write an honest
 explanation (e.g. "Answer given in the source material; the reasoning depends on a diagram not shown here.")
-rather than inventing reasoning you can't verify from text. For ordinary questions that are fully readable as
-text, set "needsDiagram": false and "sourcePage": null.
+rather than inventing reasoning you can't verify from text. For ordinary questions that are fully readable as text, set "needsDiagram": false but still set "sourcePage" to the actual page number. Every MCQ and note must retain its sourcePage for provenance and validation; only the diagram flag changes.
 
 Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
 {
@@ -62,11 +61,11 @@ Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
       "question": string,
       "questionNumber": number | null,
       "options": [string, ...],          // 2-6 options, exact text, no "A)" prefixes
-      "answerIndex": number,              // 0-based index into options
+      "answerIndex": number | null,       // 0-based index into options; null when no answer key is explicitly present in the source
       "explanation": string,              // why that answer is correct
       "trap": string | null,              // why a wrong option is tempting, or null
       "needsDiagram": boolean,            // true if a figure in the source is essential and not captured in text
-      "sourcePage": number | null,        // page number this question is on, required if needsDiagram is true
+      "sourcePage": number,               // actual source page number for every question, whether or not it needs a diagram
       "topicId": string | null,           // an id from the existing list, or null if none fits
       "isNewTopic": boolean,              // true if topicId is null and this needs a new topic
       "newTopicName": string | null,      // short name for the new topic, only if isNewTopic
@@ -79,7 +78,7 @@ Respond with ONLY strict JSON, no markdown fences, matching exactly this shape:
       "title": string,                    // short heading for this note
       "body": string,                     // the explanation/notes text itself, cleaned up
       "needsDiagram": boolean,
-      "sourcePage": number | null,
+      "sourcePage": number,               // actual source page number for every note
       "topicId": string | null,
       "isNewTopic": boolean,
       "newTopicName": string | null,
@@ -122,8 +121,8 @@ function sanitizeMcq(raw, validTopicIds, maxPage) {
   const options = Array.isArray(raw.options) ? raw.options.map((o) => cleanString(o)).filter(Boolean) : [];
   if (!question || options.length < 2) return null;
 
-  const answerIndex = Number.isInteger(raw.answerIndex) ? raw.answerIndex : -1;
-  if (answerIndex < 0 || answerIndex >= options.length) return null;
+  const answerIndex = Number.isInteger(raw.answerIndex) ? raw.answerIndex : null;
+  if (answerIndex !== null && (answerIndex < 0 || answerIndex >= options.length)) return null;
 
   const topicId = cleanString(raw.topicId) || null;
   const isNewTopic = Boolean(raw.isNewTopic) && !validTopicIds.has(topicId);
@@ -219,18 +218,32 @@ function splitIntoChunks(pages, maxChars) {
     }
 
     // One oversized "page" (typically a whole .txt/.docx with no real page
-    // breaks) -- split it on blank-line paragraph boundaries instead.
+    // breaks). Preserve paragraph boundaries where possible, but also split a
+    // single oversized paragraph at a whitespace boundary so no model call
+    // can exceed the configured input budget.
     flush();
     const paragraphs = page.text.split(/\n\s*\n/);
     let buffer = '';
-    for (const para of paragraphs) {
-      if (buffer && buffer.length + para.length + 2 > maxChars) {
-        chunks.push([{ pageNumber: page.pageNumber, text: buffer }]);
-        buffer = '';
+    const flushBuffer = () => {
+      if (buffer) chunks.push([{ pageNumber: page.pageNumber, text: buffer }]);
+      buffer = '';
+    };
+    for (const paragraph of paragraphs) {
+      const segments = [];
+      let remaining = paragraph;
+      while (remaining.length > maxChars) {
+        let cut = remaining.lastIndexOf(' ', maxChars);
+        if (cut < Math.floor(maxChars * 0.5)) cut = maxChars;
+        segments.push(remaining.slice(0, cut));
+        remaining = remaining.slice(cut).trimStart();
       }
-      buffer += (buffer ? '\n\n' : '') + para;
+      if (remaining) segments.push(remaining);
+      for (const segment of segments) {
+        if (buffer && buffer.length + segment.length + 2 > maxChars) flushBuffer();
+        buffer += (buffer ? '\n\n' : '') + segment;
+      }
     }
-    if (buffer) chunks.push([{ pageNumber: page.pageNumber, text: buffer }]);
+    flushBuffer();
   }
   flush();
 
@@ -271,8 +284,13 @@ async function runWithConcurrency(tasks, limit) {
  */
 export async function classifyContent(pages, syllabusTree) {
   const allChunks = splitIntoChunks(pages, CHUNK_CHARS);
-  const truncated = allChunks.length > MAX_CHUNKS;
-  const chunks = truncated ? allChunks.slice(0, MAX_CHUNKS) : allChunks;
+  if (allChunks.length > MAX_CHUNKS) {
+    throw new ClassifyError(
+      'DOCUMENT_TOO_LARGE',
+      `This document requires ${allChunks.length} classification chunks; the safe limit is ${MAX_CHUNKS}. No partial content was processed. Split the document into smaller files and upload each part separately.`,
+    );
+  }
+  const chunks = allChunks;
 
   if (chunks.length === 0) {
     throw new ClassifyError('EMPTY_TEXT', 'No text could be extracted from that file.');
@@ -286,7 +304,7 @@ export async function classifyContent(pages, syllabusTree) {
   return {
     mcqs: results.flatMap((r) => r.mcqs),
     resources: results.flatMap((r) => r.resources),
-    truncated,
+    truncated: false,
     chunkCount: chunks.length,
   };
 }

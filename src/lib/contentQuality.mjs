@@ -50,7 +50,8 @@ export function evaluateClassifiedContent({ pages = [], result = {}, syllabusTre
     if (!item.topicId || !topicIds.has(item.topicId)) issues.push('TOPIC_NOT_CONFIRMED');
     if (!Number.isInteger(item.sourcePage) || !pageMap.has(item.sourcePage)) issues.push('SOURCE_PAGE_NOT_CONFIRMED');
     if (options.length < 2 || options.length > 6 || distinctOptions.size !== options.length) issues.push('OPTIONS_INVALID');
-    if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= options.length) issues.push('ANSWER_INDEX_INVALID');
+    if (answerIndex === null || answerIndex === undefined) issues.push('ANSWER_INDEX_MISSING');
+    else if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= options.length) issues.push('ANSWER_INDEX_INVALID');
     if (String(item.explanation ?? '').trim().length < 16) issues.push('EXPLANATION_TOO_SHORT');
     if (typeof item.confidence !== 'number' || item.confidence < 0.8) issues.push('LOW_CLASSIFICATION_CONFIDENCE');
 
@@ -61,8 +62,12 @@ export function evaluateClassifiedContent({ pages = [], result = {}, syllabusTre
     const sourceAnswerIndex = pageText ? sourceAnswer(pageText, candidatesOnPage) : null;
     let answerVerification = 'HUMAN_VERIFICATION_REQUIRED';
     if (sourceAnswerIndex !== null) {
-      answerVerification = sourceAnswerIndex === answerIndex ? 'SOURCE_KEY_MATCH' : 'SOURCE_KEY_CONFLICT';
-      if (sourceAnswerIndex !== answerIndex) issues.push('SOURCE_ANSWER_KEY_CONFLICT');
+      if (answerIndex === null || answerIndex === undefined) {
+        answerVerification = 'SOURCE_KEY_AVAILABLE_REQUIRES_REVIEW';
+      } else {
+        answerVerification = sourceAnswerIndex === answerIndex ? 'SOURCE_KEY_MATCH' : 'SOURCE_KEY_CONFLICT';
+        if (sourceAnswerIndex !== answerIndex) issues.push('SOURCE_ANSWER_KEY_CONFLICT');
+      }
     } else {
       issues.push('NO_SOURCE_ANSWER_KEY');
     }

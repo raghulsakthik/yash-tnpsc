@@ -82,5 +82,30 @@ class ResourceClassifierTests(unittest.TestCase):
         self.assertTrue(result["review_required"])
 
 
+    def test_every_canonical_topic_maps_or_is_explicitly_ambiguous(self):
+        checked = 0
+        for curriculum_id, syllabus in self.classifier.taxonomies.items():
+            is_mains = syllabus.get("exam_stage") == "MAINS"
+            group = "Group IIA" if syllabus.get("exam_group") == "TNPSC_GROUP_2A" else "Group II"
+            stage = "Mains" if is_mains else "Preliminary"
+            for subject in syllabus.get("subjects", []):
+                for chapter in subject.get("chapters", []):
+                    for topic in chapter.get("topics", []):
+                        checked += 1
+                        result = self.classifier.classify(
+                            f"TNPSC {group} {stage} {topic['name']} study notes.pdf",
+                            text=f"Topic: {topic['name']}\nCanonical course material for {topic['name']}."
+                        )
+                        self.assertEqual(result["curriculum_id"], curriculum_id, topic["id"])
+                        exact = result.get("topic_id") == topic["id"]
+                        safe_ambiguity = (
+                            result.get("mapping_status") == "ambiguous_topics"
+                            and topic["id"] in result.get("topic_candidates", ())
+                            and result.get("review_required") is True
+                        )
+                        self.assertTrue(exact or safe_ambiguity, f"{topic['id']}: {result}")
+        self.assertEqual(checked, 353)
+
+
 if __name__ == "__main__":
     unittest.main()

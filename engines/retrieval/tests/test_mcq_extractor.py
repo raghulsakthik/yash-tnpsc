@@ -25,6 +25,17 @@ class MCQExtractorTests(unittest.TestCase):
         self.assertEqual(items[0]["source_page"], 1)
         self.assertEqual(items[1]["source_page"], 2)
 
+    def test_splits_multiple_options_printed_on_the_same_pdf_text_line(self):
+        items = self.extractor.extract_text(
+            "1. What is the SI unit of electric charge?\n"
+            "(A) Ampere (B) Volt (C) Coulomb (D) Ohm\n"
+        )
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["option_a"], "Ampere")
+        self.assertEqual(items[0]["option_b"], "Volt")
+        self.assertEqual(items[0]["option_c"], "Coulomb")
+        self.assertEqual(items[0]["option_d"], "Ohm")
+
     def test_normalizes_ocr_digit_eight_to_option_b(self):
         items = self.extractor.extract_text(
             "7. Question text?\n(A) Alpha\n(8) Beta\n(C) Gamma\n(D) Delta\n"

@@ -82,7 +82,7 @@ export async function POST(request) {
         duplicatesSkipped += 1;
         continue;
       }
-      const { score } = validateQuestion(
+      const validation = validateQuestion(
         {
           prompt: q.question,
           options: q.options,
@@ -94,6 +94,13 @@ export async function POST(request) {
         },
         existingHashes
       );
+      if (!validation.passed) {
+        throw new ContentUploadError(
+          'QUESTION_QUALITY_FAILED',
+          `Question ${q.questionNumber ?? q.question.slice(0, 80)} failed the content quality gate. Verify its answer, options, explanation, and duplicate status before committing.`,
+        );
+      }
+      const { score } = validation;
       existingHashes.add(normalized);
       byTopic.get(q.topicId).push({
         id: sourceYear ? `tnpsc-${sourceYear}-${hash}` : `pdf-${hash}`,
@@ -117,6 +124,9 @@ export async function POST(request) {
     let updatedQuestions = 0;
     const batchIds = [];
     for (const [topicId, questions] of byTopic) {
+      // A topic can remain in the map after every candidate was skipped as a duplicate.
+      // Do not create an empty review batch or calculate an average over zero items.
+      if (questions.length === 0) continue;
       if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_CREATE, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
       const result = await upsertQuestions({
         topic: topicId,

@@ -26,7 +26,7 @@ class MCQ:
 
 
 # Some scanned/OCR-derived PDFs render option B as the digit 8.
-_OPT = re.compile(r"^\s*[\(\[]?([A-E8])\s*[\)\].:-]\s*(.+)$", re.I)
+_OPT_INLINE = re.compile(r"(?<![A-Za-z0-9])(?:\(\s*([A-E8])\s*\)|\[\s*([A-E8])\s*\]|([A-E8])\s*[\).:])\s*", re.I)
 _NUM = re.compile(r"^\s*(\d{1,4})[.)\-:'’]+\s+(.+)$")
 _ANSWER = re.compile(r"^\s*(?:answer|ans|correct\s+option)\s*[:.-]\s*([A-E])(?:\s|$)", re.I)
 
@@ -71,12 +71,15 @@ class MCQExtractor:
                         answer = answer_match.group(1).upper()
                         j += 1
                         break
-                    option_match = _OPT.match(lines[j])
-                    if option_match:
-                        label = self._normalize_option_label(option_match.group(1))
-                        value = option_match.group(2).strip()
-                        if label not in options and value:
-                            options[label] = value
+                    option_matches = list(_OPT_INLINE.finditer(lines[j]))
+                    if option_matches and (option_matches[0].start() == 0 or len(option_matches) >= 2):
+                        for option_index, option_match in enumerate(option_matches):
+                            raw_label = next((group for group in option_match.groups() if group), "")
+                            label = self._normalize_option_label(raw_label)
+                            value_end = option_matches[option_index + 1].start() if option_index + 1 < len(option_matches) else len(lines[j])
+                            value = lines[j][option_match.end():value_end].strip()
+                            if label not in options and value:
+                                options[label] = value
                         j += 1
                         continue
 

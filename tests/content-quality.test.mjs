@@ -1,11 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { evaluateClassifiedContent } from '../src/lib/contentQuality.mjs';
+import { validateQuestion } from '../src/lib/contentValidation.mjs';
 
 const syllabusTree = [{
   id: 'general-studies',
   chapters: [{ id: 'polity', topics: [{ id: 'polity.constitution', name: 'Constitution' }] }],
 }];
+
+test('commit quality gate rejects answerless candidates before the database constraint', () => {
+  const result = validateQuestion({
+    prompt: 'Which part introduces the Constitution?',
+    options: ['Directive Principles', 'Preamble', 'Fundamental Duties', 'Schedules'],
+    answerIndex: null,
+    explanation: 'The source does not provide an answer key.',
+    difficulty: 0.3,
+    estimatedSeconds: 45,
+    topicExists: true,
+  }, new Set());
+  assert.equal(result.passed, false);
+  assert.equal(result.breakdown.correctness, 0);
+});
 
 test('keeps extracted MCQs in review and verifies only an explicit source key', () => {
   const pages = [{ pageNumber: 1, text: 'The Constitution of India has a Preamble. Question: What introduces the Constitution?\nAnswer: B' }];
@@ -49,7 +64,29 @@ test('flags inferred answers when the source has no answer key', () => {
   assert.ok(result.mcqs[0].quality.issues.includes('NO_SOURCE_ANSWER_KEY'));
 });
 
-test('blocks unknown topics and invalid source page references', () => {
+test('keeps answerless MCQs as review candidates instead of discarding or auto-solving them', () => {
+  const result = evaluateClassifiedContent({
+    pages: [{ pageNumber: 1, text: 'The Constitution has a Preamble. Which part introduces the Constitution?' }],
+    syllabusTree,
+    result: { mcqs: [{
+      question: 'Which part introduces the Constitution?',
+      options: ['Directive Principles', 'Preamble', 'Fundamental Duties', 'Schedules'],
+      answerIndex: null,
+      explanation: 'The source provides the question and options but does not include an answer key.',
+      topicId: 'polity.constitution',
+      sourcePage: 1,
+      confidence: 0.95,
+    }], resources: [] },
+  });
+  assert.equal(result.mcqs.length, 1);
+  assert.equal(result.mcqs[0].answerIndex, null);
+  assert.equal(result.mcqs[0].quality.status, 'REVIEW_REQUIRED');
+  assert.ok(result.mcqs[0].quality.issues.includes('ANSWER_INDEX_MISSING'));
+  assert.ok(result.mcqs[0].quality.issues.includes('NO_SOURCE_ANSWER_KEY'));
+  assert.equal(result.mcqs[0].quality.publishable, false);
+});
+
+ test('blocks unknown topics and invalid source page references', () => {
   const result = evaluateClassifiedContent({
     pages: [{ pageNumber: 1, text: 'Question text from source.' }],
     syllabusTree,

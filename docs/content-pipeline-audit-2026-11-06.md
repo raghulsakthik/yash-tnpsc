@@ -108,7 +108,7 @@ PYQ detection and the content-engine import boundary continue to block ordinary 
 - Next.js production build: compiled, TypeScript completed, and all 46 static pages generated.
 - `git diff --check`: passed at the audit checkpoint.
 
-The classifier's multi-chunk integration test uses a mocked Gemini HTTP response. A live Gemini run was not possible because `GEMINI_API_KEY` is not configured in the local environment.
+The classifier's multi-chunk integration test uses a mocked Gemini HTTP response. A live Gemini run was not possible because `GEMINI_API_KEY` is not configured in the local environment. The local PostgreSQL 18 cluster is also stopped (`pg_isready` reports no response), so database-backed upload → processing → commit → review → learner-lesson integration could not be exercised in this pass. The production build and all offline unit/content tests pass, but this is not an end-to-end database PASS.
 
 ## Remaining blockers — do not mark complete
 
@@ -122,8 +122,8 @@ The classifier's multi-chunk integration test uses a mocked Gemini HTTP response
 ## Next execution order
 
 1. Bring the legacy prototype upload component into parity only if that prototype remains an intended product surface; the production Next.js `/admin/upload` workflow is now wired to authenticated APIs.
-2. Add an answerless-question review state that requires the reviewer to select and verify the answer before commit.
-3. Add OCR confidence/language-quality checks and quarantine corrupted Tamil extraction rather than creating MCQ candidates.
+2. Add OCR confidence/language-quality checks. The production Node PDF extractor currently uses native text extraction only; it has no OCR fallback. The retrieval engine has an English-only OCR fallback, and Tamil language data is not installed. Scanned PDFs must fail clearly or remain quarantined until an appropriate OCR path is available.
+3. Start the local PostgreSQL 18 cluster in the authorized development environment and run database-backed upload → process → commit → review → learner lesson integration tests.
 4. Run a live, small-sample Gemini classification and lesson-generation test after configuring the provider key; then test representative large documents.
 5. Build a coverage matrix for study notes, structured lessons, and MCQs by every syllabus topic and language; prioritise uncovered General Studies, English, Tamil, and Mains topics.
 6. Only then run a controlled batch import, retaining DRAFT/review gates and PYQ exclusion.

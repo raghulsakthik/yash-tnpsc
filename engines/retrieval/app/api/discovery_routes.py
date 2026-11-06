@@ -3,6 +3,7 @@ from app.engine.browser.service import service as browser_service
 from app.engine.discovery.portal import PortalDiscovery
 from app.engine.classification.resource import ResourceClassifier
 from app.engine.extract.document_text import extract_document_text
+from app.engine.extract.review_gate import enforce_extraction_review
 from app.engine.integrity.path_resolver import resolve_resource_path
 from app.config.settings import DB_PATH
 from app.db.database import Database
@@ -47,17 +48,15 @@ async def classify_resource(resource_id: int):
     if path is None:
         raise HTTPException(status_code=404, detail='Resource file is missing or its size does not match the database')
 
-    extracted = extract_document_text(path)
-    classification = ResourceClassifier().classify(
+    classifier = ResourceClassifier()
+    title_classification = classifier.classify(row['title'], row['canonical_url'], '')
+    extracted = extract_document_text(path, language_hint=title_classification.get('language'))
+    classification = classifier.classify(
         row['title'],
         row['canonical_url'],
         extracted.text,
     )
-    if extracted.method == 'ocr':
-        classification['review_required'] = True
-        classification['reasons'] = tuple(dict.fromkeys(
-            (*classification['reasons'], 'ocr-content-requires-human-verification')
-        ))
+    classification = enforce_extraction_review(classification, extracted)
 
     return {
         'resource_id': resource_id,
@@ -72,7 +71,7 @@ async def classify_resource(resource_id: int):
             'preview': extracted.text[:1200],
         },
         'published': False,
-        'review_required': True if extracted.method == 'ocr' else classification['review_required'],
+        'review_required': classification['review_required'],
     }
 
 

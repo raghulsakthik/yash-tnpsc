@@ -17,7 +17,7 @@
 | Published study-note resources | 0 | 0 / 353 topics |
 | Draft MCQs / lessons / resources after cleanup | 0 | 0 |
 
-The coverage matrix CSV/JSON was regenerated with database counts per topic. Counts describe this disposable, freshly seeded database only; they are not production database counts. Retrieval download inventory is not treated as learner-published content.
+The coverage matrix CSV/JSON was regenerated with database counts per topic. The retrieval extraction sample audit is recorded separately in `docs/retrieval-extraction-sample-audit-2026-11-06.md`. Counts describe this disposable, freshly seeded database only; they are not production database counts. Retrieval download inventory is not treated as learner-published content.
 
 ## Executed checks
 

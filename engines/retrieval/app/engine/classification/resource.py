@@ -205,6 +205,7 @@ class ResourceClassifier:
         url = url or ""
         text = text or ""
         title_url = f"{title} {url}"
+        title_norm = _normalize(title)
         hay = f"{title} {url} {text}"
         norm = _normalize(hay)
         reasons: list[str] = []
@@ -233,7 +234,10 @@ class ResourceClassifier:
         if "current affairs" in norm or "current affair" in norm:
             resource_type, content_kind = "current_affairs", "current_affairs"
             reasons.append("current-affairs")
-        elif any(x in norm for x in ("question paper", "question papers", "previous year", "pyq")):
+        elif (
+            any(x in norm for x in ("question paper", "question papers", "previous year", "pyq"))
+            or (group and exam_stage in {"PRELIMS", "MAINS"} and re.search(r"\b(?:ge|gt)\b", title_norm))
+        ):
             resource_type, content_kind = "question_paper", "question_paper"
             reasons.append("question-paper")
         elif any(x in norm for x in ("mock test", "mock exam", "full length test", "full mock")):
@@ -260,7 +264,6 @@ class ResourceClassifier:
         else:
             resource_type, content_kind = "other", "other"
 
-        title_norm = _normalize(title)
         language = None
         if re.search(r"[\u0B80-\u0BFF]", text) or (re.search(r"\btamil(?:\s+medium)?(?:\s+edition)?\b", title_norm) and not re.search(r"\btamil\s+nadu\b", title_norm)):
             language = "ta"
@@ -268,6 +271,14 @@ class ResourceClassifier:
         elif re.search(r"\benglish(?:\s+medium)?\b", title_norm):
             language = "en"
             reasons.append("language-en")
+        elif resource_type == "question_paper" and exam == "TNPSC" and re.search(r"\bgt\b", title_norm):
+            # Official TNPSC paper filenames use GT = General Tamil.
+            language = "ta"
+            reasons.append("language-ta-from-official-gt-paper-code")
+        elif resource_type == "question_paper" and exam == "TNPSC" and re.search(r"\bge\b", title_norm):
+            # Official TNPSC paper filenames use GE = General English.
+            language = "en"
+            reasons.append("language-en-from-official-ge-paper-code")
 
         if exam_stage == "MAINS":
             curriculum_id = self.mains_curriculum_id if group == "TNPSC_GROUP_2A" else None

@@ -57,6 +57,16 @@ class ResourceClassifierTests(unittest.TestCase):
         self.assertEqual(result["resource_type"], "question_paper")
         self.assertEqual(result["content_kind"], "question_paper")
 
+    def test_official_ge_paper_code_is_english(self):
+        result = self.classifier.classify("Group 2 2025 Prelims GE GS official.pdf")
+        self.assertEqual(result["language"], "en")
+        self.assertIn("language-en-from-official-ge-paper-code", result["reasons"])
+
+    def test_official_gt_paper_code_is_tamil(self):
+        result = self.classifier.classify("Group 2 2025 Prelims GT GS official.pdf")
+        self.assertEqual(result["language"], "ta")
+        self.assertIn("language-ta-from-official-gt-paper-code", result["reasons"])
+
     def test_unrelated_pdf_is_not_assumed_to_be_study_material(self):
         result = self.classifier.classify("Unrelated College Assignment.pdf")
         self.assertEqual(result["resource_type"], "other")

@@ -29,6 +29,32 @@ class ResourceClassifierTests(unittest.TestCase):
         self.assertIsNone(result["topic_id"])
         self.assertTrue(result["review_required"])
 
+    def test_structured_tamil_question_bank_is_detected_as_mcq(self):
+        questions = []
+        for index in range(1, 6):
+            questions.extend([
+                f"{index}. Choose the correct answer",
+                "A) Option one",
+                "B) Option two",
+                "C) Option three",
+                "D) Option four",
+            ])
+        result = self.classifier.classify(
+            "TNPSC Group 2A Quick Revision General Tamil.pdf",
+            text="\n".join(questions),
+        )
+        self.assertEqual(result["resource_type"], "mcq")
+        self.assertEqual(result["content_kind"], "mcq")
+        self.assertIn("multiple-choice-question-structure", result["reasons"])
+
+    def test_revision_notes_with_questions_but_no_option_structure_stay_study_material(self):
+        result = self.classifier.classify(
+            "TNPSC Group 2A Quick Revision Study Notes General English.pdf",
+            text="GROUP2A REVISION GENERAL ENGLISH\n1. Who is the speaker?\nThe poet is the speaker.",
+        )
+        self.assertEqual(result["resource_type"], "study_material")
+        self.assertEqual(result["content_kind"], "study_notes")
+
     def test_current_affairs_body_terms_do_not_create_spurious_topic_candidates(self):
         result = self.classifier.classify(
             "TNPSC Daily Current Affairs October 17 2026 English.pdf",

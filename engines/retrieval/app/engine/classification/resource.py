@@ -163,6 +163,13 @@ class ResourceClassifier:
         return tuple(dict.fromkeys(x for x in aliases if len(_normalize(x)) >= 4 or _normalize(x) in {"hcf", "lcm", "rti"}))
 
     @staticmethod
+    def _has_mcq_structure(text: str) -> bool:
+        sample = (text or "")[:50000]
+        question_lines = len(re.findall(r"(?m)^\s*\d{1,3}\s*[.)]\s+\S", sample))
+        option_lines = len(re.findall(r"(?m)^\s*\(?[A-D]\)?[.)]\s*\S", sample))
+        return question_lines >= 5 and option_lines >= 10 and option_lines >= question_lines * 2
+
+    @staticmethod
     def _explicit_topic(text: str) -> str | None:
         for line in (text or "").splitlines()[:120]:
             match = re.match(r"^\s*(?:topic|subtopic)\s*[:\-]\s*(.{3,140})$", line, re.I)
@@ -246,6 +253,9 @@ class ResourceClassifier:
         elif any(x in norm for x in ("mcq", "multiple choice", "question bank")):
             resource_type, content_kind = "mcq", "mcq"
             reasons.append("mcq")
+        elif self._has_mcq_structure(text):
+            resource_type, content_kind = "mcq", "mcq"
+            reasons.append("multiple-choice-question-structure")
         elif "syllabus" in norm:
             resource_type, content_kind = "syllabus", "syllabus"
             reasons.append("syllabus")

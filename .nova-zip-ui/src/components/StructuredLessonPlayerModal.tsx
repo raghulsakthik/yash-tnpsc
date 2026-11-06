@@ -26,6 +26,9 @@ interface StructuredLessonPlayerModalProps {
     completed: boolean
   ) => void;
   onAddXp?: (amount: number) => void;
+  initialTab?: 'learn' | 'understand' | 'practice' | 'assessment';
+  practiceMode?: 'PRACTICE' | 'REVISION';
+  onEvidenceRecorded?: () => Promise<void> | void;
 }
 
 type AnswerResult = { correct: boolean; correctIndex: number; explanation: string } | null;
@@ -37,15 +40,18 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
   onClose,
   onUpdateStep,
   onAddXp,
+  initialTab,
+  practiceMode = 'PRACTICE',
+  onEvidenceRecorded,
 }) => {
   const [activeTab, setActiveTab] = useState<'learn' | 'understand' | 'practice' | 'assessment'>(
-    !lesson.steps.learnCompleted
+    initialTab || (!lesson.steps.learnCompleted
       ? 'learn'
       : !lesson.steps.understandCompleted
       ? 'understand'
       : !lesson.steps.practiceCompleted
       ? 'practice'
-      : 'assessment'
+      : 'assessment')
   );
 
   // Real lesson content (src/app/api/lesson/:topic), fetched for this
@@ -76,6 +82,10 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
   const pyqStartedAt = React.useRef<number>(Date.now());
 
   useEffect(() => {
+    if (initialTab && isOpen) setActiveTab(initialTab);
+  }, [lesson.id, initialTab, isOpen]);
+
+  useEffect(() => {
     let cancelled = false;
     setLessonLoading(true);
     setLessonError(false);
@@ -88,7 +98,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
     setPracticeQuestion(null);
     setSelectedPracticeOption(null);
     setPracticeResult(null);
-    novaApi.question(lesson.id)
+    (practiceMode === 'REVISION' ? novaApi.revisionNext(lesson.id) : novaApi.question(lesson.id))
       .then((data) => { if (!cancelled) { setPracticeQuestion(data); practiceStartedAt.current = Date.now(); } })
       .catch(() => { if (!cancelled) setPracticeQuestion(null); })
       .finally(() => { if (!cancelled) setPracticeLoading(false); });
@@ -103,7 +113,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
       .finally(() => { if (!cancelled) setPyqLoading(false); });
 
     return () => { cancelled = true; };
-  }, [lesson.id]);
+  }, [lesson.id, practiceMode]);
 
   if (!isOpen) return null;
 
@@ -126,9 +136,10 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
         questionId: practiceQuestion.questionId,
         selectedIndex: selectedPracticeOption,
         timeTakenMs: Date.now() - practiceStartedAt.current,
-        mode: 'PRACTICE',
+        mode: practiceMode,
       });
       setPracticeResult({ correct: Boolean(result.correct), correctIndex: Number(result.correctIndex), explanation: result.explanation || '' });
+      await onEvidenceRecorded?.();
       if (result.correct) onUpdateStep(lesson.id, 'practiceCompleted', true);
     } finally {
       setPracticeSubmitting(false);
@@ -147,6 +158,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
         mode: 'PRACTICE',
       });
       setPyqResult({ correct: Boolean(result.correct), correctIndex: Number(result.correctIndex), explanation: result.explanation || '' });
+      await onEvidenceRecorded?.();
       if (result.correct) {
         onUpdateStep(lesson.id, 'assessmentCompleted', true);
         if (onAddXp) onAddXp(50);
@@ -391,13 +403,13 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
             <div className="space-y-6 animate-in fade-in">
               <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-                  Step 3 of 4 · Adaptive Guided Practice
+                  {practiceMode === 'REVISION' ? 'Step 3 of 4 · Spaced Memory Echo' : 'Step 3 of 4 · Adaptive Guided Practice'}
                 </span>
                 <h3 className="mt-1 text-lg font-bold text-neutral-900 dark:text-white">
-                  Solve a Real Practice Question
+                  {practiceMode === 'REVISION' ? 'Recall a Due Topic' : 'Solve a Real Practice Question'}
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                  Graded by the real adaptive engine -- this updates your real topic mastery.
+                  {practiceMode === 'REVISION' ? 'This question is selected from your learner-specific spaced-repetition schedule. A submitted revision attempt advances that schedule.' : 'Graded by the real adaptive engine -- this updates your real topic mastery.'}
                 </p>
               </div>
 
@@ -405,7 +417,7 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading a real question for this topic…</p>
               ) : !practiceQuestion ? (
                 <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-400">
-                  No published question is available for this topic yet.
+                  {practiceMode === 'REVISION' ? 'No revision is due for this topic yet. The spaced-repetition schedule will make it available when it is due.' : 'No published question is available for this topic yet.'}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-800/60 space-y-4">

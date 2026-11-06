@@ -5,12 +5,13 @@ import {
   Trophy,
 } from 'lucide-react';
 import { UserProfile, TodayUnit } from '../../types';
-import { AdaptiveRoadmapPanel, type AdaptiveRoadmapData } from '../../components/AdaptiveRoadmapPanel';
+import { AdaptiveRoadmapPanel, type AdaptiveRoadmapData, type AdaptiveRoadmapStep } from '../../components/AdaptiveRoadmapPanel';
 
 interface JourneyViewProps {
   profile: UserProfile;
   todayUnits: TodayUnit[];
   adaptivePlan?: AdaptiveRoadmapData | null;
+  onLaunchAdaptiveStep?: (step: AdaptiveRoadmapStep) => void;
 }
 
 const PHASE_ORDER: UserProfile['currentPhase'][] = [
@@ -37,7 +38,7 @@ const PHASE_META: Record<UserProfile['currentPhase'], { roman: string; name: str
  * which phase is COMPLETED/CURRENT/LOCKED and how far into it the learner
  * is now come from the real profile.
  */
-export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits, adaptivePlan }) => {
+export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits, adaptivePlan, onLaunchAdaptiveStep }) => {
   const currentPhaseIndex = Math.max(0, PHASE_ORDER.indexOf(profile.currentPhase));
 
   const phases = PHASE_ORDER.map((phaseKey, index) => {
@@ -83,7 +84,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({ profile, todayUnits, a
         </div>
       </div>
 
-      <AdaptiveRoadmapPanel plan={adaptivePlan} />
+      <AdaptiveRoadmapPanel plan={adaptivePlan} onLaunchStep={onLaunchAdaptiveStep} />
 
       {/* 7-Phase Stepper Cards */}
       <div className="space-y-3">

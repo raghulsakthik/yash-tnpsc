@@ -16,6 +16,13 @@ export interface AdaptiveRoadmapStep {
   weakestPrerequisite?: { topicId: string; accuracy: number } | null;
 }
 
+export interface AdaptiveRoadmapLaunch {
+  topicId: string;
+  tab: 'learn' | 'practice' | 'assessment';
+  practiceMode: 'PRACTICE' | 'REVISION';
+  requestId: number;
+}
+
 export interface AdaptiveRoadmapData {
   learnerId: string;
   syllabusOrder: string[];
@@ -54,7 +61,7 @@ const actionTone: Record<string, string> = {
   MEMORY_ECHO: 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950/40 dark:text-purple-300',
 };
 
-export const AdaptiveRoadmapPanel: React.FC<{ plan?: AdaptiveRoadmapData | null }> = ({ plan }) => {
+export const AdaptiveRoadmapPanel: React.FC<{ plan?: AdaptiveRoadmapData | null; onLaunchStep?: (step: AdaptiveRoadmapStep) => void }> = ({ plan, onLaunchStep }) => {
   const steps = plan?.steps ?? [];
   const totalMinutes = steps.reduce((sum, step) => sum + Number(step.estimatedMinutes || 0), 0);
   const remediationCount = steps.filter((step) => ['PREREQUISITE_LESSON', 'LESSON', 'REVISION', 'MEMORY_ECHO'].includes(step.type)).length;
@@ -101,11 +108,12 @@ export const AdaptiveRoadmapPanel: React.FC<{ plan?: AdaptiveRoadmapData | null 
                     <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">{step.topicName}</p>
                     <p className="mt-0.5 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{step.reason}</p>
                     {step.type === 'PREREQUISITE_LESSON' && step.weakestPrerequisite && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 dark:text-red-300"><AlertTriangle className="h-3 w-3" /> Prerequisite accuracy: {Math.round(step.weakestPrerequisite.accuracy)}%</p>
+                      <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 dark:text-red-300"><AlertTriangle className="h-3 w-3" /> Prerequisite accuracy: {Math.round(step.weakestPrerequisite.accuracy * 100)}%</p>
                     )}
                   </div>
-                  <div className="hidden shrink-0 text-right sm:block">
-                    <div className="inline-flex items-center gap-1 text-[10px] text-neutral-400"><Gauge className="h-3 w-3" /> {Math.round(step.accuracy * 100)}% accuracy</div>
+                  <div className="flex shrink-0 flex-col items-end justify-between gap-2">
+                    <div className="hidden items-center gap-1 text-[10px] text-neutral-400 sm:inline-flex"><Gauge className="h-3 w-3" /> {Math.round(step.accuracy * 100)}% accuracy</div>
+                    <button type="button" onClick={() => onLaunchStep?.(step)} disabled={!onLaunchStep} className="rounded-xl bg-orange-500 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2">Start step <span aria-hidden="true">→</span></button>
                   </div>
                 </div>
               );

@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
  * query param.
  */
 export async function GET(request) {
+  const requestedTopicId = new URL(request.url).searchParams.get('topic');
   const learnerId = await requireLearnerId(request);
   if (!learnerId) {
     return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
@@ -26,10 +27,11 @@ export async function GET(request) {
          FROM revision_schedule rs
          JOIN topic t ON t.id = rs.topic_id
          LEFT JOIN learner_topic_state lts ON lts.learner_id = rs.learner_id AND lts.topic_id = rs.topic_id
-        WHERE rs.learner_id = $1 AND rs.scheduled_at <= now()
+        WHERE rs.learner_id = $1 AND rs.status = 'SCHEDULED' AND rs.scheduled_at <= now()
+          AND ($2::text IS NULL OR rs.topic_id = $2)
         ORDER BY rs.scheduled_at ASC
         LIMIT 1`,
-      [learnerId]
+      [learnerId, requestedTopicId]
     );
 
     if (dueRows.length === 0) {

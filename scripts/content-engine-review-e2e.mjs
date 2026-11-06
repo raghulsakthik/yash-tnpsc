@@ -34,7 +34,7 @@ const created = {
   subjectExpertSubjectId: null,
   studentId: null, studentSessionHash: null,
   comparisonStudentId: null, comparisonStudentSessionHash: null,
-  adaptiveDependentTopicId: null, adaptivePrerequisiteTopicId: null,
+  adaptiveDependentTopicId: null, adaptivePrerequisiteTopicId: null, revisionTopicId: null,
   publications: [], batches: [], questionIds: [], lessonIds: [],
   manualQuestionIds: [], reviewEvidenceResourceIds: [], lessonWorkflowTopicId: null,
 };
@@ -98,6 +98,10 @@ try {
   await db.query(`INSERT INTO learner_profile(learner_id,language) VALUES ($1,'en')`, [studentId]);
   await db.query(`INSERT INTO app_user(id,role,status) VALUES ($1,'STUDENT','ACTIVE')`, [studentId]);
   await db.query(`INSERT INTO user_session(user_id,token_hash,expires_at) VALUES ($1,$2,now()+interval '1 hour')`, [studentId, created.studentSessionHash]);
+  const revisionTopic = await db.query(`SELECT DISTINCT topic_id FROM question WHERE status='PUBLISHED' ORDER BY topic_id LIMIT 1`);
+  assert.ok(revisionTopic.rows.length, 'a published question topic is required for the revision route test');
+  created.revisionTopicId = revisionTopic.rows[0].topic_id;
+  await db.query(`INSERT INTO revision_schedule(learner_id,topic_id,scheduled_at,interval_days,status) VALUES ($1,$2,now()-interval '1 minute',1,'SCHEDULED')`, [studentId, created.revisionTopicId]);
 
   const comparisonStudentId = crypto.randomUUID();
   const comparisonStudentToken = crypto.randomBytes(32).toString('hex');
@@ -178,6 +182,12 @@ try {
   assert.equal(comparisonAdaptivePlanBody.learnerId, comparisonStudentId);
   assert.equal(comparisonAdaptivePlanBody.steps.some((step) => step.type === 'PREREQUISITE_LESSON' && step.topicId === created.adaptivePrerequisiteTopicId), false,
     'the second learner’s stronger prerequisite must not inherit the first learner’s weakness');
+  const scopedRevision = await fetch(`${baseUrl}/api/revision/next?topic=${encodeURIComponent(created.revisionTopicId)}`, { headers: { cookie: studentCookie } });
+  assert.equal(scopedRevision.status, 200);
+  const scopedRevisionBody = await scopedRevision.json();
+  assert.equal(scopedRevisionBody.topicId, created.revisionTopicId, 'revision retrieval must honor the requested roadmap topic');
+  const otherLearnerRevision = await fetch(`${baseUrl}/api/revision/next?topic=${encodeURIComponent(created.revisionTopicId)}`, { headers: { cookie: comparisonStudentCookie } });
+  assert.equal(otherLearnerRevision.status, 404, 'another learner must not inherit the first learner’s due revision schedule');
   const learnerScopedReads = [
     ['/api/v1/learning/plan', 'legacy weekly plan'],
     ['/api/v1/learning/next-action', 'legacy adaptive next action'],

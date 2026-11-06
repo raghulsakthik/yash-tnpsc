@@ -39,7 +39,7 @@ import { TestsView } from '../TestsView';
 import { MistakesView } from '../MistakesView';
 import { RevisionView } from '../RevisionView';
 import { JourneyView } from '../JourneyView';
-import type { AdaptiveRoadmapData } from '../../../components/AdaptiveRoadmapPanel';
+import type { AdaptiveRoadmapData, AdaptiveRoadmapLaunch, AdaptiveRoadmapStep } from '../../../components/AdaptiveRoadmapPanel';
 import { NotesView } from '../NotesView';
 import { BookmarksView } from '../BookmarksView';
 
@@ -49,6 +49,11 @@ interface AndroidAppShellProps {
   structuredCourses: StructuredCourse[];
   todayUnits: TodayUnit[];
   adaptivePlan?: AdaptiveRoadmapData | null;
+  pendingAdaptiveLaunch?: AdaptiveRoadmapLaunch | null;
+  onLaunchAdaptiveStep?: (step: AdaptiveRoadmapStep) => void;
+  onAdaptiveLaunchHandled?: (requestId: number) => void;
+  onAdaptiveLaunchMissing?: (topicId: string) => void;
+  onEvidenceRecorded?: () => Promise<void> | void;
   subjectMastery: SubjectMastery[];
   weakAreas: WeakArea[];
   activities: ActivityDay[];
@@ -91,6 +96,11 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
   structuredCourses,
   todayUnits,
   adaptivePlan,
+  pendingAdaptiveLaunch,
+  onLaunchAdaptiveStep,
+  onAdaptiveLaunchHandled,
+  onAdaptiveLaunchMissing,
+  onEvidenceRecorded,
   subjectMastery,
   weakAreas,
   activities,
@@ -317,6 +327,10 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
                 }}
                 onAddXp={(amount) => showSnackbar(`Earned +${amount} XP!`, 'xp')}
                 onSwitchToTodayPlan={() => setActiveTab('today')}
+                adaptiveLaunch={pendingAdaptiveLaunch}
+                onAdaptiveLaunchHandled={onAdaptiveLaunchHandled}
+                onAdaptiveLaunchMissing={(topicId) => { onAdaptiveLaunchMissing?.(topicId); setActiveTab('practice'); }}
+                onEvidenceRecorded={onEvidenceRecorded}
                 onCompleteModule={(cId, mId) => {
                   onCompleteModule(cId, mId);
                   showSnackbar('Module completed! Unlocked Milestone Badge +200 XP', 'xp');
@@ -504,7 +518,7 @@ export const AndroidAppShell: React.FC<AndroidAppShellProps> = ({
           )}
 
           {/* Sub-Views */}
-          {subView === 'journey' && <JourneyView profile={profile} todayUnits={todayUnits} adaptivePlan={adaptivePlan} />}
+          {subView === 'journey' && <JourneyView profile={profile} todayUnits={todayUnits} adaptivePlan={adaptivePlan} onLaunchAdaptiveStep={(step) => { onLaunchAdaptiveStep?.(step); setSubView(null); setActiveTab('courses'); }} />}
           {subView === 'notes' && (
             <NotesView
               notes={notes}

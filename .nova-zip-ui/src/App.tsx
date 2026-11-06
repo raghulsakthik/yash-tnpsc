@@ -32,7 +32,7 @@ export default function App() {
   const {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, tests, structuredCourses, notifications, achievements, activities,
-    isDataLoading, dataError, dashboardSnapshot, curriculumProgress, activeCurriculum, adaptivePlan, quickLabStats,
+    isDataLoading, dataError, dashboardSnapshot, curriculumProgress, activeCurriculum, adaptivePlan, pendingAdaptiveLaunch, quickLabStats,
     isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen, currentView, activeCourseModal,
     isProfileModalOpen, themeToast, isGlowActive, masterclassCourse, totalBookmarks, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
@@ -40,7 +40,7 @@ export default function App() {
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
     handleUpdateStructuredLessonStep, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
-    handlePracticeTopic, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
+    handlePracticeTopic, handleLaunchAdaptiveStep, handleAdaptiveLaunchHandled, handleRefreshAdaptivePlan, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
     handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,
   } = useAppData();
 
@@ -216,6 +216,10 @@ export default function App() {
                 onUpdateLessonStep={handleUpdateStructuredLessonStep}
                 onAddXp={handleAddXp}
                 onSwitchToTodayPlan={() => setCurrentView('home')}
+                adaptiveLaunch={pendingAdaptiveLaunch}
+                onAdaptiveLaunchHandled={handleAdaptiveLaunchHandled}
+                onAdaptiveLaunchMissing={handlePracticeTopic}
+                onEvidenceRecorded={handleRefreshAdaptivePlan}
               />
             )}
 
@@ -266,7 +270,7 @@ export default function App() {
 
             {/* EXAM HUB -> JOURNEY ROADMAP VIEW */}
             {currentView === 'journey' && (
-              <JourneyView progress={curriculumProgress} active={activeCurriculum?.current} adaptivePlan={adaptivePlan} />
+              <JourneyView progress={curriculumProgress} active={activeCurriculum?.current} adaptivePlan={adaptivePlan} onLaunchAdaptiveStep={(step) => { handleLaunchAdaptiveStep(step); setCurrentView('courses'); }} />
             )}
 
             {/* EXAM HUB -> MISTAKE ENGINE VIEW */}

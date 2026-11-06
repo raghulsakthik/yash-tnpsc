@@ -112,7 +112,7 @@ export const novaApi = {
   pyqForTopic: (topic: string) => request<Json>(`/api/pyqs/next?topic=${encodeURIComponent(topic)}`),
   lesson: (topic: string) => request<Json>(`/api/lesson/${encodeURIComponent(topic)}`),
   mistake: () => request<Json>('/api/mistakes/next'),
-  revisionNext: () => request<Json>('/api/revision/next'),
+  revisionNext: (topic?: string) => request<Json>(`/api/revision/next${topic ? `?topic=${encodeURIComponent(topic)}` : ''}`),
   logout: () => request<Json>('/api/auth/logout', { method: 'POST' }),
   login: (email: string, password: string) => request<Json>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string, phone?: string) => request<Json>('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, phone }) }),

@@ -20,7 +20,7 @@ import {
 import { AdminQuestion, AdminRole, QuestionStatus } from '../../types/admin';
 import { checkPermission, validateQuestion } from '../../utils/adminPermissions';
 
-interface QuestionTopic {
+export interface AdminTopicOption {
   topicId: string;
   topicName: string;
   chapterId: string;
@@ -32,7 +32,7 @@ interface QuestionTopic {
 interface QuestionsViewProps {
   role: AdminRole;
   questions: AdminQuestion[];
-  topics: QuestionTopic[];
+  topics: AdminTopicOption[];
   selectedTopicId: string;
   onTopicChange: (topicId: string) => void;
   isLoading?: boolean;

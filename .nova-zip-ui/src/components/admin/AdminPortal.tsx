@@ -52,7 +52,6 @@ import {
   initialAdminResources,
   initialAdminPYQs,
   initialProctoringPolicies,
-  initialAdminTests,
   initialProctoringReviews,
   initialAdaptiveRules,
   initialAdminMilestones,
@@ -248,10 +247,62 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     if (selectedQuestionTopicId) refreshQuestions(selectedQuestionTopicId);
   }, [selectedQuestionTopicId, refreshQuestions]);
 
-  const [tests, setTests] = useState<AdminTest[]>(() => {
-    const saved = localStorage.getItem('nova_admin_tests');
-    return saved ? JSON.parse(saved) : initialAdminTests;
-  });
+  // Real test templates (GET /api/admin/tests/templates -- see
+  // src/lib/adminCrud.mjs listTestTemplates). Previously seeded from
+  // mockAdminData into localStorage. difficulty/randomizeQuestions (except
+  // where it can be derived for real, see below)/attemptLimit/instructions
+  // stay fixed defaults -- TestBuilderView never actually exposes editable
+  // controls for them (checked: no form field sets them), so there's
+  // nothing real to persist. sections is synthesized as one section
+  // covering the whole paper -- the UI has no section editor either.
+  const mapTestFromApi = (r: any): AdminTest => {
+    const totalMarks = Number(r.questionCount || 0) * Number(r.marksPerQuestion ?? 1);
+    return {
+      id: r.id,
+      title: r.name,
+      testType: (r.testType || 'Milestone') as AdminTest['testType'],
+      examName: 'TNPSC Group 2 & 2A Combined',
+      subjectName: r.subjectName || 'General Studies',
+      topicNames: (r.topics || []).map((t: any) => t.topicName),
+      durationMinutes: Number(r.durationMinutes ?? 45),
+      questionCount: Number(r.questionCount || 0),
+      totalMarks,
+      marksPerQuestion: Number(r.marksPerQuestion ?? 1),
+      negativeMarks: Number(r.negativeMarks ?? 0),
+      passingThresholdPercent: Number(r.passingThresholdPercent ?? 40),
+      difficulty: 'Exam-Standard',
+      randomizeQuestions: (r.questionIds || []).length === 0,
+      proctoringPolicyId: r.proctoringPolicyId || '',
+      proctoringPolicyName: r.proctoringPolicyName || 'Not assigned',
+      attemptLimit: 2,
+      instructions: ['Maintain full-screen supervision throughout test.'],
+      status: r.active ? 'PUBLISHED' : 'DRAFT',
+      questionIds: r.questionIds || [],
+      sections: [{ id: `${r.id}-sec-1`, name: 'Section 1', questionCount: Number(r.questionCount || 0), marks: totalMarks }],
+      totalAttempts: Number(r.totalAttempts ?? 0),
+      avgScore: Number(r.avgScore ?? 0),
+      passRate: Number(r.passRate ?? 0),
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt || r.createdAt,
+    };
+  };
+
+  const [tests, setTests] = useState<AdminTest[]>([]);
+  const [testsError, setTestsError] = useState<string | null>(null);
+
+  const refreshTests = React.useCallback(() => {
+    novaApi
+      .adminTestTemplates()
+      .then((res: any) => {
+        setTests((res.templates || []).map(mapTestFromApi));
+        setTestsError(null);
+      })
+      .catch((err) => setTestsError(err instanceof Error ? err.message : 'Could not load test templates'));
+  }, []);
+
+  useEffect(() => {
+    refreshTests();
+  }, [refreshTests]);
 
   const [policies, setPolicies] = useState<ProctoringPolicy[]>(() => {
     const saved = localStorage.getItem('nova_admin_policies');
@@ -349,10 +400,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     localStorage.setItem('nova_admin_learners', JSON.stringify(learners));
   }, [learners]);
 
-
-  useEffect(() => {
-    localStorage.setItem('nova_admin_tests', JSON.stringify(tests));
-  }, [tests]);
 
   useEffect(() => {
     localStorage.setItem('nova_admin_policies', JSON.stringify(policies));
@@ -503,23 +550,55 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     await refreshQuestions(selectedQuestionTopicId);
   };
 
-  // Test builder operations
+  // Test builder operations -- real writes against POST/PATCH
+  // /api/admin/tests/templates(/:id). "exists" distinguishes create from
+  // update the same way QuestionsView's save does: a brand-new test gets a
+  // fake `test-${Date.now()}` id from TestBuilderView.handleSave that never
+  // matches a real template.
   const handleSaveTest = (test: AdminTest, reason?: string) => {
     const exists = tests.some((t) => t.id === test.id);
+    const payload = {
+      name: test.title,
+      subjectName: test.subjectName,
+      testType: test.testType,
+      durationMinutes: test.durationMinutes,
+      marksPerQuestion: test.marksPerQuestion,
+      negativeMarks: test.negativeMarks,
+      passingThresholdPercent: test.passingThresholdPercent,
+      proctoringPolicyId: test.proctoringPolicyId,
+      proctoringPolicyName: test.proctoringPolicyName,
+      questionIds: test.questionIds,
+      active: test.status === 'PUBLISHED',
+    };
+
     if (exists) {
-      setTests((prev) => prev.map((t) => (t.id === test.id ? test : t)));
-      recordAudit('TEST_UPDATED', 'Test', test.id, reason || 'Updated test paper');
+      novaApi
+        .adminUpdateTestTemplate(test.id, payload)
+        .then(() => {
+          recordAudit('TEST_UPDATED', 'Test', test.id, reason || 'Updated test paper');
+          refreshTests();
+        })
+        .catch((err) => setTestsError(err instanceof Error ? err.message : 'Unable to update this test'));
     } else {
-      setTests((prev) => [test, ...prev]);
-      recordAudit('TEST_CREATED', 'Test', test.id, reason || 'Created test paper');
+      novaApi
+        .adminCreateTestTemplate(payload)
+        .then((res: any) => {
+          recordAudit('TEST_CREATED', 'Test', res.id, reason || 'Created test paper');
+          refreshTests();
+        })
+        .catch((err) => setTestsError(err instanceof Error ? err.message : 'Unable to create this test'));
     }
   };
 
   const handlePublishTest = (testId: string) => {
-    setTests((prev) =>
-      prev.map((t) => (t.id === testId ? { ...t, status: 'PUBLISHED' } : t))
-    );
-    recordAudit('TEST_PUBLISHED', 'Test', testId, 'Published test paper for learner cohort');
+    setTests((prev) => prev.map((t) => (t.id === testId ? { ...t, status: 'PUBLISHED' } : t)));
+    novaApi
+      .adminUpdateTestTemplate(testId, { active: true })
+      .then(() => recordAudit('TEST_PUBLISHED', 'Test', testId, 'Published test paper for learner cohort'))
+      .catch((err) => {
+        refreshTests();
+        setTestsError(err instanceof Error ? err.message : 'Unable to publish this test');
+      });
   };
 
   // Proctoring operations
@@ -809,12 +888,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
         {/* MAIN VIEW CONTENT AREA */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {/* Some sections below still use browser-local design-preview data
-              (learners, test builder, proctoring policy editor, audit logs,
-              adaptive rules and AI proposal simulator). Lessons, syllabus-
-              scoped questions, notifications, proctoring session review and
-              admin roster use live backend routes. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'content-engine' && (
+          {/* Live backend-backed sections are excluded from the design-preview warning. */}
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'content-engine' && currentSectionSlug !== 'tests' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
@@ -924,6 +999,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <TestBuilderView
               role={activeRole}
               tests={tests}
+              topics={lessonTopics as any}
               policies={policies}
               availableQuestions={questions}
               onSaveTest={handleSaveTest}

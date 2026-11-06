@@ -496,15 +496,43 @@ export async function deleteQuestion(id) {
 
 // ----------------------------------------------------------- test templates
 
+/**
+ * A template composes its questions one of two ways: `topics` (an array of
+ * {topicId, targetCount}) for the original topic-weighted random
+ * generation -- a fresh pick from each topic every time a learner attempts
+ * it -- or `questionIds` (an array of real question ids) for the Test
+ * Builder's hand-picked exam-paper model, served verbatim and in order.
+ * Both can't be meaningfully combined (picking is all-or-nothing per
+ * template), so whichever is provided replaces the template's composition
+ * entirely; the real generation endpoint (/api/tests POST) prefers an
+ * explicit question list when one exists, falling back to topic-weighted
+ * picking otherwise -- see pickTemplateQuestions there.
+ */
 export async function listTestTemplates() {
   const { rows } = await query(`
-    SELECT tt.id, tt.name, tt.description, tt.question_count, tt.active, tt.created_at,
-           COALESCE(json_agg(json_build_object('topicId', ttt.topic_id, 'topicName', t.name, 'targetCount', ttt.target_count))
-                    FILTER (WHERE ttt.topic_id IS NOT NULL), '[]') AS topics
+    SELECT tt.id, tt.name, tt.description, tt.question_count, tt.active, tt.created_at, tt.updated_at,
+           tt.subject_name, tt.test_type, tt.duration_minutes, tt.marks_per_question::float8 AS marks_per_question,
+           tt.negative_marks::float8 AS negative_marks, tt.passing_threshold_percent::float8 AS passing_threshold_percent,
+           tt.proctoring_policy_id, tt.proctoring_policy_name,
+           COALESCE(topics.agg, '[]') AS topics,
+           COALESCE(questions.agg, '[]') AS question_ids,
+           COALESCE(stats.total_attempts, 0) AS total_attempts,
+           COALESCE(stats.avg_score, 0) AS avg_score,
+           COALESCE(stats.passed_count, 0) AS passed_count
       FROM test_template tt
-      LEFT JOIN test_template_topic ttt ON ttt.template_id = tt.id
-      LEFT JOIN topic t ON t.id = ttt.topic_id
-     GROUP BY tt.id
+      LEFT JOIN LATERAL (
+        SELECT json_agg(json_build_object('topicId', ttt.topic_id, 'topicName', t.name, 'targetCount', ttt.target_count)) AS agg
+          FROM test_template_topic ttt JOIN topic t ON t.id = ttt.topic_id WHERE ttt.template_id = tt.id
+      ) topics ON true
+      LEFT JOIN LATERAL (
+        SELECT json_agg(ttq.question_id ORDER BY ttq.sort_order) AS agg
+          FROM test_template_question ttq WHERE ttq.template_id = tt.id
+      ) questions ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*)::int AS total_attempts, AVG(te.score)::float8 AS avg_score,
+               COUNT(*) FILTER (WHERE te.score >= tt.passing_threshold_percent)::int AS passed_count
+          FROM test te WHERE te.template_id = tt.id AND te.status = 'COMPLETED'
+      ) stats ON true
      ORDER BY tt.created_at DESC
   `);
   return rows.map((r) => ({
@@ -513,61 +541,103 @@ export async function listTestTemplates() {
     description: r.description,
     questionCount: r.question_count,
     active: r.active,
+    subjectName: r.subject_name,
+    testType: r.test_type,
+    durationMinutes: r.duration_minutes,
+    marksPerQuestion: r.marks_per_question,
+    negativeMarks: r.negative_marks,
+    passingThresholdPercent: r.passing_threshold_percent,
+    proctoringPolicyId: r.proctoring_policy_id,
+    proctoringPolicyName: r.proctoring_policy_name,
     createdAt: r.created_at,
+    updatedAt: r.updated_at,
     topics: r.topics,
+    questionIds: r.question_ids,
+    totalAttempts: Number(r.total_attempts),
+    avgScore: Number(r.avg_score),
+    passRate: Number(r.total_attempts) > 0 ? Math.round((Number(r.passed_count) / Number(r.total_attempts)) * 100) : 0,
   }));
 }
 
-export async function createTestTemplate({ name, description, topics }) {
-  if (!name || !Array.isArray(topics) || topics.length === 0) {
-    throw new ContentUploadError('MISSING_FIELDS', 'name and at least one topic are required');
-  }
-  for (const t of topics) {
-    if (!t.topicId || !Number.isInteger(t.targetCount) || t.targetCount <= 0) {
-      throw new ContentUploadError('INVALID_TOPIC', 'Each topic needs a topicId and a positive targetCount');
-    }
-  }
-  const questionCount = topics.reduce((sum, t) => sum + t.targetCount, 0);
+const TEST_TEMPLATE_FIELDS = ['subjectName', 'testType', 'durationMinutes', 'marksPerQuestion', 'negativeMarks', 'passingThresholdPercent', 'proctoringPolicyId', 'proctoringPolicyName'];
+const TEST_TEMPLATE_COLUMNS = ['subject_name', 'test_type', 'duration_minutes', 'marks_per_question', 'negative_marks', 'passing_threshold_percent', 'proctoring_policy_id', 'proctoring_policy_name'];
 
-  const { rows } = await query(
-    'INSERT INTO test_template (name, description, question_count) VALUES ($1, $2, $3) RETURNING id',
-    [name, description ?? null, questionCount]
-  );
-  const templateId = rows[0].id;
-
-  for (const t of topics) {
-    await query('INSERT INTO test_template_topic (template_id, topic_id, target_count) VALUES ($1, $2, $3)', [
-      templateId,
-      t.topicId,
-      t.targetCount,
-    ]);
-  }
-  return templateId;
-}
-
-export async function updateTestTemplate(id, { name, description, active, topics }) {
-  const { rows } = await query('SELECT id FROM test_template WHERE id = $1', [id]);
-  if (rows.length === 0) throw new ContentUploadError('TEMPLATE_NOT_FOUND', `No test template ${id}`);
-
+async function setTemplateComposition(templateId, { topics, questionIds }) {
   if (Array.isArray(topics)) {
     for (const t of topics) {
       if (!t.topicId || !Number.isInteger(t.targetCount) || t.targetCount <= 0) {
         throw new ContentUploadError('INVALID_TOPIC', 'Each topic needs a topicId and a positive targetCount');
       }
     }
-    await query('DELETE FROM test_template_topic WHERE template_id = $1', [id]);
+    await query('DELETE FROM test_template_topic WHERE template_id = $1', [templateId]);
+    await query('DELETE FROM test_template_question WHERE template_id = $1', [templateId]);
     for (const t of topics) {
-      await query('INSERT INTO test_template_topic (template_id, topic_id, target_count) VALUES ($1, $2, $3)', [id, t.topicId, t.targetCount]);
+      await query('INSERT INTO test_template_topic (template_id, topic_id, target_count) VALUES ($1, $2, $3)', [templateId, t.topicId, t.targetCount]);
     }
     const questionCount = topics.reduce((sum, t) => sum + t.targetCount, 0);
-    await query('UPDATE test_template SET question_count = $2 WHERE id = $1', [id, questionCount]);
+    await query('UPDATE test_template SET question_count = $2 WHERE id = $1', [templateId, questionCount]);
+  } else if (Array.isArray(questionIds)) {
+    if (questionIds.length === 0) throw new ContentUploadError('MISSING_QUESTIONS', 'At least one question must be selected');
+    const { rows: validRows } = await query('SELECT id FROM question WHERE id = ANY($1::text[])', [questionIds]);
+    const validIds = new Set(validRows.map((r) => r.id));
+    const unknown = questionIds.filter((id) => !validIds.has(id));
+    if (unknown.length) throw new ContentUploadError('QUESTION_NOT_FOUND', `Unknown question id(s): ${unknown.join(', ')}`);
+
+    await query('DELETE FROM test_template_topic WHERE template_id = $1', [templateId]);
+    await query('DELETE FROM test_template_question WHERE template_id = $1', [templateId]);
+    for (const [index, qid] of questionIds.entries()) {
+      await query('INSERT INTO test_template_question (template_id, question_id, sort_order) VALUES ($1, $2, $3)', [templateId, qid, index]);
+    }
+    await query('UPDATE test_template SET question_count = $2 WHERE id = $1', [templateId, questionIds.length]);
+  }
+}
+
+export async function createTestTemplate({ name, description, topics, questionIds, ...rest }) {
+  if (!name) throw new ContentUploadError('MISSING_FIELDS', 'name is required');
+  const hasTopics = Array.isArray(topics) && topics.length > 0;
+  const hasQuestions = Array.isArray(questionIds) && questionIds.length > 0;
+  if (!hasTopics && !hasQuestions) {
+    throw new ContentUploadError('MISSING_FIELDS', 'Provide either topics (topic-weighted) or questionIds (hand-picked)');
   }
 
-  await query(
-    `UPDATE test_template SET name = COALESCE($2, name), description = COALESCE($3, description),
-       active = COALESCE($4, active), updated_at = now() WHERE id = $1`,
-    [id, name ?? null, description ?? null, active ?? null]
-  );
+  const setCols = [];
+  const setVals = [];
+  TEST_TEMPLATE_FIELDS.forEach((field, i) => {
+    if (rest[field] !== undefined) {
+      setCols.push(TEST_TEMPLATE_COLUMNS[i]);
+      setVals.push(rest[field]);
+    }
+  });
+
+  const initialQuestionCount = hasTopics ? topics.reduce((sum, t) => sum + (Number(t.targetCount) || 0), 0) : questionIds.length;
+  const insertCols = ['name', 'description', 'question_count', ...setCols];
+  const insertVals = [name, description ?? null, initialQuestionCount, ...setVals];
+  const placeholders = insertVals.map((_, i) => `$${i + 1}`).join(', ');
+  const { rows } = await query(`INSERT INTO test_template (${insertCols.join(', ')}) VALUES (${placeholders}) RETURNING id`, insertVals);
+  const templateId = rows[0].id;
+
+  await setTemplateComposition(templateId, { topics, questionIds });
+  return templateId;
+}
+
+export async function updateTestTemplate(id, { name, description, active, topics, questionIds, ...rest }) {
+  const { rows } = await query('SELECT id FROM test_template WHERE id = $1', [id]);
+  if (rows.length === 0) throw new ContentUploadError('TEMPLATE_NOT_FOUND', `No test template ${id}`);
+
+  if (topics !== undefined || questionIds !== undefined) {
+    await setTemplateComposition(id, { topics, questionIds });
+  }
+
+  const setClauses = ['name = COALESCE($2, name)', 'description = COALESCE($3, description)', 'active = COALESCE($4, active)', 'updated_at = now()'];
+  const values = [id, name ?? null, description ?? null, active ?? null];
+  TEST_TEMPLATE_FIELDS.forEach((field, i) => {
+    if (rest[field] !== undefined) {
+      values.push(rest[field]);
+      setClauses.push(`${TEST_TEMPLATE_COLUMNS[i]} = $${values.length}`);
+    }
+  });
+
+  await query(`UPDATE test_template SET ${setClauses.join(', ')} WHERE id = $1`, values);
 }
 
 export async function deleteTestTemplate(id) {

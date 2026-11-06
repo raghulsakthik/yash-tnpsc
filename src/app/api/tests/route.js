@@ -59,6 +59,31 @@ export async function POST(request) {
   const templateId = body?.templateId ?? null;
 
   try {
+    // A Test Builder template (see /admin -> Tests) can hand-pick its exact
+    // questions instead of generating from topic weights -- when it has,
+    // this serves that explicit list verbatim and in the admin's chosen
+    // order (no shuffle: an authored exam paper's question order is a
+    // deliberate choice, unlike the default weekly test's topic-grouped
+    // pool). Falls through to the topic-weighted path below when the
+    // template has no pinned questions (or none given at all).
+    if (templateId) {
+      const { rows: pinned } = await query(
+        `SELECT q.id, q.topic_id, t.name AS topic_name, q.prompt, q.options, q.difficulty::float8 AS difficulty, q.estimated_seconds
+           FROM test_template_question ttq
+           JOIN question q ON q.id = ttq.question_id
+           JOIN topic t ON t.id = q.topic_id
+          WHERE ttq.template_id = $1
+          ORDER BY ttq.sort_order`,
+        [templateId]
+      );
+      if (pinned.length > 0) {
+        return await finalizeTest(learnerId, templateId, pinned.map((q) => ({
+          id: q.id, topic_id: q.topic_id, topic_name: q.topic_name, prompt: q.prompt, options: q.options,
+          difficulty: q.difficulty, estimated_seconds: q.estimated_seconds,
+        })));
+      }
+    }
+
     const [{ rows: withContent }, { rows: seenRows }] = await Promise.all([
       query(`SELECT DISTINCT topic_id, id, difficulty::float8 AS difficulty, prompt, options, estimated_seconds
                FROM question WHERE status = 'PUBLISHED'`),
@@ -134,49 +159,62 @@ export async function POST(request) {
       );
     }
 
-    // Shuffle so the test isn't visibly grouped by topic — presentation
-    // only, not a scoring decision, so plain randomness is fine here.
+    for (const q of picked) q.topic_name = topicMeta.get(q.topic_id);
+    return await finalizeTest(learnerId, templateId, picked, { shuffle: true });
+  } catch (err) {
+    return NextResponse.json({ code: 'TEST_CREATE_FAILED', message: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * Shared tail for both generation paths above: persists the test +
+ * test_question rows in one transaction and returns the learner-facing
+ * payload. `shuffle` is only true for the topic-weighted default path --
+ * an explicit hand-picked exam paper (Test Builder) keeps the admin's
+ * chosen order, a deliberate authoring decision, not something to
+ * randomize away.
+ */
+async function finalizeTest(learnerId, templateId, picked, { shuffle = false } = {}) {
+  if (shuffle) {
     for (let i = picked.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       [picked[i], picked[j]] = [picked[j], picked[i]];
     }
+  }
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const { rows: testRows } = await client.query(
-        `INSERT INTO test (learner_id, question_count, template_id) VALUES ($1, $2, $3) RETURNING id`,
-        [learnerId, picked.length, templateId]
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: testRows } = await client.query(
+      `INSERT INTO test (learner_id, question_count, template_id) VALUES ($1, $2, $3) RETURNING id`,
+      [learnerId, picked.length, templateId]
+    );
+    const testId = testRows[0].id;
+
+    for (const [index, q] of picked.entries()) {
+      await client.query(
+        `INSERT INTO test_question (test_id, question_id, order_index) VALUES ($1, $2, $3)`,
+        [testId, q.id, index]
       );
-      const testId = testRows[0].id;
-
-      for (const [index, q] of picked.entries()) {
-        await client.query(
-          `INSERT INTO test_question (test_id, question_id, order_index) VALUES ($1, $2, $3)`,
-          [testId, q.id, index]
-        );
-      }
-      await client.query('COMMIT');
-
-      return NextResponse.json({
-        testId,
-        questions: picked.map((q) => ({
-          questionId: q.id,
-          topicId: q.topic_id,
-          topicName: topicMeta.get(q.topic_id),
-          prompt: q.prompt,
-          options: q.options,
-          difficulty: difficultyBand(q.difficulty),
-          estimatedSeconds: q.estimated_seconds,
-        })),
-      });
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw err;
-    } finally {
-      client.release();
     }
+    await client.query('COMMIT');
+
+    return NextResponse.json({
+      testId,
+      questions: picked.map((q) => ({
+        questionId: q.id,
+        topicId: q.topic_id,
+        topicName: q.topic_name,
+        prompt: q.prompt,
+        options: q.options,
+        difficulty: difficultyBand(q.difficulty),
+        estimatedSeconds: q.estimated_seconds,
+      })),
+    });
   } catch (err) {
-    return NextResponse.json({ code: 'TEST_CREATE_FAILED', message: err.message }, { status: 500 });
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
   }
 }

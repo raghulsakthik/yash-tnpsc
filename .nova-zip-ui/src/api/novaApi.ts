@@ -51,6 +51,12 @@ export const novaApi = {
   markAllNotificationsRead: () => request<Json>('/api/notifications/read-all', { method: 'POST' }),
   clearNotifications: () => request<Json>('/api/notifications/clear', { method: 'POST' }),
   adminProctoringSessions: () => request<Json>('/api/admin/proctoring/sessions'),
+  adminProctoringPolicies: () => request<Json>('/api/admin/proctoring/policies'),
+  adminUpdateProctoringPolicy: (id: string, patch: Json) =>
+    request<Json>(`/api/admin/proctoring/policies/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  adminDecideAttempt: (testId: string, decision: string, reason?: string) =>
+    request<Json>(`/api/admin/proctoring/sessions/${encodeURIComponent(testId)}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason }) }),
+  adminProctoringEvents: (limit?: number) => request<Json>(`/api/admin/proctoring/events${limit != null ? `?limit=${limit}` : ''}`),
   adminProctoringSession: (testId: string) => request<Json>(`/api/admin/proctoring/sessions/${encodeURIComponent(testId)}`),
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
   adminUsers: () => request<Json>('/api/admin/users'),

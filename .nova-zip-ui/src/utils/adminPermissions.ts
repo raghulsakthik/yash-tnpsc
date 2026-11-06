@@ -12,6 +12,23 @@ import {
  * Section 3: CRUD Permission Matrix Evaluation
  * Legend: C Create, R Read, U Update, D Delete/Archive, P Publish/Approve, V Review
  */
+export function mapSessionAdminRole(session: { role?: string; adminRole?: string | null } | null | undefined): AdminRole {
+  if (session?.role === 'SUPER_ADMIN' || session?.adminRole === 'super_admin') return 'SUPER_ADMIN';
+  const map: Record<string, AdminRole> = {
+    platform_admin: 'ADMIN',
+    content_admin: 'CONTENT_ADMIN',
+    content_reviewer: 'CONTENT_REVIEWER',
+    question_bank_admin: 'QUESTION_BANK_ADMIN',
+    subject_expert: 'SUBJECT_ADMIN',
+    question_reviewer: 'QUESTION_REVIEWER',
+    ai_quality_admin: 'AI_QUALITY_ADMIN',
+    student_support_admin: 'SUPPORT',
+    analytics_admin: 'ANALYTICS_ADMIN',
+    auditor: 'AUDITOR',
+  };
+  return map[session?.adminRole || ''] || 'UNASSIGNED_ADMIN';
+}
+
 export function checkPermission(
   role: AdminRole,
   entity: AdminEntity,
@@ -22,145 +39,83 @@ export function checkPermission(
     isSuperAdminTarget?: boolean;
   }
 ): { allowed: boolean; reason?: string } {
-  // SUPER_ADMIN has full governance over all entities
-  if (role === 'SUPER_ADMIN') {
+  if (role === 'SUPER_ADMIN') return { allowed: true };
+  if (role === 'UNASSIGNED_ADMIN') return { allowed: false, reason: 'No admin role is assigned to this account. Ask a Super Admin to assign an RBAC role.' };
+  if (entity === 'Admin') return { allowed: false, reason: 'Only SUPER_ADMIN can manage administrative credentials and roles.' };
+
+  if (role === 'ADMIN') {
+    if (entity === 'Learner' && action === 'DELETE') return { allowed: false, reason: 'Learner accounts must be suspended or archived, not hard-deleted.' };
     return { allowed: true };
   }
 
-  // Admin management: ONLY SUPER_ADMIN
-  if (entity === 'Admin') {
-    return { allowed: false, reason: 'Only SUPER_ADMIN can manage administrative credentials and roles.' };
+  if (role === 'QUESTION_BANK_ADMIN') {
+    if (entity === 'Question' || entity === 'PYQ') return { allowed: true };
+    return { allowed: false, reason: 'Question Bank Admin is limited to syllabus questions and PYQ management.' };
   }
 
-  // Subject Scope Check for SUBJECT_ADMIN
-  if (role === 'SUBJECT_ADMIN') {
-    if (options?.entitySubject && options?.assignedSubjects) {
-      const isAssigned = options.assignedSubjects.some(
-        (subj) => subj.toLowerCase() === options.entitySubject?.toLowerCase()
-      );
-      if (!isAssigned) {
-        return {
-          allowed: false,
-          reason: `Subject scope violation: You are only authorized for [${options.assignedSubjects.join(
-            ', '
-          )}], not '${options.entitySubject}'.`,
-        };
-      }
-    }
+  if (role === 'AUDITOR') {
+    const readable = ['AuditLog','Question','PYQ','Lesson','Resource','Subject','Chapter','Topic','Concept'];
+    return { allowed: action === 'READ' && readable.includes(entity), reason: 'Auditor access is read-only.' };
   }
 
-  // Learner entity
+  if (role === 'ANALYTICS_ADMIN') {
+    return { allowed: entity === 'Subject' && action === 'READ', reason: 'Analytics Admin has read-only analytics access.' };
+  }
+
+  if (role === 'AI_QUALITY_ADMIN') {
+    return { allowed: false, reason: 'AI quality review is performed in the Content Engine review queue, not this local admin simulator.' };
+  }
+
+  if (role === 'SUBJECT_ADMIN' && options?.entitySubject && options?.assignedSubjects) {
+    const isAssigned = options.assignedSubjects.some((subject) => subject.toLowerCase() === options.entitySubject?.toLowerCase());
+    if (!isAssigned) return { allowed: false, reason: `Subject scope violation: not assigned to '${options.entitySubject}'.` };
+  }
+
   if (entity === 'Learner') {
-    if (role === 'ADMIN') {
-      if (action === 'DELETE') {
-        return { allowed: false, reason: 'ADMIN cannot delete learner accounts (Archive/Suspend only).' };
-      }
-      return { allowed: true };
-    }
-    if (role === 'SUPPORT') {
-      if (action === 'READ' || action === 'UPDATE') {
-        return { allowed: true };
-      }
-      return { allowed: false, reason: 'SUPPORT role can only view and update support status/suspension.' };
-    }
-    return { allowed: false, reason: `${role} does not have access to Learner administration.` };
+    return { allowed: false, reason: 'Learner roster actions are not available to this role in the current admin portal.' };
   }
 
-  // Lesson entity
-  if (entity === 'Lesson') {
-    if (role === 'ADMIN' || role === 'CONTENT_ADMIN') {
-      return { allowed: true };
-    }
-    if (role === 'SUBJECT_ADMIN') {
-      return { allowed: true };
-    }
-    if (role === 'QUESTION_REVIEWER') {
-      if (action === 'READ' || action === 'REVIEW') {
-        return { allowed: true };
-      }
-      return { allowed: false, reason: 'QUESTION_REVIEWER cannot author or publish lessons.' };
-    }
-    return { allowed: false, reason: `${role} is not authorized for lesson operations.` };
-  }
-
-  // Question & PYQ entities
   if (entity === 'Question' || entity === 'PYQ') {
-    if (role === 'ADMIN' || role === 'CONTENT_ADMIN' || role === 'SUBJECT_ADMIN') {
-      return { allowed: true };
-    }
-    if (role === 'QUESTION_REVIEWER') {
-      if (action === 'DELETE') {
-        return { allowed: false, reason: 'QUESTION_REVIEWER cannot delete questions from the central bank.' };
-      }
-      return { allowed: true };
-    }
-    return { allowed: false, reason: `${role} cannot manage question banks.` };
+    if (role === 'CONTENT_ADMIN') return { allowed: false, reason: 'Content Admin uses the Content Engine review queue; question bank listing requires QUESTION_READ.' };
+    if (role === 'SUBJECT_ADMIN') return { allowed: ['READ','CREATE','UPDATE'].includes(action), reason: 'Subject Experts cannot publish, reject, or delete questions.' };
+    if (role === 'QUESTION_REVIEWER') return { allowed: ['READ','UPDATE','REVIEW','REJECT'].includes(action), reason: 'Question Reviewer cannot publish or delete questions.' };
+    if (role === 'SUPPORT') return { allowed: ['READ','UPDATE'].includes(action), reason: 'Support can inspect and correct reported question issues only.' };
+    return { allowed: false, reason: `${role} has no question-bank permission.` };
   }
 
-  // Test Builder entity
-  if (entity === 'Test') {
-    if (role === 'ADMIN') {
-      return { allowed: true };
+  if (entity === 'Lesson' || entity === 'Resource' || entity === 'Chapter' || entity === 'Topic' || entity === 'Concept' || entity === 'Subject') {
+    if (role === 'CONTENT_ADMIN') return { allowed: true };
+    if (role === 'CONTENT_REVIEWER') return { allowed: ['READ','UPDATE','REVIEW'].includes(action) };
+    if (role === 'SUBJECT_ADMIN') {
+      if (entity === 'Subject') return { allowed: action === 'READ' };
+      if (entity === 'Topic') return { allowed: ['READ','UPDATE'].includes(action) };
+      return { allowed: ['READ','CREATE','UPDATE'].includes(action) };
     }
-    if (role === 'CONTENT_ADMIN' || role === 'SUBJECT_ADMIN') {
-      if (action === 'DELETE') {
-        return { allowed: false, reason: 'Only ADMIN or SUPER_ADMIN can delete/archive test papers.' };
-      }
-      return { allowed: true };
-    }
-    if (role === 'QUESTION_REVIEWER') {
-      return {
-        allowed: action === 'READ' || action === 'REVIEW',
-        reason: action !== 'READ' && action !== 'REVIEW' ? 'QUESTION_REVIEWER can only inspect test questions.' : undefined,
-      };
-    }
-    if (role === 'SUPPORT') {
-      return { allowed: action === 'READ' };
-    }
-    return { allowed: false, reason: 'Unauthorized for test builder.' };
+    return { allowed: false, reason: `${role} does not have curriculum/content access.` };
   }
 
-  // Proctoring Policy
-  if (entity === 'ProctoringPolicy') {
-    if (role === 'ADMIN') {
-      if (action === 'READ' || action === 'UPDATE') return { allowed: true };
-      return { allowed: false, reason: 'ADMIN can read/update policy parameters, but cannot delete security policies.' };
-    }
-    return { allowed: false, reason: 'Proctoring policies can only be managed by SUPER_ADMIN or operational ADMIN.' };
+  if (entity === 'Test' || entity === 'TestAttempt') {
+    return { allowed: false, reason: 'Test management is restricted to Platform Admin.' };
   }
 
-  // Proctoring Event & Proctoring Report
-  if (entity === 'ProctoringEvent' || entity === 'ProctoringReport') {
-    if (role === 'ADMIN') return { allowed: true };
-    if (role === 'QUESTION_REVIEWER' && action === 'READ') return { allowed: true };
-    if (role === 'SUPPORT' && (action === 'READ' || action === 'UPDATE')) return { allowed: true };
-    return { allowed: false, reason: `${role} has no proctoring oversight permissions.` };
+  if (entity === 'ProctoringPolicy' || entity === 'ProctoringEvent' || entity === 'ProctoringReport') {
+    return { allowed: false, reason: 'Proctoring operations are restricted to Platform Admin.' };
   }
 
-  // Adaptive Rules
   if (entity === 'AdaptiveRule') {
-    if (role === 'ADMIN') return { allowed: true };
-    if (role === 'SUBJECT_ADMIN' || role === 'QUESTION_REVIEWER') {
-      return { allowed: action === 'READ' };
-    }
-    return { allowed: false, reason: 'Adaptive rule configuration restricted.' };
+    return { allowed: false, reason: 'Adaptive rules are read-only for analytics and auditors, and editable by Platform Admin.' };
   }
 
-  // Notifications
   if (entity === 'Notification') {
-    if (role === 'ADMIN') return { allowed: true };
-    if (role === 'SUPPORT' && action === 'READ') return { allowed: true };
-    return { allowed: false, reason: 'Notification authoring restricted to Admins.' };
+    return { allowed: false, reason: 'Notification authoring is restricted to Platform Admin.' };
   }
 
-  // Audit Log
   if (entity === 'AuditLog') {
-    if (action === 'READ') return { allowed: true };
-    return { allowed: false, reason: 'Audit logs are immutable and cannot be edited or deleted.' };
+    return { allowed: false, reason: 'Audit logs are immutable and restricted to auditors.' };
   }
 
-  // Default fallback
-  return { allowed: true };
+  if (entity === 'Milestone') return { allowed: false, reason: 'Milestone reporting is read-only for analytics and auditors.' };
+  return { allowed: false, reason: 'No permission is configured for this role and entity.' };
 }
 
 /**

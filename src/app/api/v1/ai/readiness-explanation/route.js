@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { explainReadiness } from '../../../../../services/aiInsightsService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,8 +14,10 @@ export const dynamic = 'force-dynamic';
  * computed.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const result = await explainReadiness(LEARNER_ID);
+    const result = await explainReadiness(learner.id);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ code: 'AI_READINESS_EXPLANATION_FAILED', message: err.message }, { status: 500 });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { pool, LEARNER_ID, recordEvent } from '../../../../../../lib/db.mjs';
+import { pool, recordEvent } from '../../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../../lib/auth.mjs';
 import { recordAttempt, RecordAttemptError } from '../../../../../../lib/attempts.mjs';
 import { getPyqQuestion } from '../../../../../../services/pyqCatalogService.mjs';
 import { NotFoundError } from '../../../../../../services/errors.mjs';
@@ -17,6 +18,8 @@ export const dynamic = 'force-dynamic';
  * learner model exactly like any other practice attempt.
  */
 export async function POST(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { id } = await params;
 
   let body;
@@ -45,7 +48,7 @@ export async function POST(request, { params }) {
     await client.query('BEGIN');
     const result = await recordAttempt({
       client,
-      learnerId: LEARNER_ID,
+      learnerId: learner.id,
       questionId: id,
       attemptId,
       selectedIndex,
@@ -58,7 +61,7 @@ export async function POST(request, { params }) {
     await client.query('COMMIT');
 
     if (!result.duplicate) {
-      await recordEvent(LEARNER_ID, 'QUESTION_ANSWERED', result.topicId, {
+      await recordEvent(learner.id, 'QUESTION_ANSWERED', result.topicId, {
         questionId: id,
         correct: result.correct,
         mistakeType: result.mistakeType,

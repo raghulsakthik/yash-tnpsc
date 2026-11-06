@@ -76,6 +76,9 @@ export function useAppData() {
   const [curriculumTree, setCurriculumTree] = useState<any>(null);
   const [activeCurriculum, setActiveCurriculum] = useState<any>(null);
   const [curriculumProgress, setCurriculumProgress] = useState<any>(null);
+  const [adaptivePlan, setAdaptivePlan] = useState<any>(null);
+  const [pendingAdaptiveLaunch, setPendingAdaptiveLaunch] = useState<{ topicId: string; tab: 'learn' | 'practice' | 'assessment'; practiceMode: 'PRACTICE' | 'REVISION'; requestId: number } | null>(null);
+  const [adaptiveLaunchSequence, setAdaptiveLaunchSequence] = useState(0);
   const [quickLabStats, setQuickLabStats] = useState<any>({ attempts: 0, correct: 0, accuracy: 0 });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -83,7 +86,7 @@ export function useAppData() {
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [session, setSession] = useState<{ email: string; role: string } | null>(null);
+  const [session, setSession] = useState<{ email: string; role: string; adminRole?: string | null } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -118,8 +121,8 @@ export function useAppData() {
         setIsLoggedIn(true);
         setSession(me);
 
-        const [profileData, dashboard, courseData, plan, analytics, notificationData, achievementData, , notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
-          novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.analytics(),
+        const [profileData, dashboard, courseData, plan, adaptivePlanData, analytics, notificationData, achievementData, , notesData, testData, bookmarkData, pyqData, mistakeData, practiceData, treeData, activeData, curriculumProgress, labStats, resourceData] = await Promise.all([
+          novaApi.profile(), novaApi.dashboard(), novaApi.courses(), novaApi.plan(), novaApi.adaptivePlan().catch(() => null), novaApi.analytics(),
           novaApi.notifications(), novaApi.achievements(), novaApi.calendar(), novaApi.notes(), novaApi.tests(), novaApi.bookmarks(), novaApi.pyq(), novaApi.mistake().catch(() => null),
           novaApi.question('mixed').catch(() => null), novaApi.curriculumTree(), novaApi.activeCurriculum(), novaApi.curriculumProgress(), novaApi.quickLabStats().catch(() => ({ attempts: 0, correct: 0, accuracy: 0 })),
           novaApi.resources().catch(() => null),
@@ -130,6 +133,7 @@ export function useAppData() {
         setCurriculumTree(treeData);
         setActiveCurriculum(activeData);
         setCurriculumProgress(curriculumProgress);
+        setAdaptivePlan(adaptivePlanData);
         setQuickLabStats(labStats);
         setProfile(mapProfile(profileData, dashboard));
         setIsOnboardingOpen(profileData?.onboarded === false);
@@ -434,8 +438,45 @@ export function useAppData() {
     }
   };
 
-  const handlePracticeTopic = (_topic: string) => {
-    setCurrentView('practise');
+  const handlePracticeTopic = async (topic: string) => {
+    try {
+      const payload = await novaApi.question(topic);
+      const mapped = mapPracticeQuestion(payload);
+      if (!mapped) throw new Error('No published practice question is available for this topic yet.');
+      setPracticeQuestions([mapped]);
+      setCurrentView('practise');
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to load topic practice');
+    }
+  };
+
+  const handleLaunchAdaptiveStep = (step: { topicId: string; type: string }) => {
+    const nextRequestId = adaptiveLaunchSequence + 1;
+    setAdaptiveLaunchSequence(nextRequestId);
+    const tab = ['LESSON', 'PREREQUISITE_LESSON'].includes(step.type)
+      ? 'learn'
+      : step.type === 'MINI_ASSESSMENT'
+      ? 'assessment'
+      : 'practice';
+    setPendingAdaptiveLaunch({
+      topicId: step.topicId,
+      tab,
+      practiceMode: ['MEMORY_ECHO', 'REVISION'].includes(step.type) ? 'REVISION' : 'PRACTICE',
+      requestId: nextRequestId,
+    });
+  };
+
+  const handleAdaptiveLaunchHandled = (requestId: number) => {
+    setPendingAdaptiveLaunch((current) => current?.requestId === requestId ? null : current);
+  };
+
+  const handleRefreshAdaptivePlan = async () => {
+    try {
+      const freshPlan = await novaApi.adaptivePlan();
+      setAdaptivePlan(freshPlan);
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to refresh your adaptive roadmap');
+    }
   };
 
   const handlePracticeAnswer = async (question: PracticeQuestion, selectedIndex: number, timeTakenMs: number) => {
@@ -515,7 +556,7 @@ export function useAppData() {
   return {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, mistakeQuestion, tests, structuredCourses, notifications, achievements, activities,
-    isDataLoading, dataError, dashboardSnapshot, curriculumTree, activeCurriculum, curriculumProgress, quickLabStats,
+    isDataLoading, dataError, dashboardSnapshot, curriculumTree, activeCurriculum, curriculumProgress, adaptivePlan, pendingAdaptiveLaunch, quickLabStats,
     isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen, currentView, activeCourseModal,
     isProfileModalOpen, themeToast, isGlowActive, masterclassCourse, totalBookmarks, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
@@ -524,7 +565,7 @@ export function useAppData() {
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
     handleUpdateStructuredLessonStep, handleCompleteModule, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
-    handlePracticeTopic, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
+    handlePracticeTopic, handleLaunchAdaptiveStep, handleAdaptiveLaunchHandled, handleRefreshAdaptivePlan, handlePracticeAnswer, handlePracticeMistake, handlePyqAnswer, handleBookmarkQuestion,
     handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,
   };
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { compareLatestAssessments } from '../../../../services/testComparisonService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,8 +14,10 @@ export const dynamic = 'force-dynamic';
  * or escalate.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const comparison = await compareLatestAssessments(LEARNER_ID);
+    const comparison = await compareLatestAssessments(learner.id);
     return NextResponse.json(comparison);
   } catch (err) {
     return NextResponse.json({ code: 'TEST_COMPARISON_FAILED', message: err.message }, { status: 500 });

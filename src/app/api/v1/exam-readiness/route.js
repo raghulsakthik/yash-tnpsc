@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { getExamReadiness } from '../../../../services/examReadinessService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +12,10 @@ export const dynamic = 'force-dynamic';
  * can honestly explain why the score moved, not guess.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const readiness = await getExamReadiness(LEARNER_ID);
+    const readiness = await getExamReadiness(learner.id);
     return NextResponse.json(readiness);
   } catch (err) {
     return NextResponse.json({ code: 'EXAM_READINESS_FAILED', message: err.message }, { status: 500 });

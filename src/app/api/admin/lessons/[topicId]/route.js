@@ -3,6 +3,7 @@ import { requirePermission } from '../../../../../lib/auth.mjs';
 import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
 import { getLessonForEdit, upsertLesson, deleteLesson, setLessonStatus } from '../../../../../lib/adminCrud.mjs';
 import { ContentUploadError } from '../../../../../lib/adminContent.mjs';
+import { isLessonStatus, isAllowedLessonTransition, lessonTransitionPermission } from '../../../../../lib/adminLessonWorkflow.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +22,31 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const admin = await requirePermission(request, PERMISSIONS.CONTENT_UPDATE);
-  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  const admin = await requirePermission(request, PERMISSIONS.CONTENT_READ);
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Content read permission required' }, { status: 403 });
   const { topicId } = await params;
   try {
-    if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_UPDATE, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
-    await upsertLesson(topicId, await request.json());
-    return NextResponse.json({ ok: true });
+    const existing = await getLessonForEdit(topicId);
+    const mutationPermission = existing ? PERMISSIONS.CONTENT_UPDATE : PERMISSIONS.CONTENT_CREATE;
+    if (!(await requirePermission(request, mutationPermission)) ||
+        !(await canActOnTopic(admin, mutationPermission, topicId))) {
+      return NextResponse.json({ code: 'FORBIDDEN', message: 'Content create/update permission and subject scope are required' }, { status: 403 });
+    }
+    const body = await request.json();
+    const nextStatus = body.status ?? existing?.status ?? 'DRAFT';
+    if (!isLessonStatus(nextStatus) || (!existing && !['DRAFT', 'IN_REVIEW'].includes(nextStatus))) {
+      return NextResponse.json({ code: 'INVALID_STATUS', message: 'A new lesson must start as DRAFT or IN_REVIEW.' }, { status: 400 });
+    }
+    if (existing && !isAllowedLessonTransition(existing.status, nextStatus)) {
+      return NextResponse.json({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot move a lesson from ${existing.status} to ${nextStatus}.` }, { status: 409 });
+    }
+    const transitionPermission = lessonTransitionPermission(existing?.status, nextStatus);
+    if (transitionPermission && (!(await requirePermission(request, transitionPermission)) ||
+        !(await canActOnTopic(admin, transitionPermission, topicId)))) {
+      return NextResponse.json({ code: 'FORBIDDEN_STATUS_TRANSITION', message: `Permission ${transitionPermission} is required for status ${nextStatus}.` }, { status: 403 });
+    }
+    await upsertLesson(topicId, { ...body, status: nextStatus });
+    return NextResponse.json({ ok: true, status: nextStatus });
   } catch (err) {
     if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'SAVE_FAILED', message: err.message }, { status: 500 });
@@ -37,13 +56,24 @@ export async function PUT(request, { params }) {
 /** PATCH -- status-only transition (submit for review / approve / publish / archive), body: { status }. */
 export async function PATCH(request, { params }) {
   const admin = await requirePermission(request, PERMISSIONS.CONTENT_UPDATE);
-  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required' }, { status: 403 });
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Content update permission required' }, { status: 403 });
   const { topicId } = await params;
   try {
     if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_UPDATE, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
+    const existing = await getLessonForEdit(topicId);
+    if (!existing) return NextResponse.json({ code: 'LESSON_NOT_FOUND', message: `No lesson for ${topicId}` }, { status: 404 });
     const body = await request.json();
+    if (!isLessonStatus(body.status)) return NextResponse.json({ code: 'INVALID_STATUS', message: 'Unsupported lesson status' }, { status: 400 });
+    if (!isAllowedLessonTransition(existing.status, body.status)) {
+      return NextResponse.json({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot move a lesson from ${existing.status} to ${body.status}.` }, { status: 409 });
+    }
+    const transitionPermission = lessonTransitionPermission(existing.status, body.status);
+    if (transitionPermission && (!(await requirePermission(request, transitionPermission)) ||
+        !(await canActOnTopic(admin, transitionPermission, topicId)))) {
+      return NextResponse.json({ code: 'FORBIDDEN_STATUS_TRANSITION', message: `Permission ${transitionPermission} is required for status ${body.status}.` }, { status: 403 });
+    }
     await setLessonStatus(topicId, body.status);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, status: body.status });
   } catch (err) {
     if (err instanceof ContentUploadError) return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     return NextResponse.json({ code: 'STATUS_UPDATE_FAILED', message: err.message }, { status: 500 });

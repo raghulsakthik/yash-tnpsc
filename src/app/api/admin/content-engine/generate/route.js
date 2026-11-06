@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '../../../../../lib/db.mjs';
 import { requirePermission } from '../../../../../lib/auth.mjs';
-import { PERMISSIONS } from '../../../../../lib/permissions.mjs';
+import { PERMISSIONS, canActOnTopic } from '../../../../../lib/permissions.mjs';
 import { contentEngineManifestHash } from '../../../../../lib/contentEngineManifest.mjs';
 import { generateTopicPackage, LessonGenerationError } from '../../../../../lib/aiLessonGenerator.mjs';
 
@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 export async function GET(request) {
-  const admin = await requirePermission(request, PERMISSIONS.CONTENT_READ) || await requirePermission(request, PERMISSIONS.AI_GENERATE);
-  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'Content read permission required' }, { status: 403 });
+  const admin = await requirePermission(request, PERMISSIONS.AI_GENERATE);
+  if (!admin) return NextResponse.json({ code: 'FORBIDDEN', message: 'AI generation permission required' }, { status: 403 });
   try {
     const { rows } = await query(`
       SELECT t.id AS "topicId", t.name AS "topicName", c.name AS "chapterName", s.name AS "subjectName",
@@ -26,7 +26,11 @@ export async function GET(request) {
        GROUP BY t.id,t.name,c.name,s.name
        ORDER BY s.sort_order,c.sort_order,t.sort_order,t.name
     `);
-    return NextResponse.json({ topics: rows });
+    const scopedTopics = [];
+    for (const topic of rows) {
+      if (await canActOnTopic(admin, PERMISSIONS.AI_GENERATE, topic.topicId)) scopedTopics.push(topic);
+    }
+    return NextResponse.json({ topics: scopedTopics });
   } catch (error) {
     return NextResponse.json({ code: 'TOPIC_LIST_FAILED', message: error.message }, { status: 500 });
   }
@@ -49,6 +53,9 @@ export async function POST(request) {
        WHERE t.id=$1
     `, [topicId]);
     if (!topics.length) return NextResponse.json({ code: 'TOPIC_NOT_FOUND', message: 'Topic is not in the syllabus tree.' }, { status: 404 });
+    if (!(await canActOnTopic(admin, PERMISSIONS.AI_GENERATE, topicId))) {
+      return NextResponse.json({ code: 'FORBIDDEN_TOPIC', message: 'Your admin role is not authorised to generate content for this syllabus topic.' }, { status: 403 });
+    }
     const { rows: sources } = await query(`
       SELECT r.id::text AS id,r.title,r.body,r.source,l.source_file_name,l.source_page
         FROM topic_resource r

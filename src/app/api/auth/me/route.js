@@ -8,5 +8,5 @@ export async function GET(request) {
   if (!session) {
     return NextResponse.json({ code: 'NOT_AUTHENTICATED', message: 'No active session' }, { status: 401 });
   }
-  return NextResponse.json({ email: session.email, role: session.role });
+  return NextResponse.json({ email: session.email, role: session.role, adminRole: session.adminRole ?? null });
 }

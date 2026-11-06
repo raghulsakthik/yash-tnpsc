@@ -52,7 +52,7 @@ export function validateGeneratedContent(output, evidence, expectedMcqs) {
   return { valid: issues.length === 0, issues };
 }
 
-export async function generateTopicPackage({ topic, evidence, mcqCount = 5 }) {
+export async function generateTopicPackage({ topic, evidence, mcqCount = 5, generateJsonFn = generateJson }) {
   if (!process.env.GEMINI_API_KEY) throw new LessonGenerationError('AI_PROVIDER_NOT_CONFIGURED', 'GEMINI_API_KEY is not configured on the server. Add it to the deployment secret store to enable generation.');
   if (!Array.isArray(evidence) || !evidence.length) throw new LessonGenerationError('NO_APPROVED_EVIDENCE', 'This topic has no approved, non-PYQ source material. Approve or upload source material before generating.');
   const evidenceText = evidence.map((item) => ({
@@ -63,7 +63,7 @@ export async function generateTopicPackage({ topic, evidence, mcqCount = 5 }) {
   }));
   const system = `You are a careful TNPSC educator and assessment writer. Use ONLY the supplied approved source excerpts. Never invent facts, dates, laws, formulas, or answer keys. Do not use or reproduce previous-year question text. Create beginner-friendly, syllabus-aligned lesson content and exactly ${mcqCount} original four-option MCQs. Every MCQ must have one defensible correct answer explicitly supported by a verbatim answerEvidence quote from one supplied source. The quote must be copied exactly from that source body, not paraphrased. answerIndex is zero-based (A=0, B=1, C=2, D=3). If the source evidence cannot support an unambiguous answer, do not guess; return fewer MCQs only if impossible, and state the gap in qualityNotes. Output JSON only with this shape: {lesson:{title,concept,definition,explanation,examples:[{problem,steps:[...],answer}],revisionNotes:[...],sourceIds:[...]},mcqs:[{question,options:[4 strings],answerIndex,explanation,difficulty:"easy|medium|hard",sourceIds:[...],answerEvidence:{sourceId,quote}}],qualityNotes:[...]}. Provide exactly one detailed worked example because the learner lesson view has one primary worked-example slot. Teach from first principles, define terminology, use worked steps, and avoid claiming guaranteed exam appearance.`;
   const user = `Syllabus topic: ${topic.name}\nTopic ID: ${topic.id}\nSubject: ${topic.subject_name}\nChapter: ${topic.chapter_name}\nGenerate ${mcqCount} MCQs.\nAPPROVED SOURCE EXCERPTS (IDs must be copied exactly):\n${JSON.stringify(evidenceText)}`;
-  const output = await generateJson({ system, user });
+  const output = await generateJsonFn({ system, user });
   if (!output) throw new LessonGenerationError('AI_GENERATION_UNAVAILABLE', 'The AI provider returned no valid JSON. Check provider configuration, quota and availability; no content was staged.');
   const validation = validateGeneratedContent(output, evidence, mcqCount);
   if (!validation.valid) throw new LessonGenerationError('AI_OUTPUT_FAILED_VALIDATION', 'Generated output did not meet source-provenance or content requirements. Nothing was staged.', validation.issues);

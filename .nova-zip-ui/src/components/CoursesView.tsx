@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
@@ -20,6 +20,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { StructuredCourse, StructuredLesson, StructuredModule } from '../types';
+import type { AdaptiveRoadmapLaunch } from './AdaptiveRoadmapPanel';
 import { StructuredLessonPlayerModal } from './StructuredLessonPlayerModal';
 import { BrandLogo } from './BrandLogo';
 
@@ -33,6 +34,10 @@ interface CoursesViewProps {
   ) => void;
   onAddXp?: (amount: number) => void;
   onSwitchToTodayPlan?: () => void;
+  adaptiveLaunch?: AdaptiveRoadmapLaunch | null;
+  onAdaptiveLaunchHandled?: (requestId: number) => void;
+  onAdaptiveLaunchMissing?: (topicId: string) => void;
+  onEvidenceRecorded?: () => Promise<void> | void;
 }
 
 export const CoursesView: React.FC<CoursesViewProps> = ({
@@ -40,6 +45,10 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
   onUpdateLessonStep,
   onAddXp,
   onSwitchToTodayPlan,
+  adaptiveLaunch,
+  onAdaptiveLaunchHandled,
+  onAdaptiveLaunchMissing,
+  onEvidenceRecorded,
 }) => {
   const [selectedSubjectGroup, setSelectedSubjectGroup] = useState<
     'All' | 'General Studies' | 'Aptitude & Mental Ability' | 'Language'
@@ -51,7 +60,23 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
   const [activeLessonPlayer, setActiveLessonPlayer] = useState<{
     course: StructuredCourse;
     lesson: StructuredLesson;
+    initialTab?: 'learn' | 'understand' | 'practice' | 'assessment';
+    practiceMode?: 'PRACTICE' | 'REVISION';
   } | null>(null);
+
+  useEffect(() => {
+    if (!adaptiveLaunch) return;
+    const match = courses
+      .map((course) => ({ course, lesson: course.modules.flatMap((module) => module.lessons).find((lesson) => lesson.id === adaptiveLaunch.topicId) }))
+      .find((entry) => entry.lesson);
+    if (match?.lesson) {
+      setActiveLessonPlayer({ course: match.course, lesson: match.lesson, initialTab: adaptiveLaunch.tab, practiceMode: adaptiveLaunch.practiceMode });
+      onAdaptiveLaunchHandled?.(adaptiveLaunch.requestId);
+    } else if (courses.length > 0) {
+      onAdaptiveLaunchMissing?.(adaptiveLaunch.topicId);
+      onAdaptiveLaunchHandled?.(adaptiveLaunch.requestId);
+    }
+  }, [adaptiveLaunch, courses, onAdaptiveLaunchHandled, onAdaptiveLaunchMissing]);
 
   // Filter courses by group & search
   const filteredCourses = courses.filter((c) => {
@@ -513,6 +538,9 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
             );
           }}
           onAddXp={onAddXp}
+          initialTab={activeLessonPlayer.initialTab}
+          practiceMode={activeLessonPlayer.practiceMode}
+          onEvidenceRecorded={onEvidenceRecorded}
         />
       )}
     </div>

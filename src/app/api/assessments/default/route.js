@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID, recordEvent } from '../../../../lib/db.mjs';
+import { recordEvent } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { startDefaultAssessment } from '../../../../services/defaultAssessmentService.mjs';
 import { ValidationError } from '../../../../services/errors.mjs';
 
@@ -14,9 +15,11 @@ export const dynamic = 'force-dynamic';
  * without side effects).
  */
 export async function POST() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const assessment = await startDefaultAssessment(LEARNER_ID);
-    await recordEvent(LEARNER_ID, 'DEFAULT_ASSESSMENT_STARTED', null, { assessmentId: assessment.assessmentId });
+    const assessment = await startDefaultAssessment(learner.id);
+    await recordEvent(learner.id, 'DEFAULT_ASSESSMENT_STARTED', null, { assessmentId: assessment.assessmentId });
     return NextResponse.json(assessment);
   } catch (err) {
     if (err instanceof ValidationError) {

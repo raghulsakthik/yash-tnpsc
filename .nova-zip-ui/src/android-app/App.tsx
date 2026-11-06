@@ -7,6 +7,7 @@ import { NotificationDrawer } from './components/NotificationDrawer';
 import { AdminPortal } from '../components/admin/AdminPortal';
 import { OnboardingModal } from '../components/OnboardingModal';
 import { useAppData } from '../hooks/useAppData';
+import { mapSessionAdminRole } from '../utils/adminPermissions';
 import { useFcmPush } from './useFcmPush';
 
 /**
@@ -17,22 +18,22 @@ import { useFcmPush } from './useFcmPush';
  * the exact same real backend as the web app via useAppData() -- the same
  * hook src/App.tsx (the desktop/browser entry) uses, so this is the same
  * production data and the same write-paths, just a different, Android-
- * specific presentation layer on top. The design itself is untouched: no
- * file under android-app/components was edited beyond fixing relative
- * import paths after repackaging.
+ * specific presentation layer on top. Adaptive roadmap launches share the
+ * backend-backed lesson player with desktop so questions, grading and spaced
+ * revision have identical behavior across both clients.
  */
 export default function AndroidApp() {
   const {
     profile, courses, notes, todayUnits, subjectMastery, weakAreas, practiceQuestions, pyqs, mistakes,
     uploadedResources, tests, structuredCourses, notifications, activities,
-    isDataLoading, dataError, isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen,
+    isDataLoading, dataError, adaptivePlan, pendingAdaptiveLaunch, isDarkMode, isLoggedIn, session, isAuthModalOpen, authMode, isOnboardingOpen,
     currentView, activeCourseModal, isProfileModalOpen, masterclassCourse, isAdminSession,
     setCurrentView, setActiveCourseModal, setIsProfileModalOpen, setIsAuthModalOpen, setIsOnboardingOpen,
     toggleDarkMode,
     handleMarkNotificationRead, handleMarkAllNotificationsRead, handleClearAllNotifications,
     handleUpdateStructuredLessonStep, handleCompleteModule, handleToggleBookmark, handleToggleLesson, handleUpdateDailyGoal,
     handleLogGoalProgress, handleAddXp, handleAddNote, handleDeleteNote, handleToggleTodayUnit, handleLaunchTodayUnit,
-    handlePracticeTopic, handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,
+    handlePracticeTopic, handleLaunchAdaptiveStep, handleAdaptiveLaunchHandled, handleRefreshAdaptivePlan, handleOpenAuth, handleLogout, handleLoginSuccess, handleCompleteOnboarding, handleUpdateProfile,
   } = useAppData();
 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = React.useState(false);
@@ -42,7 +43,7 @@ export default function AndroidApp() {
     return (
       <AdminPortal
         onReturnToLearnerHub={() => setCurrentView('home')}
-        initialRole={session?.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN'}
+        initialRole={mapSessionAdminRole(session)}
       />
     );
   }
@@ -65,6 +66,12 @@ export default function AndroidApp() {
         courses={courses}
         structuredCourses={structuredCourses}
         todayUnits={todayUnits}
+        adaptivePlan={adaptivePlan}
+        pendingAdaptiveLaunch={pendingAdaptiveLaunch}
+        onLaunchAdaptiveStep={handleLaunchAdaptiveStep}
+        onAdaptiveLaunchHandled={handleAdaptiveLaunchHandled}
+        onAdaptiveLaunchMissing={handlePracticeTopic}
+        onEvidenceRecorded={handleRefreshAdaptivePlan}
         subjectMastery={subjectMastery}
         weakAreas={weakAreas}
         activities={activities}

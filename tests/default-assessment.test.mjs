@@ -420,3 +420,15 @@ test('deriveStrengthsAndWeaknesses matches the documented thresholds', () => {
   assert.deepEqual(strengths.map((s) => s.topicId), ['strong']);
   assert.deepEqual(weaknesses.map((w) => w.topicId), ['weak']);
 });
+
+test('an untouched dependent topic is prerequisite-blocked when its required foundation has no evidence', () => {
+  const topics = [
+    { topicId: 'advanced-ratio', accuracy: 0, questionCount: 0 },
+    { topicId: 'fractions', accuracy: 0, questionCount: 0 },
+  ];
+  const graph = new Map([['advanced-ratio', [{ id: 'fractions', strength: 0.9 }]]]);
+  const [advanced] = classifyTopics(topics, graph).filter((topic) => topic.topicId === 'advanced-ratio');
+  assert.equal(advanced.classification, TopicClassification.PREREQUISITE_BLOCKED);
+  assert.equal(advanced.weakestPrerequisite.topicId, 'fractions');
+  assert.equal(advanced.weakestPrerequisite.accuracy, 0);
+});

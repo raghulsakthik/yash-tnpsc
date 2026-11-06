@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../lib/db.mjs';
+import { requireLearner } from '../../../lib/auth.mjs';
 import { startIntervention, listInterventions } from '../../../services/interventionService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +9,10 @@ export const dynamic = 'force-dynamic';
  * learner, newest first: the experiment log Phase 14 exists to build.
  */
 export async function GET() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const interventions = await listInterventions(LEARNER_ID);
+    const interventions = await listInterventions(learner.id);
     return NextResponse.json({ interventions });
   } catch (err) {
     return NextResponse.json({ code: 'INTERVENTIONS_LIST_FAILED', message: err.message }, { status: 500 });
@@ -26,6 +28,8 @@ export async function GET() {
  * (Phase 11) currently recommends for this topic.
  */
 export async function POST(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   let body;
   try {
     body = await request.json();
@@ -39,7 +43,7 @@ export async function POST(request) {
   }
 
   try {
-    const intervention = await startIntervention(LEARNER_ID, topicId);
+    const intervention = await startIntervention(learner.id, topicId);
     return NextResponse.json(intervention);
   } catch (err) {
     return NextResponse.json({ code: 'INTERVENTION_START_FAILED', message: err.message }, { status: 500 });

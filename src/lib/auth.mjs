@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 import { query } from './db.mjs';
 import { hasPermission } from './permissions.mjs';
+import { isLearnerAccount } from './learnerAccess.mjs';
 
 const SESSION_COOKIE = 'session_token';
 const SESSION_DAYS = 30;
@@ -98,10 +99,16 @@ export async function requireUser() {
   return { id: rows[0].user_id, accountId: rows[0].user_id, email: rows[0].email, role: rows[0].role, adminRole: rows[0].admin_role };
 }
 
-/** Resolves the learner id behind a request's session, or null if there isn't one (no session, or an admin account with no learner data). */
+/** Resolves an authenticated student account for learner-only APIs. */
+export async function requireLearner() {
+  const user = await requireUser();
+  return isLearnerAccount(user) ? user : null;
+}
+
+/** Resolves the learner id behind a STUDENT request session; every other role is denied. */
 export async function requireLearnerId(request) {
   const session = await getSession(request);
-  return session?.learnerId ?? null;
+  return session?.role === 'STUDENT' ? session.learnerId : null;
 }
 
 /** Resolves the session only if it belongs to an admin account, or null otherwise. The real authorization boundary for every /api/admin/* route -- never trust a client-side role check alone. */

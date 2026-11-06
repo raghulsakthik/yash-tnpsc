@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../../lib/db.mjs';
+import { requireLearner } from '../../../../lib/auth.mjs';
 import { evaluateAndRecordMilestones } from '../../../../services/milestoneService.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -14,8 +14,10 @@ export const dynamic = 'force-dynamic';
  * automatically yet; see docs/phase-17-completion.md.
  */
 export async function POST() {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   try {
-    const result = await evaluateAndRecordMilestones(LEARNER_ID);
+    const result = await evaluateAndRecordMilestones(learner.id);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ code: 'MILESTONE_EVALUATION_FAILED', message: err.message }, { status: 500 });

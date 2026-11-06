@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID } from '../../../lib/db.mjs';
+import { requireLearner } from '../../../lib/auth.mjs';
 import { startLearningSession } from '../../../services/sessionService.mjs';
 import { ValidationError } from '../../../services/errors.mjs';
 
@@ -15,6 +15,8 @@ export const dynamic = 'force-dynamic';
  * route that actually calls them.
  */
 export async function POST(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   let body;
   try {
     body = await request.json();
@@ -25,7 +27,7 @@ export async function POST(request) {
   const { topicId = null, sessionType, metadata = {} } = body;
 
   try {
-    const session = await startLearningSession({ learnerId: LEARNER_ID, topicId, sessionType, metadata });
+    const session = await startLearningSession({ learnerId: learner.id, topicId, sessionType, metadata });
     return NextResponse.json(session);
   } catch (err) {
     if (err instanceof ValidationError) {

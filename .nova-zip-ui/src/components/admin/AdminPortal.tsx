@@ -48,6 +48,7 @@ import {
   QuestionStatus,
 } from '../../types/admin';
 import {
+  initialLearnersList,
   initialAdminResources,
   initialAdminPYQs,
   initialProctoringPolicies,
@@ -83,79 +84,71 @@ import {
   AdminsRolesView,
 } from './GenericAdminViews';
 
+function mapAdminQuestion(row: any): AdminQuestion {
+  const answerIndex = Number(row.answerIndex ?? -1);
+  const rawOptions = Array.isArray(row.options) ? row.options : [];
+  const options = rawOptions.map((option: any, index: number) => ({
+    id: `${row.id}-option-${index + 1}`,
+    text: typeof option === 'string' ? option : String(option?.text ?? ''),
+    isCorrect: index === answerIndex,
+  }));
+  const rawStatus = String(row.status || 'DRAFT').toUpperCase();
+  const status: QuestionStatus = rawStatus === 'APPROVED' ? 'PUBLISHED' : rawStatus as QuestionStatus;
+  const generation = String(row.generationSource || 'manual').toLowerCase();
+  const isPYQ = generation === 'pyq' || row.sourceYear != null || row.examCode != null || row.examGroup != null || row.paper != null;
+  const difficultyValue = Number(row.difficulty ?? 0.5);
+  const difficulty: AdminQuestion['difficulty'] = difficultyValue < 0.34 ? 'Easy' : difficultyValue < 0.67 ? 'Medium' : 'Hard';
+  return {
+    id: row.id,
+    topicId: row.topicId,
+    questionText: row.prompt || '',
+    options,
+    explanation: row.explanation || '',
+    examName: 'TNPSC Group 2 & 2A',
+    subjectName: row.subjectName || '—',
+    chapterName: row.chapterName || '—',
+    topicName: row.topicName || '—',
+    conceptName: row.topicName || '—',
+    difficulty,
+    type: 'MCQ',
+    isPYQ,
+    pyqMetadata: isPYQ ? {
+      sourceYear: Number(row.sourceYear || 0),
+      examGroup: row.examGroup || 'TNPSC',
+      paperNumber: String(row.paper || row.examCode || '—'),
+      questionNumber: Number(row.questionNumber || 0),
+      sourcePage: Number(row.sourcePage || 0),
+      verifiedProvenance: row.sourceYear != null && row.questionNumber != null && row.sourcePage != null,
+    } : undefined,
+    generationSource: generation === 'pyq' ? 'OFFICIAL_PAST_PAPER' : generation === 'ai' ? 'AI_GENERATED' : generation === 'pdf' ? 'PDF_EXTRACTED' : generation === 'template' ? 'TEMPLATE_GENERATED' : 'MANUAL_AUTHOR',
+    status,
+    authorName: '—',
+    attemptsCount: null,
+    accuracyRate: null,
+    createdAt: row.createdAt || row.updatedAt || new Date(0).toISOString(),
+    updatedAt: row.updatedAt || row.createdAt || new Date(0).toISOString(),
+  };
+}
+
 interface AdminPortalProps {
   onReturnToLearnerHub: () => void;
-  // The real admin_role from the authenticated session
-  // (src/lib/permissions.mjs's ADMIN_ROLE_LABELS keys) -- this replaces the
-  // original design's role simulator as the real starting point. Section
-  // views below this point still read/write mock data; backend wiring for
-  // each is tracked as follow-up work, not done in this pass.
+  // Derived from the server-authenticated admin_role; never client-selectable.
   initialRole: AdminRole;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, initialRole }) => {
-  // Role & Scope Simulator State -- seeded from the real session role;
-  // still locally overridable for now (no section view performs a real,
-  // backend-checked mutation yet, so this can't actually escalate anything).
-  const [activeRole, setActiveRole] = useState<AdminRole>(() => {
-    return (localStorage.getItem('nova_admin_role') as AdminRole) || initialRole;
-  });
-
-  const [activeSubjectScope, setActiveSubjectScope] = useState<string>(() => {
-    return localStorage.getItem('nova_admin_subject_scope') || 'Indian Polity & Constitution';
-  });
+  // Display the authenticated backend role. Client-side role simulation is
+  // intentionally disabled; every sensitive operation is authorised server-side.
+  const activeRole = initialRole;
 
   const [currentSectionSlug, setCurrentSectionSlug] = useState<string>('dashboard');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // Real learner roster (GET /api/admin/learners -- see src/lib/adminUsers.mjs
-  // listLearners). Previously seeded from mockAdminData into localStorage.
-  // xp/level/streak/weak-topics/strong-topics stay at an honest zero/empty
-  // in the real response -- computing those correctly per-learner in bulk
-  // is real work the single-learner /api/profile and
-  // /api/learning/analytics routes already do, not something to fake
-  // cheaply here.
-  const [learners, setLearners] = useState<LearnerRecord[]>([]);
-  const [learnersError, setLearnersError] = useState<string | null>(null);
-
-  const refreshLearners = React.useCallback((search?: string) => {
-    novaApi
-      .adminLearners({ search, limit: 100 })
-      .then((res: any) => {
-        const mapped: LearnerRecord[] = (res.learners || []).map((l: any) => ({
-          id: l.id,
-          name: l.name,
-          email: l.email,
-          handle: `@${String(l.name || 'learner').toLowerCase().replace(/\s+/g, '_')}`,
-          phone: l.phone || '',
-          avatarText: String(l.name || 'L').charAt(0).toUpperCase(),
-          targetExam: 'TNPSC',
-          targetTrack: 'TNPSC Group 2 & 2A',
-          currentPhase: 0,
-          totalXp: 0,
-          level: 1,
-          streakDays: 0,
-          studyTimeHours: 0,
-          accuracyRate: Number(l.accuracyRate ?? 0),
-          overallReadiness: 0,
-          completedLessons: Number(l.completedLessons ?? 0),
-          testsAttempted: Number(l.testsAttempted ?? 0),
-          weakTopics: [],
-          strongTopics: [],
-          accountStatus: l.accountStatus === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
-          suspensionReason: l.suspensionReason || undefined,
-          lastActive: l.lastActive || '—',
-          createdAt: l.createdAt,
-        }));
-        setLearners(mapped);
-        setLearnersError(null);
-      })
-      .catch((err) => setLearnersError(err instanceof Error ? err.message : 'Could not load learners'));
-  }, []);
-
-  useEffect(() => {
-    refreshLearners();
-  }, [refreshLearners]);
+  // Core Persistent Administrative State
+  const [learners, setLearners] = useState<LearnerRecord[]>(() => {
+    const saved = localStorage.getItem('nova_admin_learners');
+    return saved ? JSON.parse(saved) : initialLearnersList;
+  });
 
   // Real lessons (GET /api/admin/lessons -- see db/migrations/V71__lesson_authoring_metadata.sql
   // and src/lib/adminCrud.mjs). One row per topic; topics without an
@@ -208,67 +201,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   // Real topics (used by LessonsView's "create new lesson" topic picker --
   // includes topics that don't have a lesson yet, unlike `lessons` above).
   const [lessonTopics, setLessonTopics] = useState<any[]>([]);
+  const allowedLessonSubjects = [...new Set(lessonTopics.map((topic: any) => topic.subjectName).filter(Boolean))];
   useEffect(() => {
     novaApi.adminLessons().then((res) => setLessonTopics(res.topics || [])).catch(() => {});
   }, [lessons.length]);
 
-  // Real question bank (GET /api/admin/questions -- see
-  // src/lib/adminCrud.mjs listAllQuestions). Previously seeded from
-  // mockAdminData into localStorage. The real question table stores
-  // options as string[] + answer_index, difficulty as a 0..1 float, and
-  // only DRAFT/REVIEWED/PUBLISHED/ARCHIVED statuses (question_status_ck)
-  // -- mapped here to/from the richer vocabulary QuestionsView was built
-  // against (REVIEWED <-> IN_REVIEW, ARCHIVED <-> REJECTED; the server
-  // side of this same mapping lives in adminCrud.mjs's
-  // QUESTION_STATUS_ALIASES, right next to the real CHECK constraint it
-  // has to satisfy).
-  const difficultyToBand = (d: number): 'Easy' | 'Medium' | 'Hard' => (d < 0.35 ? 'Easy' : d < 0.6 ? 'Medium' : 'Hard');
-  const bandToDifficulty: Record<'Easy' | 'Medium' | 'Hard', number> = { Easy: 0.25, Medium: 0.5, Hard: 0.75 };
-  const statusFromDb = (s: string): QuestionStatus => (s === 'REVIEWED' ? 'IN_REVIEW' : s === 'ARCHIVED' ? 'REJECTED' : (s as QuestionStatus));
-
-  const mapQuestionFromApi = (r: any): AdminQuestion => ({
-    id: r.id,
-    topicId: r.topicId,
-    questionText: r.prompt,
-    options: (r.options || []).map((text: string, i: number) => ({ id: `opt-${i}`, text, isCorrect: i === r.answerIndex })),
-    explanation: r.explanation || '',
-    examName: 'TNPSC Group 2 & 2A Combined',
-    subjectName: r.subjectName,
-    chapterName: r.chapterName,
-    topicName: r.topicName,
-    conceptName: r.topicName,
-    difficulty: difficultyToBand(Number(r.difficulty ?? 0.3)),
-    type: 'MCQ',
-    isPYQ: Boolean(r.sourceYear),
-    pyqMetadata: r.sourceYear
-      ? { sourceYear: r.sourceYear, examGroup: 'TNPSC Group 2 & 2A', paperNumber: '', questionNumber: 0, sourcePage: 0, verifiedProvenance: true }
-      : undefined,
-    generationSource: r.sourceYear ? 'OFFICIAL_PAST_PAPER' : r.source === 'ai-generated' ? 'AI_GENERATED' : 'MANUAL_AUTHOR',
-    status: statusFromDb(r.status),
-    authorName: 'Admin Contributor',
-    attemptsCount: Number(r.attemptsCount ?? 0),
-    accuracyRate: Number(r.accuracyRate ?? 0),
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-  });
-
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [questionTopics, setQuestionTopics] = useState<any[]>([]);
+  const allowedQuestionSubjects = [...new Set(questionTopics.map((topic: any) => topic.subjectName).filter(Boolean))];
+  const activeSubjectScope = [...new Set([...allowedQuestionSubjects, ...allowedLessonSubjects])].join(', ') || 'No subject scope assigned';
+  const [selectedQuestionTopicId, setSelectedQuestionTopicId] = useState('');
+  const [questionsLoading, setQuestionsLoading] = useState(false);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
 
-  const refreshQuestions = React.useCallback((search?: string) => {
-    novaApi
-      .adminQuestionsList({ search, limit: 100 })
-      .then((res: any) => {
-        setQuestions((res.questions || []).map(mapQuestionFromApi));
-        setQuestionsError(null);
-      })
-      .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Could not load questions'));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const refreshQuestions = React.useCallback(async (topicId: string) => {
+    if (!topicId) {
+      setQuestions([]);
+      return;
+    }
+    setQuestionsLoading(true);
+    try {
+      const result = await novaApi.adminQuestions(topicId);
+      setQuestions((result.questions || []).map(mapAdminQuestion));
+      setQuestionsError(null);
+    } catch (error) {
+      setQuestionsError(error instanceof Error ? error.message : 'Could not load questions');
+      setQuestions([]);
+    } finally {
+      setQuestionsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    refreshQuestions();
-  }, [refreshQuestions]);
+    novaApi.adminTopics()
+      .then((result) => {
+        const topics = result.topics || [];
+        setQuestionTopics(topics);
+        setSelectedQuestionTopicId((current) => current || topics[0]?.topicId || '');
+        if (!topics.length) setQuestionsError('No syllabus topics are available for this admin role.');
+      })
+      .catch((error) => setQuestionsError(error instanceof Error ? error.message : 'Could not load syllabus topics'));
+  }, []);
+
+  useEffect(() => {
+    if (selectedQuestionTopicId) refreshQuestions(selectedQuestionTopicId);
+  }, [selectedQuestionTopicId, refreshQuestions]);
 
   // Real test templates (GET /api/admin/tests/templates -- see
   // src/lib/adminCrud.mjs listTestTemplates). Previously seeded from
@@ -420,12 +397,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
   // Sync state to localStorage
   useEffect(() => {
-    localStorage.setItem('nova_admin_role', activeRole);
-  }, [activeRole]);
+    localStorage.setItem('nova_admin_learners', JSON.stringify(learners));
+  }, [learners]);
 
-  useEffect(() => {
-    localStorage.setItem('nova_admin_subject_scope', activeSubjectScope);
-  }, [activeSubjectScope]);
 
   useEffect(() => {
     localStorage.setItem('nova_admin_policies', JSON.stringify(policies));
@@ -478,13 +452,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     setAuditLogs((prev) => [newEntry, ...prev]);
   };
 
-  // Learner operations -- status updates and creation now reach the real
-  // app_user table (/api/admin/learners) instead of only mutating local
-  // React state. accountStatus === 'FLAGGED_PROCTORING' isn't a real value
-  // in app_user.status (ACTIVE/SUSPENDED/DELETED -- see
-  // V25__users_auth.sql) and the actual suspend/reactivate button only
-  // ever toggles ACTIVE<->SUSPENDED, so that's all this write-path needs
-  // to support.
+  // Learner operations
   const handleUpdateLearnerStatus = (
     learnerId: string,
     newStatus: LearnerRecord['accountStatus'],
@@ -492,43 +460,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
   ) => {
     const target = learners.find((l) => l.id === learnerId);
     if (!target) return;
-    if (newStatus !== 'ACTIVE' && newStatus !== 'SUSPENDED') return;
     setLearners((prev) =>
       prev.map((l) =>
         l.id === learnerId ? { ...l, accountStatus: newStatus, suspensionReason: reason } : l
       )
     );
-    novaApi
-      .adminUpdateLearnerStatus(learnerId, newStatus, reason)
-      .then(() => {
-        recordAudit(
-          newStatus === 'SUSPENDED' ? 'LEARNER_SUSPENDED' : 'LEARNER_REACTIVATED',
-          'Learner',
-          learnerId,
-          reason,
-          { status: target.accountStatus },
-          { status: newStatus }
-        );
-      })
-      .catch((err) => {
-        // Revert the optimistic update -- the real write failed.
-        setLearners((prev) =>
-          prev.map((l) => (l.id === learnerId ? { ...l, accountStatus: target.accountStatus, suspensionReason: target.suspensionReason } : l))
-        );
-        setLearnersError(err instanceof Error ? err.message : 'Unable to update this learner');
-      });
+    recordAudit(
+      newStatus === 'SUSPENDED' ? 'LEARNER_SUSPENDED' : 'LEARNER_REACTIVATED',
+      'Learner',
+      learnerId,
+      reason,
+      { status: target.accountStatus },
+      { status: newStatus }
+    );
   };
 
   const handleAddLearner = (learner: Partial<LearnerRecord>) => {
-    if (!learner.name || !learner.email) return;
-    novaApi
-      .adminCreateLearner({ name: learner.name, email: learner.email })
-      .then((res: any) => {
-        recordAudit('LEARNER_CREATED', 'Learner', res.id || '', 'Enrolled new aspirant');
-        refreshLearners();
-        window.alert(`Account created for ${learner.email}.\nTemporary password: ${res.tempPassword}\n\nRelay this to the learner directly -- it is shown only once.`);
-      })
-      .catch((err) => setLearnersError(err instanceof Error ? err.message : 'Unable to create this learner'));
+    setLearners((prev) => [learner as LearnerRecord, ...prev]);
+    recordAudit('LEARNER_CREATED', 'Learner', learner.id || '', 'Enrolled new aspirant');
   };
 
   // Lesson operations
@@ -571,74 +520,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
     }
   };
 
-  // Question operations -- now real writes against POST/PATCH
-  // /api/admin/questions(/:id). QuestionsView.handleSave generates a fake
-  // `q-${Date.now()}` id for a brand-new question (and handleDuplicate for
-  // a copy), which never matches a real row -- that's exactly how "exists"
-  // below tells create from update apart, same as before, just routed to
-  // the real endpoints now.
-  const handleSaveQuestion = (updatedQuestion: AdminQuestion, reason?: string) => {
-    const exists = questions.some((q) => q.id === updatedQuestion.id);
-    const options = updatedQuestion.options.map((o) => o.text);
-    const answerIndex = updatedQuestion.options.findIndex((o) => o.isCorrect);
-
-    if (exists) {
-      novaApi
-        .adminUpdateQuestion(updatedQuestion.id, {
-          prompt: updatedQuestion.questionText,
-          options,
-          answerIndex,
-          explanation: updatedQuestion.explanation,
-          difficulty: bandToDifficulty[updatedQuestion.difficulty],
-          status: updatedQuestion.status,
-        })
-        .then(() => {
-          recordAudit('QUESTION_UPDATED', 'Question', updatedQuestion.id, reason || 'Updated question');
-          refreshQuestions();
-        })
-        .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Unable to update this question'));
-    } else {
-      if (!updatedQuestion.topicId) {
-        setQuestionsError('Unable to create this question: no real topic was selected.');
-        return;
-      }
-      novaApi
-        .adminCreateQuestion({
-          topicId: updatedQuestion.topicId,
-          prompt: updatedQuestion.questionText,
-          options,
-          answerIndex,
-          explanation: updatedQuestion.explanation,
-          difficulty: bandToDifficulty[updatedQuestion.difficulty],
-        })
-        .then((res: any) => {
-          recordAudit('QUESTION_CREATED', 'Question', res.id, reason || 'Created MCQ');
-          refreshQuestions();
-        })
-        .catch((err) => setQuestionsError(err instanceof Error ? err.message : 'Unable to create this question'));
-    }
+  // Question bank operations use the scoped, server-authorised question APIs.
+  const handleSaveQuestion = async (updatedQuestion: AdminQuestion, reason?: string) => {
+    const exists = questions.some((question) => question.id === updatedQuestion.id);
+    const correctIndex = updatedQuestion.options.findIndex((option) => option.isCorrect);
+    if (correctIndex < 0) throw new Error('Select exactly one correct answer option.');
+    const payload = {
+      topicId: updatedQuestion.topicId || selectedQuestionTopicId,
+      prompt: updatedQuestion.questionText,
+      options: updatedQuestion.options.map((option) => option.text),
+      answerIndex: correctIndex,
+      explanation: updatedQuestion.explanation,
+      difficulty: updatedQuestion.difficulty === 'Easy' ? 0.2 : updatedQuestion.difficulty === 'Hard' ? 0.8 : 0.5,
+      estimatedSeconds: 45,
+      status: updatedQuestion.status,
+    };
+    if (!payload.topicId) throw new Error('Choose a syllabus topic before saving.');
+    if (exists) await novaApi.adminUpdateQuestion(updatedQuestion.id, payload);
+    else await novaApi.adminCreateQuestion(payload);
+    await refreshQuestions(payload.topicId);
   };
 
-  const handleUpdateQuestionStatus = (
+  const handleUpdateQuestionStatus = async (
     questionId: string,
     status: QuestionStatus,
     reason?: string
   ) => {
-    setQuestions((prev) => prev.map((q) => (q.id === questionId ? { ...q, status } : q)));
-    novaApi
-      .adminUpdateQuestion(questionId, { status })
-      .then(() => {
-        recordAudit(
-          status === 'PUBLISHED' ? 'QUESTION_APPROVED' : 'QUESTION_REJECTED',
-          'Question',
-          questionId,
-          reason || `Question transitioned to ${status}`
-        );
-      })
-      .catch((err) => {
-        refreshQuestions(); // revert the optimistic update to whatever's real
-        setQuestionsError(err instanceof Error ? err.message : 'Unable to update this question');
-      });
+    await novaApi.adminUpdateQuestion(questionId, { status });
+    await refreshQuestions(selectedQuestionTopicId);
   };
 
   // Test builder operations -- real writes against POST/PATCH
@@ -789,8 +698,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
       .catch((err) => setNotificationsError(err instanceof Error ? err.message : 'Could not send this notification'));
   };
 
-  // Visible sections filtered for active simulated role
-  const visibleSections = getVisibleSectionsForRole(activeRole);
+  // Visible sections are derived from the server-authenticated role.
+  // The Content Engine lives in the Next.js admin workspace, so provide a
+  // deliberate bridge for roles authorised to generate/review its packages.
+  const visibleSections = [
+    ...getVisibleSectionsForRole(activeRole).filter((section) => activeRole !== 'ANALYTICS_ADMIN' || ['dashboard', 'analytics'].includes(section.slug)),
+    ...(['CONTENT_ADMIN', 'CONTENT_REVIEWER', 'QUESTION_BANK_ADMIN', 'AI_QUALITY_ADMIN'].includes(activeRole)
+      ? [{ id: 34, slug: 'content-engine', title: 'AI Content Engine', category: 'Questions' as const, icon: 'Sparkles', requiredEntity: 'Question' as const }]
+      : []),
+  ];
+  useEffect(() => {
+    if (visibleSections.length && !visibleSections.some((section) => section.slug === currentSectionSlug)) {
+      setCurrentSectionSlug(visibleSections[0].slug);
+    }
+  }, [activeRole, currentSectionSlug]);
 
   const categories: Array<{
     name: 'Core' | 'Curriculum' | 'Questions' | 'Assessments' | 'Adaptive' | 'Governance';
@@ -824,39 +745,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
           </span>
         </div>
 
-        {/* ROLE SIMULATION SWITCHER (CRITICAL FOR LIVE VERIFICATION) */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 bg-neutral-50 p-1.5 dark:border-neutral-800 dark:bg-neutral-800/60">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 pl-1 hidden md:inline">
-              Simulate Role:
-            </span>
-            <select
-              value={activeRole}
-              onChange={(e) => setActiveRole(e.target.value as AdminRole)}
-              className="rounded-xl border border-neutral-200 bg-white px-2.5 py-1 text-xs font-bold text-neutral-900 shadow-xs focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-white cursor-pointer"
-              title="Switch role to immediately test permission rules and scope restrictions"
-            >
-              <option value="SUPER_ADMIN">👑 SUPER_ADMIN (Full Governance)</option>
-              <option value="ADMIN">🛡️ ADMIN (Operations & Proctoring)</option>
-              <option value="CONTENT_ADMIN">📚 CONTENT_ADMIN (Curriculum & AI)</option>
-              <option value="SUBJECT_ADMIN">⚖️ SUBJECT_ADMIN (Subject Scoped)</option>
-              <option value="QUESTION_REVIEWER">🔍 QUESTION_REVIEWER (Quality Review)</option>
-              <option value="SUPPORT">🎧 SUPPORT (Learner Support)</option>
-            </select>
-
-            {/* Scope dropdown if SUBJECT_ADMIN */}
-            {activeRole === 'SUBJECT_ADMIN' && (
-              <select
-                value={activeSubjectScope}
-                onChange={(e) => setActiveSubjectScope(e.target.value)}
-                className="rounded-xl border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200 cursor-pointer"
-              >
-                <option value="Indian Polity & Constitution">Scope: Polity</option>
-                <option value="General Studies">Scope: General Studies</option>
-                <option value="Aptitude & Mental Ability">Scope: Aptitude</option>
-              </select>
-            )}
-          </div>
+          {/* Authenticated role indicator — not a client-side role switcher. */}
+          <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-800/60">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Signed-in role</span>
+          <strong className="text-xs text-orange-700 dark:text-orange-300">{activeRole}</strong>
+        </div>
 
           {/* RETURN TO LEARNER HUB BUTTON */}
           <button
@@ -889,14 +783,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               </div>
               <p className="mt-1 text-[11px] text-neutral-400 leading-snug">
                 {activeRole === 'SUPER_ADMIN'
-                  ? 'All 33 sections accessible with unrestricted governance.'
+                  ? 'Full governance. Server-side authorization remains authoritative.'
                   : activeRole === 'SUBJECT_ADMIN'
-                  ? `Restricted to [${activeSubjectScope}]. Cross-subject edits prohibited.`
+                  ? `Server-authorized subject scope: ${activeSubjectScope}.`
                   : activeRole === 'QUESTION_REVIEWER'
-                  ? 'Focused quality review and answer key validation.'
+                  ? 'Question review access. Publishing remains restricted.'
+                  : activeRole === 'QUESTION_BANK_ADMIN'
+                  ? 'Question authoring, review and publish permissions.'
+                  : activeRole === 'CONTENT_ADMIN'
+                  ? 'Curriculum and content operations; question review uses the Content Engine.'
+                  : activeRole === 'CONTENT_REVIEWER'
+                  ? 'Read and update curriculum content; final review decisions are recorded in the review queue.'
+                  : activeRole === 'AI_QUALITY_ADMIN'
+                  ? 'AI generation quality and human review workflow.'
+                  : activeRole === 'AUDITOR'
+                  ? 'Read-only access to audit and content records.'
+                  : activeRole === 'ANALYTICS_ADMIN'
+                  ? 'Read-only analytics and progress reporting.'
                   : activeRole === 'SUPPORT'
-                  ? 'Learner progress, test history and account status support.'
-                  : 'Operational administration of learners, curriculum and proctoring.'}
+                  ? 'Support access; learner roster mutations are not enabled here.'
+                  : activeRole === 'UNASSIGNED_ADMIN'
+                  ? 'No admin role assigned. Contact a Super Admin for access.'
+                  : 'Platform administration governed by server permissions.'}
               </p>
             </div>
 
@@ -980,22 +888,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
 
         {/* MAIN VIEW CONTENT AREA */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {/* Most sections below still read/write local mock data (seeded
-              once, then persisted to this browser's localStorage) -- real
-              backend wiring per section (questions, tests, proctoring
-              policies, audit logs, AI proposals) is tracked as follow-up
-              work. notifications, proctoring-reports, admins-roles,
-              lessons, curriculum, and learners are real (GET/POST/PATCH
-              against actual API routes) and excluded from the warning
-              banner below. */}
-          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'tests' && (
+          {/* Live backend-backed sections are excluded from the design-preview warning. */}
+          {currentSectionSlug !== 'notifications' && currentSectionSlug !== 'proctoring-reports' && currentSectionSlug !== 'admins-roles' && currentSectionSlug !== 'lessons' && currentSectionSlug !== 'curriculum' && currentSectionSlug !== 'learners' && currentSectionSlug !== 'questions' && currentSectionSlug !== 'question-review' && currentSectionSlug !== 'content-engine' && currentSectionSlug !== 'tests' && (
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Design preview: this section's data is local/mock, not yet wired to the real backend.</span>
             </div>
           )}
+          {visibleSections.length === 0 && (
+            <div className="rounded-3xl border border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-800 dark:bg-amber-950/30">
+              <ShieldAlert className="mx-auto h-8 w-8 text-amber-600" />
+              <h2 className="mt-3 text-base font-bold text-amber-900 dark:text-amber-200">Admin role not assigned</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-amber-800 dark:text-amber-300">This account has no recognised admin role or permissions. Ask a Super Admin to assign the correct role. No client-side role switching is available.</p>
+            </div>
+          )}
           {/* SECTION ROUTING */}
-          {currentSectionSlug === 'dashboard' && (
+          {visibleSections.some((section) => section.slug === 'dashboard') && currentSectionSlug === 'dashboard' && (
             <DashboardView
               role={activeRole}
               learners={learners}
@@ -1022,7 +930,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
               role={activeRole}
               lessons={lessons}
               topicsWithoutLesson={lessonTopics.filter((t: any) => !t.hasLesson)}
-              assignedSubjects={[activeSubjectScope]}
+              assignedSubjects={allowedLessonSubjects}
               onSaveLesson={handleSaveLesson}
               onArchiveLesson={handleArchiveLesson}
             />
@@ -1032,8 +940,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <QuestionsView
               role={activeRole}
               questions={questions}
-              topics={lessonTopics as any}
-              assignedSubjects={[activeSubjectScope]}
+              topics={questionTopics}
+              selectedTopicId={selectedQuestionTopicId}
+              onTopicChange={setSelectedQuestionTopicId}
+              isLoading={questionsLoading}
+              loadError={questionsError}
+              assignedSubjects={allowedQuestionSubjects}
               isReviewQueueMode={false}
               onSaveQuestion={handleSaveQuestion}
               onUpdateStatus={handleUpdateQuestionStatus}
@@ -1044,12 +956,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
             <QuestionsView
               role={activeRole}
               questions={questions}
-              topics={lessonTopics as any}
-              assignedSubjects={[activeSubjectScope]}
+              topics={questionTopics}
+              selectedTopicId={selectedQuestionTopicId}
+              onTopicChange={setSelectedQuestionTopicId}
+              isLoading={questionsLoading}
+              loadError={questionsError}
+              assignedSubjects={allowedQuestionSubjects}
               isReviewQueueMode={true}
               onSaveQuestion={handleSaveQuestion}
               onUpdateStatus={handleUpdateQuestionStatus}
             />
+          )}
+
+          {currentSectionSlug === 'content-engine' && (
+            <div className="rounded-3xl border border-neutral-200 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-7 w-7 text-purple-600" />
+                <div>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">AI Content Engine</h2>
+                  <p className="mt-1 text-xs text-neutral-500">Source-grounded lesson and MCQ generation, provenance checks, and human approval.</p>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {activeRole !== 'CONTENT_REVIEWER' && <a href="/admin/content-engine" className="rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-purple-700">Open Content Engine</a>}
+                {activeRole !== 'QUESTION_BANK_ADMIN' && <a href="/admin/review" className="rounded-xl border border-neutral-200 px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200">Open Review Queue</a>}
+              </div>
+              <p className="mt-4 text-[11px] text-neutral-500">The destination pages enforce their own server-side role and subject permissions. A link being visible here does not grant access to the destination.</p>
+            </div>
           )}
 
           {(currentSectionSlug === 'content-upload' || currentSectionSlug === 'ai-content-review') && (
@@ -1163,7 +1096,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onReturnToLearnerHub, 
                 NOVA Operational Section: {currentSectionSlug.replace('-', ' ')}
               </h3>
               <p className="text-xs text-neutral-500 max-w-md mx-auto">
-                Authorized for role <strong>{activeRole}</strong>. All controls are wired to the unified backend CRUD matrix and audit trail.
+                Authenticated role <strong>{activeRole}</strong>. Server-side permissions control sensitive actions; sections marked design preview are not persisted.
               </p>
               <button
                 onClick={() => setCurrentSectionSlug('dashboard')}

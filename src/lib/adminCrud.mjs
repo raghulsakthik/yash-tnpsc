@@ -155,7 +155,7 @@ export async function upsertLesson(topicId, {
       difficulty || 'Intermediate',
       Number.isFinite(Number(estimatedDurationMinutes)) ? Number(estimatedDurationMinutes) : 30,
       markdown,
-      status || 'PUBLISHED',
+      status || 'DRAFT',
     ]
   );
 }
@@ -167,7 +167,7 @@ export async function deleteLesson(topicId) {
 
 export async function listLessonsByTopic() {
   const { rows } = await query(`
-    SELECT t.id AS topic_id, t.name AS topic_name, c.name AS chapter_name, s.name AS subject_name,
+    SELECT t.id AS topic_id, t.name AS topic_name, c.name AS chapter_name, s.id AS subject_id, s.name AS subject_name,
            l.title, (l.topic_id IS NOT NULL) AS has_lesson,
            l.description, l.difficulty, l.estimated_duration_minutes, l.status, l.version, l.updated_at
       FROM topic t
@@ -180,6 +180,7 @@ export async function listLessonsByTopic() {
     topicId: r.topic_id,
     topicName: r.topic_name,
     chapterName: r.chapter_name,
+    subjectId: r.subject_id,
     subjectName: r.subject_name,
     hasLesson: r.has_lesson,
     title: r.title,
@@ -316,13 +317,21 @@ export async function listAllQuestions({ search, status, limit = 50, offset = 0 
 
 export async function listQuestionsByTopic(topicId) {
   const { rows } = await query(
-    `SELECT id, prompt, options, answer_index, explanation, trap, difficulty::float8 AS difficulty,
-            estimated_seconds, status, source, (image_data IS NOT NULL) AS has_image, updated_at
-       FROM question WHERE topic_id = $1 ORDER BY updated_at DESC`,
+    `SELECT q.id,q.topic_id,q.prompt,q.options,q.answer_index,q.explanation,q.trap,
+            q.difficulty::float8 AS difficulty,q.estimated_seconds,q.status,q.source,
+            q.source_year,q.exam_code,q.exam_group,q.paper,q.question_number,q.source_page,
+            q.generation_source,(q.image_data IS NOT NULL) AS has_image,q.created_at,q.updated_at,
+            t.name AS topic_name,c.name AS chapter_name,s.id AS subject_id,s.name AS subject_name
+       FROM question q
+       JOIN topic t ON t.id=q.topic_id
+       JOIN chapter c ON c.id=t.chapter_id
+       JOIN subject s ON s.id=c.subject_id
+      WHERE q.topic_id=$1 ORDER BY q.updated_at DESC`,
     [topicId]
   );
   return rows.map((r) => ({
     id: r.id,
+    topicId: r.topic_id,
     prompt: r.prompt,
     options: r.options,
     answerIndex: r.answer_index,
@@ -332,15 +341,33 @@ export async function listQuestionsByTopic(topicId) {
     estimatedSeconds: r.estimated_seconds,
     status: r.status,
     source: r.source,
+    sourceYear: r.source_year,
+    examCode: r.exam_code,
+    examGroup: r.exam_group,
+    paper: r.paper,
+    questionNumber: r.question_number,
+    sourcePage: r.source_page,
+    generationSource: r.generation_source,
+    subjectId: r.subject_id,
+    subjectName: r.subject_name,
+    chapterName: r.chapter_name,
+    topicName: r.topic_name,
     hasImage: r.has_image,
+    createdAt: r.created_at,
     updatedAt: r.updated_at,
   }));
 }
 
 export async function getQuestion(id) {
   const { rows } = await query(
-    `SELECT id, topic_id, prompt, options, answer_index, explanation, trap, difficulty::float8 AS difficulty,
-            estimated_seconds, status FROM question WHERE id = $1`,
+    `SELECT q.id,q.topic_id,q.prompt,q.options,q.answer_index,q.explanation,q.trap,
+            q.difficulty::float8 AS difficulty,q.estimated_seconds,q.status,q.source,
+            q.source_year,q.exam_code,q.exam_group,q.paper,q.question_number,q.source_page,
+            q.generation_source,q.created_at,q.updated_at,
+            t.name AS topic_name,c.name AS chapter_name,s.id AS subject_id,s.name AS subject_name
+       FROM question q JOIN topic t ON t.id=q.topic_id
+       JOIN chapter c ON c.id=t.chapter_id JOIN subject s ON s.id=c.subject_id
+      WHERE q.id=$1`,
     [id]
   );
   if (rows.length === 0) return null;
@@ -356,15 +383,36 @@ export async function getQuestion(id) {
     difficulty: r.difficulty,
     estimatedSeconds: r.estimated_seconds,
     status: r.status,
+    source: r.source,
+    sourceYear: r.source_year,
+    examCode: r.exam_code,
+    examGroup: r.exam_group,
+    paper: r.paper,
+    questionNumber: r.question_number,
+    sourcePage: r.source_page,
+    generationSource: r.generation_source,
+    subjectId: r.subject_id,
+    subjectName: r.subject_name,
+    chapterName: r.chapter_name,
+    topicName: r.topic_name,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
   };
 }
 
-export async function createQuestion({ topicId, prompt, options, answerIndex, explanation, trap, difficulty, estimatedSeconds, language }) {
+export async function createQuestion({ topicId, prompt, options, answerIndex, explanation, trap, difficulty, estimatedSeconds, language, status = 'DRAFT' }) {
   if (!topicId || !prompt || !Array.isArray(options) || options.length < 2 || !explanation) {
     throw new ContentUploadError('MISSING_FIELDS', 'topicId, prompt, at least 2 options and explanation are required');
   }
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= options.length) {
     throw new ContentUploadError('INVALID_ANSWER', 'answerIndex must be a valid option index');
+  }
+  if (!['DRAFT', 'IN_REVIEW', 'PUBLISHED'].includes(status)) {
+    throw new ContentUploadError('INVALID_STATUS', 'New questions can only be created as DRAFT, IN_REVIEW, or PUBLISHED');
+  }
+  const cleanOptions = options.map((option) => String(option ?? '').trim());
+  if (cleanOptions.some((option) => !option) || new Set(cleanOptions.map(normalize)).size !== cleanOptions.length) {
+    throw new ContentUploadError('INVALID_OPTIONS', 'Options must be non-empty and unique');
   }
   const { rows: topicRows } = await query('SELECT id FROM topic WHERE id = $1', [topicId]);
   if (topicRows.length === 0) throw new ContentUploadError('TOPIC_NOT_FOUND', `No topic ${topicId}`);
@@ -372,9 +420,9 @@ export async function createQuestion({ topicId, prompt, options, answerIndex, ex
   const id = `manual-${crypto.randomUUID().slice(0, 12)}`;
   const hash = crypto.createHash('sha256').update(normalize(prompt)).digest('hex');
   await query(
-    `INSERT INTO question (id, topic_id, language, prompt, options, answer_index, explanation, trap, difficulty, estimated_seconds, source, status, normalized_hash)
-     VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,'admin-manual','PUBLISHED',$11)`,
-    [id, topicId, language ?? 'en', prompt, JSON.stringify(options), answerIndex, explanation, trap ?? null, difficulty ?? 0.3, estimatedSeconds ?? 45, hash]
+    `INSERT INTO question (id,topic_id,language,prompt,options,answer_index,explanation,trap,difficulty,estimated_seconds,source,status,normalized_hash,generation_source)
+     VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,'admin-manual',$11,$12,'manual')`,
+    [id,topicId,language ?? 'en',prompt,JSON.stringify(cleanOptions),answerIndex,explanation,trap ?? null,difficulty ?? 0.3,estimatedSeconds ?? 45,status,hash]
   );
   return id;
 }
@@ -400,7 +448,14 @@ export async function updateQuestion(id, { prompt, options, answerIndex, explana
 
   const nextOptions = options ?? existing.options;
   const nextAnswerIndex = answerIndex ?? existing.answerIndex;
-  if (!Number.isInteger(nextAnswerIndex) || nextAnswerIndex < 0 || nextAnswerIndex >= nextOptions.length) {
+  if (status !== undefined && !['DRAFT', 'IN_REVIEW', 'REVIEWED', 'PUBLISHED', 'REJECTED', 'ARCHIVED'].includes(status)) {
+    throw new ContentUploadError('INVALID_STATUS', 'Unsupported question status');
+  }
+  const cleanOptions = nextOptions.map((option) => String(option ?? '').trim());
+  if (cleanOptions.some((option) => !option) || new Set(cleanOptions.map(normalize)).size !== cleanOptions.length) {
+    throw new ContentUploadError('INVALID_OPTIONS', 'Options must be non-empty and unique');
+  }
+  if (!Number.isInteger(nextAnswerIndex) || nextAnswerIndex < 0 || nextAnswerIndex >= cleanOptions.length) {
     throw new ContentUploadError('INVALID_ANSWER', 'answerIndex must be a valid option index');
   }
   const nextPrompt = prompt ?? existing.prompt;
@@ -422,7 +477,7 @@ export async function updateQuestion(id, { prompt, options, answerIndex, explana
     [
       id,
       nextPrompt,
-      JSON.stringify(nextOptions),
+      JSON.stringify(cleanOptions),
       nextAnswerIndex,
       explanation ?? existing.explanation,
       trap !== undefined ? trap : existing.trap,

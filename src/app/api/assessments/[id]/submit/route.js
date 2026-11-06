@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID, recordEvent } from '../../../../../lib/db.mjs';
+import { recordEvent } from '../../../../../lib/db.mjs';
+import { requireLearner } from '../../../../../lib/auth.mjs';
 import { submitDefaultAssessment } from '../../../../../services/defaultAssessmentService.mjs';
 import { ValidationError, NotFoundError } from '../../../../../services/errors.mjs';
 
@@ -16,10 +17,12 @@ export const dynamic = 'force-dynamic';
  * difficulty breakdown, and prerequisite gaps) on the assessment row.
  */
 export async function POST(request, { params }) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   const { id } = await params;
   try {
-    const result = await submitDefaultAssessment(id, LEARNER_ID);
-    await recordEvent(LEARNER_ID, 'DEFAULT_ASSESSMENT_COMPLETED', null, {
+    const result = await submitDefaultAssessment(id, learner.id);
+    await recordEvent(learner.id, 'DEFAULT_ASSESSMENT_COMPLETED', null, {
       assessmentId: id,
       score: result.score,
       questionCount: result.questionCount,

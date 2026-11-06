@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { LEARNER_ID, recordEvent } from '../../../lib/db.mjs';
+import { recordEvent } from '../../../lib/db.mjs';
+import { requireLearner } from '../../../lib/auth.mjs';
 import { startGame } from '../../../services/gameService.mjs';
 import { ValidationError, NotFoundError } from '../../../services/errors.mjs';
 
@@ -15,6 +16,8 @@ export const dynamic = 'force-dynamic';
  * and difficulty band.
  */
 export async function POST(request) {
+  const learner = await requireLearner();
+  if (!learner) return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'A learner session is required.' }, { status: 401 });
   let body;
   try {
     body = await request.json();
@@ -28,8 +31,8 @@ export async function POST(request) {
   }
 
   try {
-    const session = await startGame(LEARNER_ID, gameDefinitionId);
-    await recordEvent(LEARNER_ID, 'GAME_STARTED', null, { sessionId: session.sessionId, gameDefinitionId });
+    const session = await startGame(learner.id, gameDefinitionId);
+    await recordEvent(learner.id, 'GAME_STARTED', null, { sessionId: session.sessionId, gameDefinitionId });
     return NextResponse.json(session);
   } catch (err) {
     if (err instanceof NotFoundError) {

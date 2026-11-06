@@ -85,6 +85,18 @@ function BatchCard({ batch, onDecide }) {
                 ))}
               </ul>
               <p className="muted" style={{ marginTop: 8, fontSize: '0.82rem' }}>{q.explanation}</p>
+              {(q.sourceEvidence ?? []).length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <strong style={{ fontSize: '0.82rem' }}>Source evidence for this question</strong>
+                  {(q.sourceEvidence ?? []).map((source) => (
+                    <div key={source.id} style={{ marginTop: 6, padding: 10, borderRadius: 8, background: 'var(--paper)' }}>
+                      <p style={{ fontSize: '0.8rem', fontWeight: 600 }}>{source.title} · {source.source}</p>
+                      <p className="muted" style={{ marginTop: 4, fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{String(source.body ?? '').slice(0, 1200)}</p>
+                      <p className="muted" style={{ marginTop: 4, fontSize: '0.7rem' }}>Resource ID: {source.id}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
               {q.common_mistake && (
                 <p className="muted" style={{ marginTop: 6, fontSize: '0.78rem', color: 'var(--warm-accent)' }}>
                   Common mistake: {q.common_mistake}

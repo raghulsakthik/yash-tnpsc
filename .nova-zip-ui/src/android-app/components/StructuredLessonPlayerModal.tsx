@@ -13,6 +13,7 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { StructuredCourse, StructuredLesson } from '../../types';
+import { StructuredLessonPlayerModal as SharedStructuredLessonPlayerModal } from '../../components/StructuredLessonPlayerModal';
 import { BrandLogo } from './BrandLogo';
 
 interface StructuredLessonPlayerModalProps {
@@ -26,6 +27,9 @@ interface StructuredLessonPlayerModalProps {
     completed: boolean
   ) => void;
   onAddXp?: (amount: number) => void;
+  initialTab?: 'learn' | 'understand' | 'practice' | 'assessment';
+  practiceMode?: 'PRACTICE' | 'REVISION';
+  onEvidenceRecorded?: () => Promise<void> | void;
 }
 
 export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalProps> = ({
@@ -35,6 +39,9 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
   onClose,
   onUpdateStep,
   onAddXp,
+  initialTab,
+  practiceMode,
+  onEvidenceRecorded,
 }) => {
   const [activeTab, setActiveTab] = useState<'learn' | 'understand' | 'practice' | 'assessment'>(
     !lesson.steps.learnCompleted
@@ -53,6 +60,21 @@ export const StructuredLessonPlayerModal: React.FC<StructuredLessonPlayerModalPr
   const [showRewardToast, setShowRewardToast] = useState(false);
 
   if (!isOpen) return null;
+  if (initialTab) {
+    return (
+      <SharedStructuredLessonPlayerModal
+        course={course}
+        lesson={lesson}
+        isOpen={isOpen}
+        onClose={onClose}
+        onUpdateStep={onUpdateStep}
+        onAddXp={onAddXp}
+        initialTab={initialTab}
+        practiceMode={practiceMode}
+        onEvidenceRecorded={onEvidenceRecorded}
+      />
+    );
+  }
 
   const currentPractice = lesson.practiceQuestions?.[0] || {
     question: `Key conceptual question for ${lesson.title}: Which of the following is an essential requirement under the TNPSC syllabus?`,

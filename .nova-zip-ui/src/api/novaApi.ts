@@ -37,12 +37,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const novaApi = {
-  me: () => request<{ email: string; role: string }>('/api/auth/me'),
+  me: () => request<{ email: string; role: string; adminRole?: string | null }>('/api/auth/me'),
   profile: () => request<Json>('/api/profile'),
   updateProfile: (payload: Json) => request<Json>('/api/profile', { method: 'PUT', body: JSON.stringify(payload) }),
   dashboard: () => request<Json>('/api/dashboard'),
   courses: () => request<Json>('/api/courses'),
   plan: () => request<Json>('/api/plan/today'),
+  adaptivePlan: () => request<Json>('/api/learning/adaptive-plan'),
   analytics: () => request<Json>('/api/learning/analytics'),
   journey: () => request<Json>('/api/journey'),
   achievements: () => request<Json>('/api/achievements'),
@@ -55,6 +56,11 @@ export const novaApi = {
   adminBroadcasts: () => request<Json>('/api/admin/notifications'),
   adminUsers: () => request<Json>('/api/admin/users'),
   adminLessons: () => request<Json>('/api/admin/lessons'),
+  adminTopics: () => request<Json>('/api/admin/topics'),
+  adminQuestions: (topicId: string) => request<Json>(`/api/admin/questions?topic=${encodeURIComponent(topicId)}`),
+  adminCreateQuestion: (payload: Json) => request<Json>('/api/admin/questions', { method: 'POST', body: JSON.stringify(payload) }),
+  adminUpdateQuestion: (id: string, payload: Json) => request<Json>(`/api/admin/questions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  adminDeleteQuestion: (id: string) => request<Json>(`/api/admin/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   adminSaveLesson: (topicId: string, payload: Json) =>
     request<Json>(`/api/admin/lessons/${encodeURIComponent(topicId)}`, { method: 'PUT', body: JSON.stringify(payload) }),
   adminSetLessonStatus: (topicId: string, status: string) =>
@@ -82,11 +88,6 @@ export const novaApi = {
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     return request<Json>(`/api/admin/questions${suffix}`);
   },
-  adminCreateQuestion: (payload: Json) => request<Json>('/api/admin/questions', { method: 'POST', body: JSON.stringify(payload) }),
-  adminUpdateQuestion: (questionId: string, payload: Json) =>
-    request<Json>(`/api/admin/questions/${encodeURIComponent(questionId)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
-  adminDeleteQuestion: (questionId: string) =>
-    request<Json>(`/api/admin/questions/${encodeURIComponent(questionId)}`, { method: 'DELETE' }),
   adminTestTemplates: () => request<Json>('/api/admin/tests/templates'),
   adminCreateTestTemplate: (payload: Json) => request<Json>('/api/admin/tests/templates', { method: 'POST', body: JSON.stringify(payload) }),
   adminUpdateTestTemplate: (id: string, payload: Json) =>
@@ -117,7 +118,7 @@ export const novaApi = {
   pyqForTopic: (topic: string) => request<Json>(`/api/pyqs/next?topic=${encodeURIComponent(topic)}`),
   lesson: (topic: string) => request<Json>(`/api/lesson/${encodeURIComponent(topic)}`),
   mistake: () => request<Json>('/api/mistakes/next'),
-  revisionNext: () => request<Json>('/api/revision/next'),
+  revisionNext: (topic?: string) => request<Json>(`/api/revision/next${topic ? `?topic=${encodeURIComponent(topic)}` : ''}`),
   logout: () => request<Json>('/api/auth/logout', { method: 'POST' }),
   login: (email: string, password: string) => request<Json>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string, phone?: string) => request<Json>('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, phone }) }),

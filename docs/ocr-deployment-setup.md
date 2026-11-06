@@ -25,3 +25,7 @@ npm run check:gemini
 The script sends a minimal JSON-generation request, validates the response shape, and never prints the key. Exit code 2 means the key is missing; exit code 1 means the provider call or response validation failed.
 
 The current connected environment has no `GEMINI_API_KEY` configured, so a real provider call has not been attempted.
+
+### User-managed trained-data directory (no system package installation)
+
+If the runtime user cannot install operating-system packages, provision `eng.traineddata` and `tam.traineddata` into a writable managed directory and set `TNPSC_TESSDATA_DIR` to that directory. The directory must contain both files when the service needs English and Tamil OCR. The extractor passes this directory to both Tesseract language discovery and OCR execution. Keep the binary files outside Git and do not hardcode a machine-specific path in application source.

@@ -54,11 +54,14 @@ export async function stopSession(testId, learnerId) {
 export async function listSessions() {
   const { rows } = await query(`
     SELECT ps.test_id, ps.status, ps.has_camera, ps.has_screen, ps.started_at, ps.ended_at,
-           l.name AS learner_name, t.status AS test_status, t.score::float8 AS score, t.question_count,
+           l.id AS learner_id, l.name AS learner_name, u.email AS learner_email,
+           t.status AS test_status, t.score::float8 AS score, t.question_count, tt.name AS template_name,
            (SELECT COUNT(*)::int FROM proctoring_event pe WHERE pe.session_id = ps.id) AS event_count
       FROM proctoring_session ps
       JOIN learner l ON l.id = ps.learner_id
+      LEFT JOIN app_user u ON u.id = l.id
       JOIN test t ON t.id = ps.test_id
+      LEFT JOIN test_template tt ON tt.id = t.template_id
      ORDER BY ps.started_at DESC
   `);
   return rows.map((r) => ({
@@ -68,10 +71,13 @@ export async function listSessions() {
     hasScreen: r.has_screen,
     startedAt: r.started_at,
     endedAt: r.ended_at,
+    learnerId: r.learner_id,
     learnerName: r.learner_name,
+    learnerEmail: r.learner_email,
     testStatus: r.test_status,
     score: r.score,
     questionCount: r.question_count,
+    templateName: r.template_name,
     eventCount: r.event_count,
   }));
 }

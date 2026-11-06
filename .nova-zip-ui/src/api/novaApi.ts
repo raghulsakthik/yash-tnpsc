@@ -93,6 +93,8 @@ export const novaApi = {
     request<Json>(`/api/admin/tests/templates/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   adminDeleteTestTemplate: (id: string) =>
     request<Json>(`/api/admin/tests/templates/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  adminAuditLog: (limit?: number) => request<Json>(`/api/admin/audit-log${limit != null ? `?limit=${limit}` : ''}`),
+  adminRecordAudit: (payload: Json) => request<Json>('/api/admin/audit-log', { method: 'POST', body: JSON.stringify(payload) }),
   registerFcmToken: (token: string, deviceInfo?: string) =>
     request<Json>('/api/push/fcm/register', { method: 'POST', body: JSON.stringify({ token, deviceInfo }) }),
   adminBroadcastNotification: (title: string, message: string) =>

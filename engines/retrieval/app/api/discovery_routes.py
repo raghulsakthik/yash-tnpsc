@@ -68,7 +68,9 @@ async def classify_resource(resource_id: int):
             'pages_examined': extracted.pages_examined,
             'text_characters': len(extracted.text),
             'warnings': extracted.warnings,
-            'preview': extracted.text[:1200],
+            # Bounded sample for authenticated admin review, not full ingestion.
+            'preview': extracted.text[:50000],
+            'preview_truncated': len(extracted.text) > 50000,
         },
         'published': False,
         'review_required': classification['review_required'],

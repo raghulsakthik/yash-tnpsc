@@ -36,4 +36,9 @@ Connect extracted question candidates to the platform's existing DRAFT and admin
 - Node tests: **419 passed**.
 - Next.js production build: **PASS**, including the retrieval admin page and commit API.
 - Added tests for Tamil/English language preservation, explicit default language, and rejection of unsupported language values.
-- Live PostgreSQL staging test remains pending because the app database on localhost:5432 is stopped in this environment. The code path is build/test validated but no new question rows or review batches have been inserted in this session.
+- Database-backed E2E: **PASS** using a disposable PostgreSQL 18 cluster on port 55433. Applied 62 migrations and seeded the test database (5 subjects, 22 chapters, 308 topics, 597 questions).
+- Verified the unverified-answer commit is rejected, then staged a real Tamil MCQ and asserted its database language is ta, its status is DRAFT, and its source page is preserved.
+- Verified the learner lesson response does not contain the DRAFT study resource before review; after the two separate review approvals, the question/resource are PUBLISHED and the learner endpoint returns the approved resource.
+- Re-ran the upload queue integration: without a Gemini key, processing fails visibly, retains the original source object and creates no review content.
+- The E2E fixture deletes its test accounts, questions, resources, review batches, jobs and local source object in its finally block. The disposable database is stopped and removed after validation.
+- The normal application PostgreSQL service on localhost:5432 remains stopped; no production database or production content was changed.

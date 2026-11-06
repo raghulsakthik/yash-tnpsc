@@ -97,6 +97,8 @@ PYQ detection and the content-engine import boundary continue to block ordinary 
 - Answerless MCQs are retained as `REVIEW_REQUIRED` candidates with `answerIndex: null`; the classifier is explicitly instructed not to solve or infer answers. Invalid non-null answer indexes remain blocked. The commit endpoint now enforces the existing question quality gate before database insertion, so answerless/invalid candidates fail with a clear validation error instead of a PostgreSQL constraint error. Empty duplicate-only topic batches are skipped.
 - Retrieval MCQ extraction now parses multiple inline option markers on one text line.
 - Added large-document, no-partial-truncation, answerless-MCQ, and full 353-topic mapping regression tests.
+- Fixed the production `/admin/upload` flow to explicitly start the persisted processing batch after queue creation; previously it polled without triggering execution.
+- Added an admin answer-selection control and explicit source-verification checkbox for each included MCQ. The commit API independently enforces both a valid answer index and `humanVerified: true`, so a forged or stale client cannot bypass the gate.
 
 ## Verification
 
@@ -110,7 +112,7 @@ The classifier's multi-chunk integration test uses a mocked Gemini HTTP response
 
 ## Remaining blockers — do not mark complete
 
-1. **Admin upload UI wiring:** the legacy `.nova-zip-ui/src/components/admin/ContentUploadAIView.tsx` still simulates uploads with a hard-coded proposal and local React state. It does not call the real classify/process/commit APIs. The dedicated Next.js `/admin/content-engine` page is wired for generation and publication-package import, but is not a replacement for document classification upload.
+1. **Prototype parity:** the production Next.js `/admin/upload` page already uses the real queue/process/status/commit APIs. The separate legacy `.nova-zip-ui/src/components/admin/ContentUploadAIView.tsx` remains a simulation and must not be mistaken for the production upload surface. This audit pass fixed a production bug where the UI queued a batch and polled it but never called the batch-start endpoint, leaving jobs permanently QUEUED. It also adds mandatory per-question answer selection and explicit human verification before commit.
 2. **Live AI generation:** local AI lesson/MCQ generation cannot be verified until a Gemini key is configured in the runtime environment.
 3. **Question-bank breadth:** 29/353 topics have questions; all 597 are English and none cover the language tracks or Group IIA Mains.
 4. **Answer-key extraction:** the 10-resource dry-run found no explicit answer keys. Human verification is required before any of those candidates can be published.
@@ -119,7 +121,7 @@ The classifier's multi-chunk integration test uses a mocked Gemini HTTP response
 
 ## Next execution order
 
-1. Replace the legacy simulated upload handler with a real authenticated document-upload → process → classify → review/edit → commit workflow, preserving the existing visual design.
+1. Bring the legacy prototype upload component into parity only if that prototype remains an intended product surface; the production Next.js `/admin/upload` workflow is now wired to authenticated APIs.
 2. Add an answerless-question review state that requires the reviewer to select and verify the answer before commit.
 3. Add OCR confidence/language-quality checks and quarantine corrupted Tamil extraction rather than creating MCQ candidates.
 4. Run a live, small-sample Gemini classification and lesson-generation test after configuring the provider key; then test representative large documents.

@@ -116,6 +116,15 @@ export default function PdfClassifyPanel() {
       const queued = await queueRes.json();
       if (!queueRes.ok) throw new Error(queued.message ?? 'Could not queue that document');
 
+      // Queue creation is deliberately separate from execution. Explicitly start
+      // the persisted batch; otherwise the UI only polls a permanently QUEUED job.
+      const startRes = await fetch(`/api/admin/content/process/${queued.batchId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const started = await startRes.json();
+      if (!startRes.ok) throw new Error(started.message ?? 'The document was queued but processing could not be started');
+
       let data = null;
       for (let attempt = 0; attempt < 180; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -133,7 +142,7 @@ export default function PdfClassifyPanel() {
       setProposal({
         processingBatchId: queued.batchId,
         sourceFileName: file.name,
-        mcqs: (data.mcqs ?? []).map((m) => ({ ...m, included: m.quality?.status !== 'BLOCKED' })),
+        mcqs: (data.mcqs ?? []).map((m) => ({ ...m, included: m.quality?.status !== 'BLOCKED', answerVerified: false })),
         resources: (data.resources ?? []).map((r) => ({ ...r, included: r.quality?.status !== 'BLOCKED' })),
         truncated: data.truncated,
         qualitySummary: data.qualitySummary ?? null,
@@ -164,6 +173,8 @@ export default function PdfClassifyPanel() {
 
       const missing = [...included.mcqs, ...included.resources].find((i) => !i.topicId && !(i.isNewTopic && i.newTopicName && i.newChapterId));
       if (missing) throw new Error('Every included item needs a topic -- pick an existing one or fill in the new-topic name and chapter.');
+      const unverified = included.mcqs.find((item) => !Number.isInteger(item.answerIndex) || item.answerIndex < 0 || item.answerIndex >= item.options.length || item.answerVerified !== true);
+      if (unverified) throw new Error(`Verify the correct answer for every selected MCQ before committing. First pending: ${unverified.question.slice(0, 100)}`);
 
       // Collapse repeated "new topic" choices (same name+chapter) into one topic each.
       const newTopicKey = (i) => `${i.newChapterId}::${slugify(i.newTopicName)}`;
@@ -197,6 +208,7 @@ export default function PdfClassifyPanel() {
           question: m.question,
           options: m.options,
           answerIndex: m.answerIndex,
+          humanVerified: m.answerVerified === true,
           explanation: m.explanation,
           trap: m.trap,
           questionNumber: m.questionNumber ?? null,
@@ -352,11 +364,30 @@ export default function PdfClassifyPanel() {
                       </ul>
                       <p className="muted" style={{ marginTop: 6, fontSize: '0.8rem' }}>
                         {m.quality?.answerVerification === 'SOURCE_KEY_MATCH'
-                          ? 'Answer key matched against the source document.'
+                          ? 'The extracted answer matches the source key. A human must still verify it.'
                           : m.quality?.answerVerification === 'SOURCE_KEY_CONFLICT'
-                            ? 'Answer conflicts with the source key. Do not include until corrected.'
-                            : 'Suggested answer is not verified by a source answer key. Human verification is required.'}
+                            ? 'The extracted answer conflicts with the source key. Correct it before inclusion.'
+                            : 'No reliable source answer key was matched. Select the correct option only after checking the source.'}
                       </p>
+                      <div style={{ display: 'grid', gap: 8, marginTop: 10, padding: 12, borderRadius: 10, border: '1px solid var(--border)' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600 }}>
+                          Verified correct answer
+                          <select
+                            value={Number.isInteger(m.answerIndex) ? String(m.answerIndex) : ''}
+                            onChange={(e) => updateMcq(i, { ...m, answerIndex: e.target.value === '' ? null : Number(e.target.value), answerVerified: false })}
+                            style={{ display: 'block', width: '100%', marginTop: 6, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--ground)' }}
+                          >
+                            <option value="">Select after checking source…</option>
+                            {m.options.map((option, optionIndex) => (
+                              <option key={optionIndex} value={optionIndex}>{String.fromCharCode(65 + optionIndex)}. {option}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.8rem' }}>
+                          <input type="checkbox" checked={m.answerVerified === true} disabled={!Number.isInteger(m.answerIndex)} onChange={(e) => updateMcq(i, { ...m, answerVerified: e.target.checked })} style={{ marginTop: 2 }} />
+                          I checked this answer against the uploaded source and confirm it is correct.
+                        </label>
+                      </div>
                       {m.quality?.issues?.length > 0 && (
                         <p style={{ marginTop: 4, fontSize: '0.78rem', color: 'var(--warm)' }}>
                           Quality review: {m.quality.issues.join(', ')}

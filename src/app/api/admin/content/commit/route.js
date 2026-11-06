@@ -75,6 +75,9 @@ export async function POST(request) {
     const byTopic = new Map();
     for (const q of mcqs) {
       if (!q.topicId) throw new ContentUploadError('MISSING_TOPIC_ID', 'Every MCQ must have a final topicId before committing.');
+      if (q.humanVerified !== true || !Number.isInteger(q.answerIndex) || q.answerIndex < 0 || !Array.isArray(q.options) || q.answerIndex >= q.options.length) {
+        throw new ContentUploadError('HUMAN_ANSWER_VERIFICATION_REQUIRED', 'Every imported MCQ must have a valid answer selected and explicitly verified by an admin against the uploaded source.');
+      }
       if (!byTopic.has(q.topicId)) byTopic.set(q.topicId, []);
       const hash = crypto.createHash('sha256').update(String(q.question)).digest('hex').slice(0, 16);
       const normalized = normalizedHash(q.question);

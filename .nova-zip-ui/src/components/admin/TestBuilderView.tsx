@@ -17,9 +17,12 @@ import {
 } from 'lucide-react';
 import { AdminTest, AdminRole, ProctoringPolicy, AdminQuestion, TestType } from '../../types/admin';
 import { checkPermission, validateTest } from '../../utils/adminPermissions';
+import { AdminTopicOption } from './QuestionsView';
 
 interface TestBuilderViewProps {
   role: AdminRole;
+  /** Real curriculum topics, used only to populate the Subject label select with real subject names (a test isn't tied to a single topic the way a question is -- its subjectName stays a descriptive label). */
+  topics: AdminTopicOption[];
   tests: AdminTest[];
   policies: ProctoringPolicy[];
   availableQuestions: AdminQuestion[];
@@ -30,6 +33,7 @@ interface TestBuilderViewProps {
 export const TestBuilderView: React.FC<TestBuilderViewProps> = ({
   role,
   tests,
+  topics,
   policies,
   availableQuestions,
   onSaveTest,
@@ -40,10 +44,12 @@ export const TestBuilderView: React.FC<TestBuilderViewProps> = ({
   const [editingTest, setEditingTest] = useState<AdminTest | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  const subjectNames = Array.from(new Set(topics.map((t) => t.subjectName))).sort();
+
   // Form fields
   const [formTitle, setFormTitle] = useState('');
   const [formType, setFormType] = useState<TestType>('Milestone');
-  const [formSubject, setFormSubject] = useState('Indian Polity & Constitution');
+  const [formSubject, setFormSubject] = useState(subjectNames[0] || '');
   const [formDuration, setFormDuration] = useState(45);
   const [formPassingPercent, setFormPassingPercent] = useState(60);
   const [formNegativeMarks, setFormNegativeMarks] = useState(0.5);
@@ -58,7 +64,7 @@ export const TestBuilderView: React.FC<TestBuilderViewProps> = ({
     setEditingTest(null);
     setFormTitle('');
     setFormType('Milestone');
-    setFormSubject('Indian Polity & Constitution');
+    setFormSubject(subjectNames[0] || '');
     setFormDuration(45);
     setFormPassingPercent(60);
     setFormNegativeMarks(0.5);
@@ -312,10 +318,9 @@ export const TestBuilderView: React.FC<TestBuilderViewProps> = ({
                     onChange={(e) => setFormSubject(e.target.value)}
                     className="w-full rounded-xl border border-neutral-200 p-2.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                   >
-                    <option value="Indian Polity & Constitution">Indian Polity & Constitution</option>
-                    <option value="General Studies">General Studies</option>
-                    <option value="Aptitude & Mental Ability">Aptitude & Mental Ability</option>
-                    <option value="History & Culture of Tamil Nadu">History & Culture of Tamil Nadu</option>
+                    {subjectNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -29,7 +29,13 @@ export async function POST(request, { params }) {
   const client = await pool.connect();
 
   try {
-    const { rows: testRows } = await client.query(`SELECT status, question_count FROM test WHERE id = $1 AND learner_id = $2`, [id, learnerId]);
+    const { rows: testRows } = await client.query(
+      `SELECT t.status, t.question_count, COALESCE(tt.marks_per_question, 1)::float8 AS marks_per_question,
+              COALESCE(tt.negative_marks, 0)::float8 AS negative_marks
+         FROM test t LEFT JOIN test_template tt ON tt.id = t.template_id
+        WHERE t.id = $1 AND t.learner_id = $2`,
+      [id, learnerId]
+    );
     if (testRows.length === 0) {
       return NextResponse.json({ code: 'TEST_NOT_FOUND', message: `No test ${id}` }, { status: 404 });
     }
@@ -60,6 +66,7 @@ export async function POST(request, { params }) {
     await client.query('BEGIN');
 
     let correctCount = 0;
+    let wrongCount = 0;
     const perTopic = new Map();
     const review = [];
 
@@ -83,6 +90,7 @@ export async function POST(request, { params }) {
       }
 
       if (correct) correctCount += 1;
+      else if (answered) wrongCount += 1; // negative marking only ever applies to a wrong answer, never a blank
 
       if (!perTopic.has(q.topic_id)) perTopic.set(q.topic_id, { topicId: q.topic_id, topicName: q.topic_name, correct: 0, total: 0 });
       const t = perTopic.get(q.topic_id);
@@ -103,7 +111,16 @@ export async function POST(request, { params }) {
       });
     }
 
-    const score = (correctCount / questions.length) * 100;
+    // marksPerQuestion defaults to 1 and negativeMarks to 0 for a test with
+    // no template (or a template that never set a marking scheme), which
+    // collapses this back to the original plain correctCount/total*100 --
+    // same number as before, just derived through the general formula
+    // instead of a special case.
+    const marksPerQuestion = testRows[0].marks_per_question;
+    const negativeMarks = testRows[0].negative_marks;
+    const totalMarks = questions.length * marksPerQuestion;
+    const obtainedMarks = correctCount * marksPerQuestion - wrongCount * negativeMarks;
+    const score = Math.max(0, Math.min(100, (obtainedMarks / totalMarks) * 100));
 
     await client.query(
       `UPDATE test SET status = 'COMPLETED', completed_at = now(), score = $1 WHERE id = $2`,

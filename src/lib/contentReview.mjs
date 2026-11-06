@@ -65,7 +65,7 @@ export async function listPendingBatches({ admin, canReviewQuestions, canReviewC
     if (hasContent && (!canReviewContent || !(await canActOnTopic(admin, PERMISSIONS.REVIEW_CONTENT, b.topic_id)))) continue;
 
     const { rows: questions } = await query(
-      `SELECT id,prompt,options,answer_index,explanation,shortcut,common_mistake,difficulty::float8 AS difficulty,
+      `SELECT id,language,prompt,options,answer_index,explanation,shortcut,common_mistake,difficulty::float8 AS difficulty,
               quality_score::float8 AS quality_score,source,source_year,exam_code,exam_group,paper,question_number,source_page,generation_source
          FROM question WHERE id=ANY($1::text[])`, [b.question_ids]);
     const { rows: questionLineage } = await query(

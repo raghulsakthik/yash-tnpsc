@@ -6,6 +6,7 @@ import { createTopicIfMissing, upsertQuestions, upsertResource, ContentUploadErr
 import { validateQuestion, normalizedHash } from '../../../../../lib/contentValidation.mjs';
 import { createReviewBatch } from '../../../../../lib/contentReview.mjs';
 import { query } from '../../../../../lib/db.mjs';
+import { ContentImportError, resolveMcqLanguage } from '../../../../../lib/contentImport.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,19 +69,27 @@ export async function POST(request) {
       await createTopicIfMissing(t);
     }
 
-    const { rows: hashRows } = await query(`SELECT normalized_hash FROM question WHERE language = 'en'`);
-    const existingHashes = new Set(hashRows.map((r) => r.normalized_hash));
+    const { rows: hashRows } = await query(`SELECT language, normalized_hash FROM question WHERE language IN ('ta','en')`);
+    const existingHashesByLanguage = new Map([
+      ['ta', new Set(hashRows.filter((r) => r.language === 'ta').map((r) => r.normalized_hash))],
+      ['en', new Set(hashRows.filter((r) => r.language === 'en').map((r) => r.normalized_hash))],
+    ]);
     let duplicatesSkipped = 0;
 
     const byTopic = new Map();
     for (const q of mcqs) {
+      const language = resolveMcqLanguage(q, body.language ?? 'en');
       if (!q.topicId) throw new ContentUploadError('MISSING_TOPIC_ID', 'Every MCQ must have a final topicId before committing.');
       if (q.humanVerified !== true || !Number.isInteger(q.answerIndex) || q.answerIndex < 0 || !Array.isArray(q.options) || q.answerIndex >= q.options.length) {
         throw new ContentUploadError('HUMAN_ANSWER_VERIFICATION_REQUIRED', 'Every imported MCQ must have a valid answer selected and explicitly verified by an admin against the uploaded source.');
       }
-      if (!byTopic.has(q.topicId)) byTopic.set(q.topicId, []);
+      if (typeof q.question !== 'string' || !q.question.trim()) throw new ContentUploadError('INVALID_QUESTION', 'Every MCQ needs question text.');
+      if (typeof q.explanation !== 'string' || q.explanation.trim().length < 16) throw new ContentUploadError('INVALID_EXPLANATION', 'Every imported MCQ needs a meaningful explanation of at least 16 characters.');
+      const groupKey = q.topicId + '::' + language;
+      if (!byTopic.has(groupKey)) byTopic.set(groupKey, { topicId: q.topicId, language, questions: [] });
       const hash = crypto.createHash('sha256').update(String(q.question)).digest('hex').slice(0, 16);
       const normalized = normalizedHash(q.question);
+      const existingHashes = existingHashesByLanguage.get(language);
       if (existingHashes.has(normalized)) {
         duplicatesSkipped += 1;
         continue;
@@ -105,8 +114,8 @@ export async function POST(request) {
       }
       const { score } = validation;
       existingHashes.add(normalized);
-      byTopic.get(q.topicId).push({
-        id: sourceYear ? `tnpsc-${sourceYear}-${hash}` : `pdf-${hash}`,
+      byTopic.get(groupKey).questions.push({
+        id: sourceYear ? (language === 'ta' ? 'tnpsc-' + sourceYear + '-ta-' + hash : 'tnpsc-' + sourceYear + '-' + hash) : (language === 'ta' ? 'pdf-ta-' + hash : 'pdf-' + hash),
         question: q.question,
         options: q.options,
         answer: q.answerIndex,
@@ -126,14 +135,13 @@ export async function POST(request) {
     let insertedQuestions = 0;
     let updatedQuestions = 0;
     const batchIds = [];
-    for (const [topicId, questions] of byTopic) {
-      // A topic can remain in the map after every candidate was skipped as a duplicate.
-      // Do not create an empty review batch or calculate an average over zero items.
+    for (const group of byTopic.values()) {
+      const { topicId, language, questions } = group;
       if (questions.length === 0) continue;
       if (!(await canActOnTopic(admin, PERMISSIONS.CONTENT_CREATE, topicId))) return NextResponse.json({ code: 'FORBIDDEN', message: 'Subject scope does not allow this topic' }, { status: 403 });
       const result = await upsertQuestions({
         topic: topicId,
-        language: 'en',
+        language,
         source,
         questions,
         status: 'DRAFT',
@@ -149,7 +157,7 @@ export async function POST(request) {
         questionIds: result.questionIds,
         avgQualityScore: Math.round(avgQualityScore * 1000) / 1000,
       });
-      batchIds.push({ topicId, id: batchId });
+      batchIds.push({ topicId, language, id: batchId });
     }
 
     let resourcesAdded = 0;
@@ -168,7 +176,8 @@ export async function POST(request) {
     // questions and study material for the same topic together, while the
     // reviewer can approve/reject both atomically.
     for (const [topicId, resourceIds] of resourcesByTopic) {
-      if (byTopic.has(topicId)) {
+      const hasQuestionsForTopic = [...byTopic.values()].some((group) => group.topicId === topicId && group.questions.length > 0);
+      if (hasQuestionsForTopic) {
         const existingBatch = batchIds.find((b) => b.topicId === topicId);
         if (existingBatch) {
           // The current batch API is intentionally one-shot; create a second
@@ -187,8 +196,9 @@ export async function POST(request) {
     // Persist immutable provenance after the review batch exists. The topic/chapter/subject
     // snapshot is captured now so later syllabus renames/re-parenting do not erase where
     // the imported item originally landed.
-    for (const [topicId, questions] of byTopic) {
-      const batch = batchIds.find((b) => b.topicId === topicId && b.id);
+    for (const group of byTopic.values()) {
+      const { topicId, questions, language } = group;
+      const batch = batchIds.find((b) => b.topicId === topicId && b.language === language && b.id);
       if (!batch) continue;
       const { rows: placement } = await query(`
         SELECT t.id AS topic_id, t.chapter_id, c.subject_id
@@ -240,6 +250,9 @@ export async function POST(request) {
       reviewBatches: batchIds.length,
     });
   } catch (err) {
+    if (err instanceof ContentImportError) {
+      return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
+    }
     if (err instanceof ContentUploadError) {
       return NextResponse.json({ code: err.code, message: err.message }, { status: 400 });
     }

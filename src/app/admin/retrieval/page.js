@@ -14,6 +14,10 @@ function Body() {
   const [previewBusy, setPreviewBusy] = useState(null);
   const [mcqPreview, setMcqPreview] = useState(null);
   const [mcqPreviewBusy, setMcqPreviewBusy] = useState(null);
+  const [syllabusTopics, setSyllabusTopics] = useState([]);
+  const [mcqEdits, setMcqEdits] = useState({});
+  const [mcqLanguage, setMcqLanguage] = useState('en');
+  const [stagingMcqs, setStagingMcqs] = useState(false);
 
   async function load() {
     setLoading(true); setError(null);
@@ -44,9 +48,84 @@ function Body() {
       const response = await fetch('/api/admin/retrieval/resources/' + resource.id + '/mcq-preview', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Could not extract MCQ candidates');
+      const syllabusResponse = await fetch('/api/admin/syllabus', { cache: 'no-store' });
+      const syllabusData = await syllabusResponse.json();
+      if (!syllabusResponse.ok) throw new Error(syllabusData.message || 'Could not load syllabus topics');
+      const topics = (syllabusData.subjects || []).flatMap((subject) =>
+        (subject.chapters || []).flatMap((chapter) =>
+          (chapter.topics || []).map((topic) => ({
+            id: topic.id,
+            label: subject.name + ' / ' + chapter.name + ' / ' + topic.name,
+          }))
+        )
+      );
+      setSyllabusTopics(topics);
+      const sample = (data.candidates || []).map((candidate) => candidate.question + ' ' + (candidate.options || []).map((option) => option.text).join(' ')).join(' ');
+      setMcqLanguage(/[\u0B80-\u0BFF]/.test(sample) ? 'ta' : 'en');
+      setMcqEdits(Object.fromEntries((data.candidates || []).map((candidate, index) => [index, {
+        selected: false, topicId: '', answerIndex: '', explanation: '', humanVerified: false,
+      }])));
       setMcqPreview({ ...data, title: resource.title });
     } catch (err) { setMessage({ ok: false, text: err.message }); }
     finally { setMcqPreviewBusy(null); }
+  }
+
+  function updateMcqEdit(index, patch) {
+    setMcqEdits((current) => ({
+      ...current,
+      [index]: { ...current[index], ...patch },
+    }));
+  }
+
+  const selectedMcqIndexes = Object.keys(mcqEdits).filter((index) => mcqEdits[index]?.selected);
+  const readyMcqIndexes = selectedMcqIndexes.filter((index) => {
+    const edit = mcqEdits[index];
+    return edit.topicId && edit.answerIndex !== '' && edit.explanation.trim().length >= 16 && edit.humanVerified;
+  });
+  const canStageMcqs = selectedMcqIndexes.length > 0 && readyMcqIndexes.length === selectedMcqIndexes.length;
+
+  async function stageVerifiedMcqs() {
+    if (!mcqPreview || !canStageMcqs || stagingMcqs) return;
+    setStagingMcqs(true);
+    setMessage(null);
+    try {
+      const mcqs = readyMcqIndexes.map((index) => {
+        const candidate = mcqPreview.candidates[Number(index)];
+        const edit = mcqEdits[index];
+        return {
+          topicId: edit.topicId,
+          language: mcqLanguage,
+          question: candidate.question,
+          options: candidate.options.map((option) => option.text),
+          answerIndex: Number(edit.answerIndex),
+          explanation: edit.explanation.trim(),
+          humanVerified: true,
+          questionNumber: candidate.question_number,
+          sourcePage: candidate.source_page,
+        };
+      });
+      const response = await fetch('/api/admin/content/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mcqs,
+          examGroup: group,
+          paper: mcqPreview.title,
+          sourceFileName: mcqPreview.filename,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Could not stage the verified questions');
+      setMessage({
+        ok: true,
+        text: result.insertedQuestions + ' question(s) staged as DRAFT across ' + result.reviewBatches + ' review batch(es). ' + result.duplicatesSkipped + ' duplicate(s) skipped. Nothing is learner-visible until separately approved.',
+      });
+      setMcqPreview(null);
+    } catch (err) {
+      setMessage({ ok: false, text: err.message });
+    } finally {
+      setStagingMcqs(false);
+    }
   }
 
   async function analyze(resource) {
@@ -121,11 +200,51 @@ function Body() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 }}>
               {candidate.options.map((option) => <div key={option.label} className="muted" style={{ fontSize: '.84rem' }}><strong>{option.label}.</strong> {option.text}</div>)}
             </div>
-            {candidate.answer_marker_present && <p className="muted" style={{ marginTop: 8, fontSize: '.78rem' }}>Printed answer marker: {candidate.answer_marker} (unverified)</p>}
+            {candidate.answer_marker_present && <p className="muted" style={{ marginTop: 8, fontSize: '.78rem' }}>Printed answer marker: {candidate.answer_marker} (unverified; not imported automatically)</p>}
+            <div style={{ display: 'grid', gap: 8, marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.84rem' }}>
+                <input type="checkbox" checked={Boolean(mcqEdits[index]?.selected)} onChange={(event) => updateMcqEdit(index, { selected: event.target.checked })} />
+                Select this question for draft review
+              </label>
+              <label style={{ display: 'grid', gap: 5, fontSize: '.8rem' }}>
+                Syllabus topic
+                <select value={mcqEdits[index]?.topicId || ''} onChange={(event) => updateMcqEdit(index, { topicId: event.target.value })} style={{ width: '100%', padding: 9, borderRadius: 8, background: 'var(--paper)', color: 'inherit', border: '1px solid var(--border)' }}>
+                  <option value="">Choose the exact topic…</option>
+                  {syllabusTopics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 5, fontSize: '.8rem' }}>
+                Verified correct answer
+                <select value={mcqEdits[index]?.answerIndex ?? ''} onChange={(event) => updateMcqEdit(index, { answerIndex: event.target.value, humanVerified: false })} style={{ width: '100%', padding: 9, borderRadius: 8, background: 'var(--paper)', color: 'inherit', border: '1px solid var(--border)' }}>
+                  <option value="">Choose after checking the source…</option>
+                  {candidate.options.map((option, optionIndex) => <option key={option.label} value={optionIndex}>{option.label} — {option.text}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 5, fontSize: '.8rem' }}>
+                Explanation (minimum 16 characters)
+                <textarea value={mcqEdits[index]?.explanation || ''} onChange={(event) => updateMcqEdit(index, { explanation: event.target.value, humanVerified: false })} rows={2} placeholder="Explain why the verified answer is correct…" style={{ width: '100%', padding: 9, borderRadius: 8, background: 'var(--paper)', color: 'inherit', border: '1px solid var(--border)' }} />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '.78rem' }}>
+                <input type="checkbox" checked={Boolean(mcqEdits[index]?.humanVerified)} onChange={(event) => updateMcqEdit(index, { humanVerified: event.target.checked })} />
+                I checked the original source, confirmed the answer and reviewed this question's options and explanation.
+              </label>
+            </div>
           </article>)}
           {!mcqPreview.candidates.length && <div className="card-sunk muted">No MCQ candidates were extracted from the first {mcqPreview.pages_requested} pages.</div>}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="btn btn-primary" onClick={() => setMcqPreview(null)}>Done reviewing</button></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.82rem' }}>
+            Question language
+            <select value={mcqLanguage} onChange={(event) => setMcqLanguage(event.target.value)} style={{ padding: 8, borderRadius: 8, background: 'var(--paper)', color: 'inherit', border: '1px solid var(--border)' }}>
+              <option value="ta">Tamil</option><option value="en">English</option>
+            </select>
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn" onClick={() => setMcqPreview(null)}>Close</button>
+            <button className="btn btn-primary" disabled={!canStageMcqs || stagingMcqs} onClick={stageVerifiedMcqs}>{stagingMcqs ? 'Staging…' : 'Stage ' + readyMcqIndexes.length + ' verified MCQs'}</button>
+          </div>
+        </div>
+        {selectedMcqIndexes.length > 0 && !canStageMcqs && <p className="muted" style={{ fontSize: '.75rem' }}>Complete the topic, answer, explanation and source-verification steps for every selected question before staging.</p>}
       </section>
     </div>}
     {preview && <div role="dialog" aria-modal="true" aria-labelledby="retrieval-preview-title"

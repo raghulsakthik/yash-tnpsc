@@ -67,6 +67,7 @@ function BatchCard({ batch, onDecide }) {
           {batch.questions.map((q) => (
             <div key={q.id} className="card-sunk">
               <p style={{ fontWeight: 600 }}>{q.prompt}</p>
+              <p className="muted" style={{ marginTop: 5, fontSize: '0.72rem' }}>Language: {q.language === 'ta' ? 'Tamil' : 'English'} · Status: draft review</p>
               {(q.source_year || q.paper || q.question_number || q.source_page) && (
                 <p className="muted" style={{ marginTop: 6, fontSize: '0.75rem' }}>
                   PYQ provenance: {q.exam_code || 'TNPSC'} · {q.exam_group || 'Exam'} · {q.source_year || '—'} · {q.paper || q.source || '—'} · Q{q.question_number || '—'} · page {q.source_page || '—'}
